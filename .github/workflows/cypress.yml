@@ -1,0 +1,25 @@
+name: Cypress E2E Tests
+
+# 1. กำหนดให้ Workflow ทำงานเมื่อมีการ Push หรือ Pull Request เข้า Branch main
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # เพิ่มปุ่มให้กดสั่งรันเองบนหน้าเว็บได้
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 2. ดึงโค้ดทั้งหมดของคุณมาที่ Runner
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 3. ใช้ Action อย่างเป็นทางการของ Cypress (จัดการเรื่อง Node.js และ npm install ให้เรียบร้อยในตัว)
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          start: npx serve -l 5500 . # จำลอง Live Server เปิดพอร์ต 5500 
+          wait-on: 'http://127.0.0.1:5500/index.html' # รอให้เซิร์ฟเวอร์ติดก่อน แล้วค่อยเริ่มรันเทสต์
