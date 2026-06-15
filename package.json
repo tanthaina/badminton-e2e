@@ -1,0 +1,17 @@
+{
+  "name": "voicepen",
+  "version": "1.0.0",
+  "description": "",
+  "main": "badminton.cy.js",
+  "scripts": {
+    "test": "cypress run",
+    "cy:open": "cypress open"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "cypress": "^15.17.0"
+  }
+}
