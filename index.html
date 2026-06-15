@@ -785,7 +785,9 @@ function bindEvents() {
     document.getElementById('btnClosePayment').addEventListener('click', () => document.getElementById('payment-modal').classList.add('hidden'));
     document.getElementById('btnCancelPayment').addEventListener('click', () => document.getElementById('payment-modal').classList.add('hidden'));
     document.getElementById('btnSubmitPayment').addEventListener('click', submitPayment);
-    document.getElementById('payment-amount').addEventListener('input', (e) => updateQRCode(parseFloat(e.target.value) || 0));
+    document.getElementById('payment-amount').addEventListener('input', (e) => {
+        if (typeof updateQRCode === 'function') updateQRCode(parseFloat(e.target.value) || 0);
+    });
 
     document.getElementById('btnClearTodayPlayers').addEventListener('click', () => { 
         if (getCurrentDailyData().games.length > 0) return Swal.fire('ล้างไม่ได้!', 'มีการบันทึกเกมไปแล้วในวันนี้<br>โปรดเคลียร์เกมออกก่อนเพื่อป้องกันยอดเงินสูญหาย', 'error');
@@ -823,10 +825,13 @@ function bindEvents() {
         document.getElementById('shuttlecockPrice').value = state.settings.shuttlecockPrice;
         saveToStorage(); Swal.fire({icon:'success', title:'บันทึกการตั้งค่าแล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
     });
-    document.getElementById('settingPromptPay').addEventListener('change', (e) => {
-        state.settings.promptpayId = e.target.value.trim().replace(/-/g,''); // ตัดขีดออกอัตโนมัติ
-        saveToStorage(); Swal.fire({icon:'success', title:'บันทึกเบอร์พร้อมเพย์แล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
-    });
+    const settingPromptPay = document.getElementById('settingPromptPay');
+    if (settingPromptPay) {
+        settingPromptPay.addEventListener('change', (e) => {
+            state.settings.promptpayId = e.target.value.trim().replace(/-/g,''); // ตัดขีดออกอัตโนมัติ
+            saveToStorage(); Swal.fire({icon:'success', title:'บันทึกเบอร์พร้อมเพย์แล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+        });
+    }
 
     document.getElementById('btnFactoryReset').addEventListener('click', () => {
         Swal.fire({title:'ล้างข้อมูลทั้งหมด?', text:'ข้อมูลผู้เล่น เกม และประวัติบัญชีทั้งหมดจะหายไป ไม่สามารถกู้คืนได้!', icon:'error', showCancelButton:true, confirmButtonColor:'#dc2626', confirmButtonText:'ล้างข้อมูลเลย'}).then(r=>{
@@ -839,7 +844,19 @@ function bindEvents() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => { bindEvents(); loadFromStorage(); ensureIntegrity(); document.getElementById('workingDate').value = selectedDate; document.getElementById('shuttlecockPrice').value = state.settings.shuttlecockPrice||0; document.getElementById('settingDefaultPrice').value = state.settings.shuttlecockPrice||0; document.getElementById('settingPromptPay').value = state.settings.promptpayId||''; updateAndRender(); });
+document.addEventListener('DOMContentLoaded', () => { 
+    bindEvents(); 
+    loadFromStorage(); 
+    ensureIntegrity(); 
+    document.getElementById('workingDate').value = selectedDate; 
+    document.getElementById('shuttlecockPrice').value = state.settings.shuttlecockPrice||0; 
+    document.getElementById('settingDefaultPrice').value = state.settings.shuttlecockPrice||0; 
+    
+    const settingPromptPay = document.getElementById('settingPromptPay');
+    if (settingPromptPay) settingPromptPay.value = state.settings.promptpayId||''; 
+    
+    updateAndRender(); 
+});
 </script>
 </body>
 </html>
