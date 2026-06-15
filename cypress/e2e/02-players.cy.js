@@ -56,7 +56,7 @@ describe('02 - Player Management & Security', () => {
     cy.get('#btnSubmitDebt').click();
     
     cy.contains('#unpaid-list-overall div', 'A').find('button').contains('จ่าย').click();
-    cy.get('#payment-amount').type('50');
+    cy.get('#payment-amount').clear().type('50');
     cy.get('#btnSubmitPayment').click();
 
     cy.get('button[data-tab="daily"]').click();

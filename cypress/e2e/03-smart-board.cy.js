@@ -69,11 +69,26 @@ describe('03 - Smart Board & Voice Command', () => {
     cy.window().then((win) => { win.processVoiceCommand('หมู แมน'); });
     cy.get('#penP1').should('have.value', 'ก้อง'); cy.get('#penP3').should('have.value', 'หมู');
 
-    cy.get('#btnClosePenInput').click();
+    cy.get('#btnClosePenInput').click({ force: true });
     cy.addPlayer('ก้อง', 'ตาคลี');
+    cy.addPlayer('กิตติ');
     cy.get('#btnOpenPenInput').click();
     cy.get('#penP1').clear(); cy.get('#penP2').clear(); cy.get('#penP3').clear(); cy.get('#penP4').clear();
     cy.window().then((win) => { win.processVoiceCommand('ก้อง'); });
     cy.get('#penP1').should('have.class', 'status-yellow');
+
+    // ทดสอบ Voice Shortcut: ล้างกระดาน
+    cy.window().then((win) => { win.processVoiceCommand('ล้างกระดาน'); }); 
+    cy.get('#penP1').should('have.value', '');
+    
+    // ทดสอบดึงเบอร์ลูกอัตโนมัติ (Extract Shuttlecock Number)
+    cy.window().then((win) => { win.processVoiceCommand('กิตติ คู่กับ แทน เจอ หมู และ แมน ใช้ลูกเบอร์ 5 และ 6'); });
+    cy.get('#penP1').should('have.value', 'กิตติ');
+    cy.get('#btnConfirmPenInput').should('not.have.class', 'hidden'); // ปุ่มยืนยันต้องโผล่
+    
+    // ทดสอบ Voice Shortcut: ยืนยันอัตโนมัติ
+    cy.window().then((win) => { win.processVoiceCommand('ยืนยัน'); });
+    cy.get('#pen-input-modal').should('have.class', 'hidden'); // Modal ต้องถูกปิดไปเอง
+    cy.get('#shuttlecockSpeeds').should('have.value', '5, 6'); // ข้อมูลถูกส่งมาหน้าหลัก
   });
 });
