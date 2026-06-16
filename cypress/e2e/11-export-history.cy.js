@@ -32,4 +32,31 @@ describe('11 - History Summary & CSV Export', () => {
     const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
     cy.readFile(`cypress/downloads/history-${todayStr}.csv`).should('contain', 'น้องประวัติ').and('contain', '999.99').and('contain', 'วันที่,ประเภท,ชื่อ,ยอดเงิน (บาท)');
   });
+
+  it('ทดสอบ 3: ระบบค้นหาชื่อในหน้าประวัติ (History Name Search)', () => {
+    // สร้างข้อมูลประวัติสำหรับ 2 คน
+    cy.addPlayer('น้องก้อง');
+    cy.addPlayer('น้องแทน');
+    
+    cy.get('button[data-tab="account"]').click();
+    cy.get('#btnAddDebt').click();
+    cy.get('#debt-name').type('น้องก้อง'); cy.get('#debt-amount').type('100'); cy.get('#btnSubmitDebt').click();
+    
+    cy.get('#btnAddDebt').click();
+    cy.get('#debt-name').type('น้องแทน'); cy.get('#debt-amount').type('200'); cy.get('#btnSubmitDebt').click();
+
+    // ไปที่แท็บประวัติ
+    cy.get('button[data-tab="history"]').click();
+    
+    // ตอนแรกต้องเจอทั้ง 2 คน และยอดรวมต้องเป็น 300
+    cy.get('#overall-summary-content').should('contain.text', 'น้องก้อง').and('contain.text', 'น้องแทน');
+    cy.get('#history-total-cost').should('contain.text', '฿300.00');
+
+    // พิมพ์ค้นหาชื่อ "น้องก้อง"
+    cy.get('#summarySearchName').type('น้องก้อง');
+    
+    // ตารางต้องเหลือแค่น้องก้อง (ไม่เห็นน้องแทน) และยอดรวมต้องอัปเดตเหลือ 100 แบบเรียลไทม์
+    cy.get('#overall-summary-content').should('contain.text', 'น้องก้อง').and('not.contain.text', 'น้องแทน');
+    cy.get('#history-total-cost').should('contain.text', '฿100.00');
+  });
 });

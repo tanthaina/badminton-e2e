@@ -259,6 +259,7 @@
             <div class="card-body">
                 <div class="flex flex-wrap gap-2 mb-4">
                     <input type="date" id="summaryStartDate" class="form-control" style="width:auto;"><input type="date" id="summaryEndDate" class="form-control" style="width:auto;">
+                    <input type="text" id="summarySearchName" class="form-control" placeholder="🔍 ค้นหาชื่อ..." style="width:auto; flex: 1; min-width: 120px; max-width: 200px;">
                     <button id="btnFilterHistory" class="btn btn-primary">ค้นหา</button>
                 </div>
                 <div id="history-summary-box" class="grid grid-cols-2 gap-3 mb-4 text-center hidden">
@@ -901,11 +902,13 @@ function generatePersonalSlip(name, amount) {
 }
 
 function renderHistory() { 
-    let start = document.getElementById('summaryStartDate').value;
-    let end = document.getElementById('summaryEndDate').value;
+    let start = $('summaryStartDate').value;
+    let end = $('summaryEndDate').value;
+    let searchName = $('summarySearchName').value.trim().toLowerCase();
     let h = [...state.allTransactions.map(t=>({...t, type:'เกม'})), ...state.allPayments.map(p=>({...p, type:'ชำระเงิน'}))];
     if(start) h = h.filter(x=>x.date>=start);
     if(end) h = h.filter(x=>x.date<=end);
+    if(searchName) h = h.filter(x=>x.name.toLowerCase().includes(searchName));
     h.sort((a,b)=>new Date(b.date) - new Date(a.date));
     
     const sumBox = $('history-summary-box');
@@ -961,8 +964,10 @@ function exportAccountImg() {
 
 function exportHistoryCSV() {
     let start = $('summaryStartDate').value; let end = $('summaryEndDate').value;
+    let searchName = $('summarySearchName').value.trim().toLowerCase();
     let h = [...state.allTransactions.map(t=>({...t, type:'เกม'})), ...state.allPayments.map(p=>({...p, type:'ชำระเงิน'}))];
     if(start) h = h.filter(x=>x.date>=start); if(end) h = h.filter(x=>x.date<=end);
+    if(searchName) h = h.filter(x=>x.name.toLowerCase().includes(searchName));
     h.sort((a,b)=>new Date(b.date) - new Date(a.date));
     if(!h.length) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลประวัติให้ส่งออกในช่วงเวลานี้', 'info');
 
@@ -1131,6 +1136,7 @@ function bindEvents() {
     document.getElementById('btnPayAllUnpaid').addEventListener('click', payAllUnpaid);
     document.getElementById('btnFilterHistory').addEventListener('click', renderHistory);
     document.getElementById('btnExportHistoryCSV').addEventListener('click', exportHistoryCSV);
+    $('summarySearchName').addEventListener('input', renderHistory);
 
     document.getElementById('settingDefaultPrice').addEventListener('change', (e) => {
         state.settings.shuttlecockPrice = parseFloat(e.target.value) || 0;
