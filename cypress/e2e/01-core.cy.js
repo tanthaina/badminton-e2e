@@ -11,7 +11,7 @@ describe('01 - Core Flow & Game Management', () => {
     cy.recordGame('ก้อง', 'แทน', 'หมู', 'แมน', '75, 76', '20');
 
     cy.get('#gamesList').children().should('have.length', 1);
-    cy.get('#gamesList').should('contain.text', 'ลูก 75,76 (10.00 บ./คน)');
+    cy.get('#gamesList').should('contain.text', 'ลูก 75,76').and('contain.text', '10.00 บ./คน');
     cy.get('#summaryTableUnpaid').find('tr').should('have.length', 4);
     cy.get('#grandTotal').should('have.text', '40.00');
     cy.contains('#summaryTableUnpaid tr', 'ก้อง').should('contain.text', '75').and('contain.text', '76');
@@ -27,6 +27,20 @@ describe('01 - Core Flow & Game Management', () => {
     cy.recordGame('ก้อง', 'ก้อง');
     cy.get('.swal2-popup').should('be.visible');
     cy.get('.swal2-html-container').should('contain.text', 'เลือก 4 คนไม่ซ้ำกัน');
+  });
+
+  it('ทดสอบการเพิ่มผู้เล่นด่วน (Quick Add Player) จากแถบเครื่องมือบันทึกเกม', () => {
+    // กดปุ่มเพิ่มผู้เล่นด่วน
+    cy.get('#btnQuickAddPlayer').click();
+    
+    // กรอกข้อมูลใน SweetAlert Popup
+    cy.get('.swal2-popup').should('be.visible').and('contain.text', 'เพิ่มผู้เล่นด่วน');
+    cy.get('#swalQuickPrefix').select('ตากฟ้า');
+    cy.get('#swalQuickName').type('สายฟ้า');
+    cy.get('.swal2-confirm').contains('เพิ่มผู้เล่น').click();
+    
+    // ตรวจสอบว่าชื่อเข้าไปอยู่ใน Dropdown ผู้เล่นแล้ว
+    cy.get('#player1').find('option[value="ตากฟ้า: สายฟ้า"]').should('exist');
   });
 
   it('ทดสอบระบบบันทึกข้อมูลอัตโนมัติ (Data Persistence)', () => {
@@ -56,9 +70,9 @@ describe('01 - Core Flow & Game Management', () => {
     cy.recordGame('A', 'B', 'C', 'D', '1', '20');
     
     cy.get('#grandTotal').should('have.text', '20.00'); 
-    cy.get('.game-card').find('.fa-trash').click();
+    cy.get('.game-card').find('.fa-trash-alt').click();
     cy.get('#grandTotal').should('have.text', '0.00');
-    cy.get('#gamesList').children().should('have.length', 0);
+    cy.get('#gamesList .game-card').should('have.length', 0);
   });
 
   it('ทดสอบ User Error: บันทึกเกมโดยที่เลือกผู้เล่นไม่ครบ 4 คน', () => {

@@ -206,28 +206,7 @@
     <div id="tab-daily" class="tab-content space-y-4">
         <div class="card">
             <div class="card-header">
-                <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-users"></i></div><h2 class="text-blue-700">1. จัดการรายชื่อผู้เล่น</h2>
-            </div>
-            <div class="card-body space-y-3">
-                <div class="relative mb-2"><input type="text" id="searchDailyPlayer" class="form-control" placeholder="🔍 ค้นหาชื่อผู้เล่น..."></div>
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <select id="newPlayerPrefix" class="form-control form-select" style="width:auto; flex-shrink:0;">
-                        <option value="ทั่วไป">ทั่วไป</option><option value="ตากฟ้า">ตากฟ้า</option><option value="ตาคลี">ตาคลี</option><option value="นครสวรรค์">นครสวรรค์</option>
-                    </select>
-                    <input type="text" id="newPlayerName" class="form-control flex-1" placeholder="พิมพ์ชื่อผู้เล่นใหม่...">
-                    <button id="btnAddPlayer" class="btn btn-primary"><i class="fas fa-user-plus"></i>เพิ่มผู้เล่น</button>
-                </div>
-                <div class="flex gap-2">
-                    <button id="btnClearTodayPlayers" class="btn btn-danger btn-sm"><i class="fas fa-user-times"></i>ล้างรายชื่อวันนี้</button>
-                    <button id="btnClearAllPlayers" class="btn btn-secondary btn-sm"><i class="fas fa-users-slash"></i>ล้างรายชื่อทั้งหมด</button>
-                </div>
-                <div id="playerList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="section-icon bg-green-100 text-green-600"><i class="fas fa-gamepad"></i></div><h2 class="text-green-700">2. บันทึกเกม</h2>
+                <div class="section-icon bg-green-100 text-green-600"><i class="fas fa-gamepad"></i></div><h2 class="text-green-700">บันทึกเกม</h2>
             </div>
             <div class="card-body space-y-4">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -245,6 +224,7 @@
                     <button id="btnCancelEditGame" class="btn btn-secondary hidden py-3 px-4" title="ยกเลิกการแก้ไข" onclick="cancelEditGame()"><i class="fas fa-times"></i></button>
                     <button id="btnOpenPenInput" class="btn btn-indigo py-3 px-5 fab-mobile"><i class="fas fa-pen-nib"></i><span>กระดานจัดทัพ</span></button>
                     <button id="btnUseLastTeam" class="btn btn-secondary py-3"><i class="fas fa-redo-alt"></i>ทีมเดิม</button>
+                    <button id="btnQuickAddPlayer" class="btn btn-primary py-3 px-4" title="เพิ่มผู้เล่นใหม่ด่วน"><i class="fas fa-user-plus"></i></button>
                 </div>
             </div>
         </div>
@@ -281,6 +261,27 @@
                     <img id="daily-summary-qr" src="" crossorigin="anonymous" class="w-32 h-32 border p-1 rounded-lg shadow-sm bg-white">
                     <div id="daily-summary-pp-text" class="text-xs text-gray-500 mt-1"></div>
                 </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-users"></i></div><h2 class="text-blue-700">จัดการรายชื่อผู้เล่น</h2>
+            </div>
+            <div class="card-body space-y-3">
+                <div class="relative mb-2"><input type="text" id="searchDailyPlayer" class="form-control" placeholder="🔍 ค้นหาชื่อผู้เล่น..."></div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <select id="newPlayerPrefix" class="form-control form-select" style="width:auto; flex-shrink:0;">
+                        <option value="ทั่วไป">ทั่วไป</option><option value="ตากฟ้า">ตากฟ้า</option><option value="ตาคลี">ตาคลี</option><option value="นครสวรรค์">นครสวรรค์</option>
+                    </select>
+                    <input type="text" id="newPlayerName" class="form-control flex-1" placeholder="พิมพ์ชื่อผู้เล่นใหม่...">
+                    <button id="btnAddPlayer" class="btn btn-primary"><i class="fas fa-user-plus"></i>เพิ่มผู้เล่น</button>
+                </div>
+                <div class="flex gap-2">
+                    <button id="btnClearTodayPlayers" class="btn btn-danger btn-sm"><i class="fas fa-user-times"></i>ล้างรายชื่อวันนี้</button>
+                    <button id="btnClearAllPlayers" class="btn btn-secondary btn-sm"><i class="fas fa-users-slash"></i>ล้างรายชื่อทั้งหมด</button>
+                </div>
+                <div id="playerList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
             </div>
         </div>
     </div>
@@ -562,6 +563,27 @@ function addPlayer() {
     
     $('newPlayerName').value = ''; 
     updateAndRender();
+}
+function quickAddPlayer() {
+    Swal.fire({
+        title: 'เพิ่มผู้เล่นด่วน',
+        html: `<select id="swalQuickPrefix" class="swal2-select" style="margin: 10px auto; width: 85%; font-size: 16px;"><option value="ทั่วไป">ทั่วไป</option><option value="ตากฟ้า">ตากฟ้า</option><option value="ตาคลี">ตาคลี</option><option value="นครสวรรค์">นครสวรรค์</option></select>
+               <input id="swalQuickName" class="swal2-input" placeholder="พิมพ์ชื่อผู้เล่น..." style="margin: 10px auto; width: 85%;">`,
+        showCancelButton: true, confirmButtonText: 'เพิ่มผู้เล่น', cancelButtonText: 'ยกเลิก',
+        preConfirm: () => {
+            const pfx = $('swalQuickPrefix').value; const raw = $('swalQuickName').value.trim();
+            if(!raw) { Swal.showValidationMessage('กรุณาพิมพ์ชื่อผู้เล่น'); return false; }
+            return { pfx, raw };
+        }
+    }).then(r => {
+        if(r.isConfirmed) {
+            const name = r.value.pfx === 'ทั่วไป' ? r.value.raw : `${r.value.pfx}: ${r.value.raw}`;
+            if(state.masterPlayerList.includes(name)) return Swal.fire({icon:'warning', title:'มีชื่อนี้ในระบบแล้ว', toast:true, position:'top-end', timer: 2000, showConfirmButton:false});
+            state.masterPlayerList.push(name); state.masterPlayerList.sort((a, b) => a.localeCompare(b, 'th'));
+            const dd = getCurrentDailyData(); if(!dd.players.find(p => p.name === name)) dd.players.push({ name, paid: false, present: true });
+            updateAndRender(); Swal.fire({icon:'success', title:'เพิ่มสำเร็จ!', toast:true, position:'top-end', timer: 1500, showConfirmButton:false});
+        }
+    });
 }
 function togglePlayer(name) {
     const dd = getCurrentDailyData(); let p = dd.players.find(x=>x.name===name);
@@ -913,24 +935,43 @@ function renderDaily() {
     // 3 & 4. Games & Summary
     let totalB = dd.games.reduce((s,g)=>s+(g.shuttlecocksUsed||0),0);
     document.getElementById('shuttlecockSpeedSummary').innerHTML = `รวมเกม: ${dd.games.length} | รวมลูก: ${totalB}`;
-   document.getElementById('gamesList').innerHTML = dd.games.map((g,i)=>{
-        let c = ((g.shuttlecocksUsed||0)*(g.shuttlecockPrice||0)/4).toFixed(2);
-        let fN = n => { if(!n) return '-'; let sh = n.includes(': ')?n.split(': ')[1]:n; let px = n.includes(': ')?n.split(': ')[0]:''; return px ? `${sh}(${px})` : sh; };
-        
-        return `<div class="game-card p-2 text-sm ${g.id === _editGameId ? 'border-yellow-400 bg-yellow-50 shadow-md' : ''}">
-            <div class="flex flex-wrap justify-between items-center mb-1 pb-1 border-b border-gray-100">
-                <span class="font-bold text-gray-700">เกม ${i+1}</span>
-                <div class="flex gap-1">
-                    <button onclick="moveGame(${i}, -1)" class="btn btn-ghost p-1 text-gray-500" title="เลื่อนขึ้น" ${i===0?'disabled style="opacity:0.3"':''}><i class="fas fa-arrow-up"></i></button>
-                    <button onclick="moveGame(${i}, 1)" class="btn btn-ghost p-1 text-gray-500" title="เลื่อนลง" ${i===dd.games.length-1?'disabled style="opacity:0.3"':''}><i class="fas fa-arrow-down"></i></button>
-                    <button onclick="editGame(${g.id})" class="btn btn-ghost p-1 text-blue-500" title="แก้ไข"><i class="fas fa-edit"></i></button>
-                    <button onclick="deleteGame(${i})" class="btn btn-ghost p-1 text-red-500" title="ลบ"><i class="fas fa-trash"></i></button>
+    if (dd.games.length === 0) {
+        document.getElementById('gamesList').innerHTML = `
+            <div class="col-span-full py-10 flex flex-col items-center justify-center text-center bg-gray-50/50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-700">
+                <div class="w-16 h-16 bg-white dark:bg-slate-800 shadow-sm rounded-full flex items-center justify-center mb-3 text-gray-300 dark:text-gray-500">
+                    <i class="fas fa-table-tennis text-3xl"></i>
                 </div>
+                <h3 class="text-gray-600 dark:text-gray-300 font-bold text-base mb-1">ยังไม่มีเกมที่บันทึก</h3>
+                <p class="text-gray-400 dark:text-gray-500 text-sm max-w-xs px-2">เพิ่มผู้เล่นลงสนามแล้วกด <span class="font-semibold text-green-600 dark:text-green-500">บันทึกเกมนี้</span> หรือใช้ <span class="font-semibold text-indigo-500">กระดานจัดทัพ</span> เพื่อเริ่มเกมแรก</p>
             </div>
-        <div class="text-blue-600">A: ${escapeHtml(fN(g.players[0]))}, ${escapeHtml(fN(g.players[1]))}</div>
-        <div class="text-red-600">B: ${escapeHtml(fN(g.players[2]))}, ${escapeHtml(fN(g.players[3]))}</div>
-        <div class="text-gray-500 text-xs mt-1">ลูก ${g.shuttlecockSpeeds.join(',')} (${c} บ./คน)</div></div>`;
-    }).join('');
+        `;
+    } else {
+        document.getElementById('gamesList').innerHTML = dd.games.map((g,i)=>{
+            let c = ((g.shuttlecocksUsed||0)*(g.shuttlecockPrice||0)/4).toFixed(2);
+            let fN = n => { if(!n) return '-'; let sh = n.includes(': ')?n.split(': ')[1]:n; let px = n.includes(': ')?n.split(': ')[0]:''; return px ? `${sh}(${px})` : sh; };
+            
+            return `<div class="game-card flex flex-col p-3 transition-shadow hover:shadow-md ${g.id === _editGameId ? 'border-yellow-400 bg-yellow-50 shadow-md ring-1 ring-yellow-400' : 'bg-white dark:bg-slate-800'}">
+                <div class="flex flex-wrap justify-between items-center mb-2 pb-2 border-b border-gray-100 dark:border-slate-700">
+                    <span class="font-bold text-gray-800 dark:text-gray-200"><i class="fas fa-flag-checkered text-indigo-500 mr-1"></i> เกม ${i+1}</span>
+                    <div class="flex gap-1 bg-gray-50 dark:bg-slate-700 rounded-md p-0.5">
+                        <button onclick="moveGame(${i}, -1)" class="btn-ghost px-2 py-1 text-gray-500 hover:text-indigo-600 rounded" title="เลื่อนขึ้น" ${i===0?'disabled style="opacity:0.3"':''}><i class="fas fa-arrow-up text-xs"></i></button>
+                        <button onclick="moveGame(${i}, 1)" class="btn-ghost px-2 py-1 text-gray-500 hover:text-indigo-600 rounded" title="เลื่อนลง" ${i===dd.games.length-1?'disabled style="opacity:0.3"':''}><i class="fas fa-arrow-down text-xs"></i></button>
+                        <div class="w-px bg-gray-200 dark:bg-slate-600 my-1"></div>
+                        <button onclick="editGame(${g.id})" class="btn-ghost px-2 py-1 text-blue-500 hover:text-blue-700 rounded" title="แก้ไข"><i class="fas fa-edit text-xs"></i></button>
+                        <button onclick="deleteGame(${i})" class="btn-ghost px-2 py-1 text-red-500 hover:text-red-700 rounded" title="ลบ"><i class="fas fa-trash-alt text-xs"></i></button>
+                    </div>
+                </div>
+                <div class="space-y-1.5 flex-1">
+                    <div class="flex items-start gap-2"><span class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800 mt-0.5 shrink-0">ทีม A</span><span class="text-sm text-gray-700 dark:text-gray-300 font-medium leading-tight">${escapeHtml(fN(g.players[0]))}, ${escapeHtml(fN(g.players[1]))}</span></div>
+                    <div class="flex items-start gap-2"><span class="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-red-200 dark:border-red-800 mt-0.5 shrink-0">ทีม B</span><span class="text-sm text-gray-700 dark:text-gray-300 font-medium leading-tight">${escapeHtml(fN(g.players[2]))}, ${escapeHtml(fN(g.players[3]))}</span></div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center text-xs">
+                    <div class="text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><div class="bg-gray-100 dark:bg-slate-700 rounded-full w-5 h-5 flex items-center justify-center"><i class="fas fa-circle-dot text-[10px] text-gray-400"></i></div><span class="truncate max-w-[120px]" title="${g.shuttlecockSpeeds.join(',')}">ลูก ${g.shuttlecockSpeeds.join(',')}</span></div>
+                    <div class="font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2 py-1 rounded-md">${c} บ./คน</div>
+                </div>
+            </div>`;
+        }).join('');
+    }
 
     // 5. Cost Table
     let details = {}; 
@@ -963,12 +1004,7 @@ function renderDaily() {
         if (ppId && grand > TOLERANCE) {
             qrContainer.classList.remove('hidden');
             document.getElementById('daily-summary-pp-text').innerText = `พร้อมเพย์: ${ppId}`;
-            fetch(`https://promptpay.io/${ppId}`)
-                .then(res => res.text())
-                .then(svgText => {
-                    const b64 = btoa(unescape(encodeURIComponent(svgText)));
-                    document.getElementById('daily-summary-qr').src = `data:image/svg+xml;base64,${b64}`;
-                }).catch(() => { document.getElementById('daily-summary-qr').src = `https://promptpay.io/${ppId}?t=${Date.now()}`; });
+            document.getElementById('daily-summary-qr').src = `https://promptpay.io/${ppId}.png`;
         } else {
             qrContainer.classList.add('hidden');
         }
@@ -1394,6 +1430,7 @@ function calcSellerPrice() {
 function bindEvents() {
     document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
     $('btnAddPlayer').addEventListener('click',addPlayer);
+    $('btnQuickAddPlayer').addEventListener('click',quickAddPlayer);
     $('btnRecordGame').addEventListener('click',recordGame);
     $('btnOpenPenInput').addEventListener('click',openPenInputModal);
     $('btnClosePenInput').addEventListener('click',closePenInputModal);
@@ -1464,7 +1501,9 @@ function bindEvents() {
     if (settingPromptPay) {
         settingPromptPay.addEventListener('change', (e) => {
             state.settings.promptpayId = e.target.value.trim().replace(/-/g,''); // ตัดขีดออกอัตโนมัติ
-            saveToStorage(); Swal.fire({icon:'success', title:'บันทึกเบอร์พร้อมเพย์แล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+            saveToStorage(); 
+            updateAndRender(); // อัปเดต UI ทันทีเพื่อให้ปุ่ม QR Code โผล่
+            Swal.fire({icon:'success', title:'บันทึกเบอร์พร้อมเพย์แล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
         });
     }
 
@@ -1504,6 +1543,15 @@ function bindEvents() {
 document.addEventListener('DOMContentLoaded', () => { 
     bindEvents(); 
     loadFromStorage(); 
+    
+    // โอนย้ายเบอร์พร้อมเพย์จากเวอร์ชันเก่า (ถ้ามี)
+    if (!state.settings.promptpayId) {
+        try {
+            const oldPP = localStorage.getItem('badminton_promptpay');
+            if (oldPP) { const p = JSON.parse(oldPP); if (p.number) state.settings.promptpayId = p.number.replace(/-/g, ''); }
+        } catch(e) {}
+    }
+
     ensureIntegrity(); 
     document.getElementById('workingDate').value = selectedDate; 
     document.getElementById('shuttlecockPrice').value = state.settings.shuttlecockPrice||0; 
