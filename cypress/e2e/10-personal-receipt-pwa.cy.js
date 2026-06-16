@@ -81,6 +81,10 @@ describe('10 - Personal Receipt & PWA', () => {
     cy.get('#btnExportAccountImg').click();
     cy.get('.swal2-popup').should('contain.text', 'กำลังสร้างรูป...');
 
+    // รอหน้าต่าง "สร้างรูปสำเร็จ" แสดงขึ้นมา แล้วจำลองการคลิกปุ่ม "โหลดลงเครื่อง"
+    cy.get('.swal2-title', { timeout: 10000 }).should('contain.text', 'สร้างรูปภาพสำเร็จ');
+    cy.get('.swal2-cancel').contains('โหลดลงเครื่อง').click();
+
     // ตรวจสอบว่าไฟล์ .png ถูกดาวน์โหลดมาที่โฟลเดอร์ cypress/downloads สำเร็จ
     cy.readFile(`cypress/downloads/${expectedFileName}`, 'base64', { timeout: 15000 }).should('exist');
   });

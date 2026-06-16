@@ -1,6 +1,5 @@
 const CACHE_NAME = 'badminton-pay-v3';
 const urlsToCache = [
-  './',
   './index.html',
   './manifest.json'
 ];
