@@ -1,0 +1,38 @@
+{
+  "masterPlayerList": [
+    "ตาคลี: ต้อม",
+    "ตากฟ้า: พี่ชัย"
+  ],
+  "settings": {
+    "shuttlecockPrice": 0
+  },
+  "dailyData": {
+    "2026-06-15": {
+      "players": [
+        { "name": "ตาคลี: ต้อม", "paid": false },
+        { "name": "ตากฟ้า: พี่ชัย", "paid": false }
+      ],
+      "games": [
+        { "id": 1, "players": ["ตาคลี: ต้อม", "ตากฟ้า: พี่ชัย", "A", "B"], "shuttlecocksUsed": 1, "shuttlecockPrice": 312 }
+      ]
+    },
+    "2026-06-14": {
+      "players": [
+        { "name": "ตากฟ้า: พี่ชัย", "paid": false }
+      ],
+      "games": [
+        { "id": 2, "players": ["ตากฟ้า: พี่ชัย", "C", "D", "E"], "shuttlecocksUsed": 1, "shuttlecockPrice": 936 }
+      ]
+    }
+  },
+  "allTransactions": [
+    { "id": 101, "date": "2026-06-01", "name": "ตาคลี: ต้อม", "totalCost": 364, "source": "quick_debt" },
+    { "id": 102, "date": "2026-06-01", "name": "ตากฟ้า: พี่ชัย", "totalCost": 53, "source": "quick_debt" }
+  ],
+  "allPayments": [
+    { "id": 201, "paymentDate": "2026-06-02", "name": "ตาคลี: ต้อม", "amount": 416, "source": "manual_payment" },
+    { "id": 202, "paymentDate": "2026-06-03", "name": "ตาคลี: ต้อม", "amount": 26, "source": "manual_payment" },
+    { "id": 203, "paymentDate": "2026-06-02", "name": "ตากฟ้า: พี่ชัย", "amount": 1000, "source": "manual_payment" },
+    { "id": 204, "paymentDate": "2026-06-03", "name": "ตากฟ้า: พี่ชัย", "amount": 107, "source": "manual_payment" }
+  ]
+}

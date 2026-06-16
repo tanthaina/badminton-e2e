@@ -48,6 +48,37 @@ describe('05 - Settings & Data Integrity', () => {
     cy.get('#overall-summary-content').should('contain.text', 'สมปอง').and('contain.text', 'ชำระเงิน').and('contain.text', '200.00');
   });
 
+  it('ทดสอบ Data Migration: โหลดไฟล์ JSON จริงที่มีข้อมูลซับซ้อน (2026-06-15) ยอดต้องไม่เบิ้ลและคำนวณถูก', () => {
+    // โหลดไฟล์จาก Fixture (ต้องมีไฟล์ badminton-2026-06-15.json ใน cypress/fixtures/)
+    cy.fixture('badminton-2026-06-15.json').then((fileContent) => {
+      cy.get('#loadFile').selectFile({ contents: Cypress.Buffer.from(JSON.stringify(fileContent)), fileName: 'badminton-2026-06-15.json', mimeType: 'application/json' }, { force: true });
+    });
+    
+    cy.get('.swal2-popup').should('contain.text', 'โหลดข้อมูลสำเร็จ!');
+    
+    cy.get('button[data-tab="account"]').click();
+    // ตาคลี: ต้อม ต้องจ่ายครบพอดี (หนี้เก่า 364 + ตีเพิ่มรวม 78 - จ่าย 416 - จ่าย 26 = 0)
+    cy.get('#paid-in-full-list-overall').should('contain.text', 'ตาคลี: ต้อม');
+    // ตากฟ้า: พี่ชัย ต้องมีเครดิต 742 (ตีหลายวัน 312 + หนี้เก่า 53 - จ่าย 1000 - จ่าย 107 = -742)
+    cy.get('#credit-list-overall').contains('div.border', 'ตากฟ้า: พี่ชัย').should('contain.text', 'เครดิต 742.00');
+  });
+
+  it('ทดสอบ Data Cleansing: ล้างบิลผีและซ่อมแซมข้อมูลวันที่ (Undefined Date Bug)', () => {
+    const corruptedJson = {
+      masterPlayerList: ["เหยื่อบั๊ก"],
+      settings: { shuttlecockPrice: 20 },
+      dailyData: {
+        "undefined": { players: [{name: "เหยื่อบั๊ก", paid: false}], games: [{ players: ["เหยื่อบั๊ก", "A", "B", "C"], shuttlecocksUsed: 2, shuttlecockPrice: 20 }] }
+      },
+      allTransactions: [{ id: 1, date: "undefined", name: "เหยื่อบั๊ก", totalCost: 999 }]
+    };
+    cy.get('#loadFile').selectFile({ contents: Cypress.Buffer.from(JSON.stringify(corruptedJson)), fileName: 'corrupted.json', mimeType: 'application/json' }, { force: true });
+    
+    cy.get('button[data-tab="history"]').click();
+    cy.get('#overall-summary-content').should('not.contain.text', 'undefined'); // ไม่ควรมีคำว่า undefined ปรากฏในหัวบิล
+    cy.get('#overall-summary-content').should('contain.text', 'เหยื่อบั๊ก');
+  });
+
   it('ทดสอบการดาวน์โหลดไฟล์ข้อมูล (Export JSON Validation)', () => {
     cy.addPlayer('สมหมาย');
     

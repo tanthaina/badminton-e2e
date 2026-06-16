@@ -467,6 +467,15 @@ function loadFromStorage() { try{ const raw = localStorage.getItem(STORAGE_KEY);
 function ensureIntegrity() {
     state.settings = state.settings || { shuttlecockPrice:0 }; state.masterPlayerList = (state.masterPlayerList||[]).filter(Boolean);
     state.allTransactions = state.allTransactions||[]; state.allPayments = state.allPayments||[]; state.dailyData = state.dailyData||{};
+
+    // Data Cleansing: ล้างคีย์ 'undefined' หรือ 'null' ออกจากฐานข้อมูลเพื่อป้องกันบั๊กบิลผี
+    ['undefined', 'null', ''].forEach(badKey => { if(state.dailyData[badKey]) delete state.dailyData[badKey]; });
+    
+    // ซ่อมแซม date ในประวัติธุรกรรมที่อาจจะชำรุดไปแล้วให้กลับมาเป็นวันปัจจุบัน
+    const fallbackDate = getTodayString();
+    state.allTransactions.forEach(t => { if (!t.date || t.date === 'undefined' || t.date === 'null') t.date = fallbackDate; });
+    state.allPayments.forEach(p => { if (!p.date || p.date === 'undefined' || p.date === 'null') p.date = fallbackDate; });
+
     Object.values(state.dailyData).forEach(d => { 
         d.players=(d.players||[]); 
         d.players.forEach(p => { if (p.present === undefined) p.present = true; });
@@ -484,14 +493,21 @@ function ensureIntegrity() {
     });
 
     state.allTransactions.forEach(t => {
-        if(t.isAutoDaily === undefined) {
+        // บังคับประเมิน isAutoDaily ใหม่ทุกครั้ง เพื่อแก้บั๊กข้อมูลเก่าที่จำค่าผิดพลาด
+        if (t.source === 'daily') t.isAutoDaily = true;
+        else if (t.source === 'quick_debt' || t.source === 'manual_payment') t.isAutoDaily = false;
+        else {
             let exp = expectedDaily[t.date]?.[t.name];
             t.isAutoDaily = exp ? (Math.abs(t.totalCost - exp.cost) < TOLERANCE) : false;
         }
     });
     state.allPayments.forEach(p => {
-        if(p.isAutoDaily === undefined) {
-            let exp = expectedDaily[p.date]?.[p.name];
+        let pDate = p.paymentDate || p.date;
+        if (!p.date) p.date = pDate;
+        if (p.source === 'daily') p.isAutoDaily = true;
+        else if (p.source === 'quick_debt' || p.source === 'manual_payment') p.isAutoDaily = false;
+        else {
+            let exp = expectedDaily[pDate]?.[p.name];
             p.isAutoDaily = exp ? (exp.paid && Math.abs(p.amount - exp.cost) < TOLERANCE) : false;
         }
     });
@@ -529,11 +545,23 @@ function loadFromFile(event) {
 
 // --- PLAYER MGMT ---
 function addPlayer() {
-    const pfx = $('newPlayerPrefix').value; const raw = $('newPlayerName').value.trim(); if(!raw) return;
-    const name = pfx==='ทั่วไป'?raw:`${pfx}: ${raw}`; if(state.masterPlayerList.includes(name)) return;
-    state.masterPlayerList.push(name); state.masterPlayerList.sort((a,b)=>a.localeCompare(b,'th'));
-    const dd = getCurrentDailyData(); if(!dd.players.find(p=>p.name===name)) dd.players.push({name,paid:false,present:true});
-    $('newPlayerName').value = ''; updateAndRender();
+    const pfx = $('newPlayerPrefix').value; 
+    const raw = $('newPlayerName').value.trim(); 
+    if(!raw) return;
+    
+    const name = pfx === 'ทั่วไป' ? raw : `${pfx}: ${raw}`; 
+    if(state.masterPlayerList.includes(name)) return;
+    
+    state.masterPlayerList.push(name); 
+    state.masterPlayerList.sort((a, b) => a.localeCompare(b, 'th'));
+    
+    const dd = getCurrentDailyData(); 
+    if(!dd.players.find(p => p.name === name)) {
+        dd.players.push({ name, paid: false, present: true });
+    }
+    
+    $('newPlayerName').value = ''; 
+    updateAndRender();
 }
 function togglePlayer(name) {
     const dd = getCurrentDailyData(); let p = dd.players.find(x=>x.name===name);
@@ -845,6 +873,7 @@ function syncAllDailyToAccount() {
     state.allPayments = state.allPayments.filter(p => p.isAutoDaily !== true);
     // 2. คำนวณใหม่จากทุกวันใน dailyData เพื่อกวาดล้างบั๊กข้อมูลซ้ำซ้อนจากไฟล์เก่า
     Object.keys(state.dailyData).forEach(date => {
+        if (!date || date === 'undefined' || date === 'null') return; // ดักจับไม่ให้คำนวณบิลผี
         const dd = state.dailyData[date]; if (!dd.players || !dd.games) return;
         let det = {}; dd.players.forEach(p => det[p.name] = { cost: 0 });
         dd.games.forEach(g => { let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; g.players.forEach(p => { if (!det[p]) det[p] = { cost: 0 }; det[p].cost += c; }); });
