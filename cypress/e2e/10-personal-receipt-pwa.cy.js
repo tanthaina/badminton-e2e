@@ -53,9 +53,17 @@ describe('10 - Personal Receipt & PWA', () => {
       win.navigator.share = cy.stub().as('shareStub').resolves();
     });
 
+    // กดแชร์ครั้งที่ 1
     cy.contains('#unpaid-list-overall div.border', 'น้องแชร์').find('button[onclick*="generatePersonalSlip"]').click();
     
-    // ตรวจสอบว่าระบบได้เรียกใช้คำสั่ง share() ส่งไปให้มือถือ
-    cy.get('@shareStub', { timeout: 5000 }).should('have.been.called');
+    // ตรวจสอบว่าระบบได้เรียกใช้คำสั่ง share() สำเร็จ
+    cy.get('@shareStub', { timeout: 5000 }).should('have.been.calledOnce');
+
+    // จำลองกรณีเผลอปิดหน้าต่างแชร์ แล้วกดส่งใหม่ (ครั้งที่ 2 และ 3)
+    cy.contains('#unpaid-list-overall div.border', 'น้องแชร์').find('button[onclick*="generatePersonalSlip"]').click();
+    cy.get('@shareStub', { timeout: 5000 }).should('have.been.calledTwice');
+
+    cy.contains('#unpaid-list-overall div.border', 'น้องแชร์').find('button[onclick*="generatePersonalSlip"]').click();
+    cy.get('@shareStub', { timeout: 5000 }).should('have.been.calledThrice');
   });
 });

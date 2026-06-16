@@ -134,4 +134,31 @@ describe('04 - Accounting & History', () => {
     cy.get('#payment-amount').clear().type('100');
     cy.get('#promptpay-qr').should('have.attr', 'src').and('include', '100.00');
   });
+
+  it('ทดสอบการแสดง QR Code ในหน้าคิดเงินรายวัน (Daily Summary QR)', () => {
+    // 1. ตั้งค่าเบอร์พร้อมเพย์
+    cy.get('button[data-tab="settings"]').click();
+    cy.get('#settingPromptPay').clear().type('0899999999').blur();
+
+    // 2. ไปที่หน้ารายวัน เพิ่มผู้เล่นและบันทึกเกม 1 เกม (40 บาท / 4 คน = 10 บาท)
+    cy.get('button[data-tab="daily"]').click();
+    const players = ['ไก่', 'ไข่', 'ควาย', 'คน'];
+    players.forEach(p => cy.addPlayer(p));
+    
+    cy.get('#player1').select('ไก่'); cy.get('#player2').select('ไข่');
+    cy.get('#player3').select('ควาย'); cy.get('#player4').select('คน');
+    cy.get('#shuttlecockSpeeds').type('1'); cy.get('#shuttlecockPrice').clear().type('40');
+    cy.get('#btnRecordGame').click();
+
+    // 3. กดปุ่มไอคอน QR Code (สีม่วง) ในตาราง
+    cy.contains('#summaryTableUnpaid tr', 'ไก่').find('button[title="สแกน QR Code"]').should('be.visible').click();
+
+    // 4. ตรวจสอบว่า Pop-up รูป QR Code และยอดเงินขึ้นมาถูกต้อง 100%
+    cy.get('.swal2-popup').should('be.visible').and('contain.text', 'สแกนเพื่อชำระเงิน');
+    cy.get('.swal2-html-container').should('contain.text', 'ไก่').and('contain.text', '฿10.00');
+    cy.get('.swal2-image').should('have.attr', 'src').and('include', 'promptpay.io/0899999999/10.00');
+    
+    // 5. กดปิดหน้าต่าง
+    cy.get('.swal2-confirm').click();
+  });
 });

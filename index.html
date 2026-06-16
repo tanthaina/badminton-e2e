@@ -252,11 +252,18 @@
 
     <div id="tab-history" class="tab-content hidden space-y-4">
         <div class="card">
-            <div class="card-header"><div class="section-icon bg-indigo-100 text-indigo-600"><i class="fas fa-history"></i></div><h2 class="text-indigo-700">ประวัติค่าใช้จ่าย</h2></div>
+            <div class="card-header">
+                <div class="section-icon bg-indigo-100 text-indigo-600"><i class="fas fa-history"></i></div><h2 class="text-indigo-700">ประวัติค่าใช้จ่าย</h2>
+                <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportHistoryCSV" class="btn btn-sm" style="background:#10b981;color:white;"><i class="fas fa-file-csv"></i>ส่งออก CSV</button></div>
+            </div>
             <div class="card-body">
                 <div class="flex flex-wrap gap-2 mb-4">
                     <input type="date" id="summaryStartDate" class="form-control" style="width:auto;"><input type="date" id="summaryEndDate" class="form-control" style="width:auto;">
                     <button id="btnFilterHistory" class="btn btn-primary">ค้นหา</button>
+                </div>
+                <div id="history-summary-box" class="grid grid-cols-2 gap-3 mb-4 text-center hidden">
+                    <div class="bg-red-50 p-2 rounded-lg"><div class="text-red-700 font-bold text-lg" id="history-total-cost">฿0.00</div><div class="text-xs text-gray-500">ค่าใช้จ่ายรวม</div></div>
+                    <div class="bg-green-50 p-2 rounded-lg"><div class="text-green-700 font-bold text-lg" id="history-total-paid">฿0.00</div><div class="text-xs text-gray-500">ชำระเงินรวม</div></div>
                 </div>
                 <div id="overall-summary-content"></div>
             </div>
@@ -786,10 +793,25 @@ function renderDaily() {
     Object.values(details).filter(x=>x.cost>0).sort((a,b)=>a.n.localeCompare(b.n,'th')).forEach(d=>{
         grand+=d.cost; let statusBadge = d.p ? '<span class="text-green-600 font-bold">จ่ายแล้ว</span>' : '<span class="text-red-600 font-bold">ค้างชำระ</span>'; 
         let spds = [...new Set(d.speeds)].join(', ') || '-';
-        let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${d.cost.toFixed(2)}</td><td class="text-center">${statusBadge}</td><td class="text-center"><button onclick="togglePlayerPaidStatus('${escapeHtml(d.n)}')" class="btn btn-sm ${d.p?'btn-secondary':'btn-warning'}">${d.p?'ยกเลิก':'จ่าย'}</button></td></tr>`;
+        let qrBtn = (!d.p && state.settings.promptpayId && d.cost > TOLERANCE) ? `<button onclick="showDailyQR('${escapeHtml(d.n)}', ${d.cost})" class="btn btn-sm btn-indigo" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
+        let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${d.cost.toFixed(2)}</td><td class="text-center">${statusBadge}</td><td class="text-center"><div class="flex justify-center items-center gap-1"><button onclick="togglePlayerPaidStatus('${escapeHtml(d.n)}')" class="btn btn-sm ${d.p?'btn-secondary':'btn-warning'}">${d.p?'ยกเลิก':'จ่าย'}</button>${qrBtn}</div></td></tr>`;
         if(d.p) pd+=row; else un+=row;
     });
     document.getElementById('summaryTableUnpaid').innerHTML = un; document.getElementById('summaryTablePaid').innerHTML = pd; document.getElementById('grandTotal').innerText = grand.toFixed(2);
+}
+
+function showDailyQR(name, amount) {
+    const ppId = state.settings.promptpayId;
+    if (!ppId) return Swal.fire('ผิดพลาด', 'กรุณาตั้งค่าเบอร์พร้อมเพย์ในแท็บตั้งค่าระบบก่อน', 'warning');
+    Swal.fire({
+        title: 'สแกนเพื่อชำระเงิน',
+        html: `<div class="text-lg mb-2"><b>${name}</b></div>ยอดของวันนี้: <span class="text-red-600 font-bold text-xl">฿${amount.toFixed(2)}</span>`,
+        imageUrl: `https://promptpay.io/${ppId}/${amount.toFixed(2)}`,
+        imageWidth: 220,
+        imageHeight: 220,
+        imageAlt: 'PromptPay QR',
+        confirmButtonText: 'ปิด'
+    });
 }
 
 function calculateOverallBalances() {
@@ -885,10 +907,34 @@ function renderHistory() {
     if(start) h = h.filter(x=>x.date>=start);
     if(end) h = h.filter(x=>x.date<=end);
     h.sort((a,b)=>new Date(b.date) - new Date(a.date));
-    if(!h.length) { document.getElementById('overall-summary-content').innerHTML=`<div class="p-3 bg-gray-50 border rounded text-center text-gray-500">ไม่มีข้อมูลประวัติในช่วงเวลานี้</div>`; return; }
-    document.getElementById('overall-summary-content').innerHTML = `<div class="overflow-x-auto"><table class="data-table"><thead><tr><th>วันที่</th><th>ประเภท</th><th>ชื่อ</th><th class="text-right">ยอดเงิน (฿)</th></tr></thead><tbody>` + 
-        h.map(x=>`<tr><td>${x.date}</td><td><span class="font-bold ${x.type==='ชำระเงิน'?'text-green-600':'text-red-600'}">${x.type}</span></td><td>${escapeHtml(x.name)}</td><td class="text-right font-bold ${x.type==='ชำระเงิน'?'text-green-600':'text-red-600'}">${(x.totalCost||x.amount).toFixed(2)}</td></tr>`).join('') +
-        `</tbody></table></div>`;
+    
+    const sumBox = $('history-summary-box');
+    if(!h.length) { 
+        $('overall-summary-content').innerHTML=`<div class="p-3 bg-gray-50 border rounded text-center text-gray-500">ไม่มีข้อมูลประวัติในช่วงเวลานี้</div>`; 
+        sumBox.classList.add('hidden');
+        return; 
+    }
+    
+    let tC=0, tP=0; h.forEach(x => { if(x.type==='เกม') tC+=x.totalCost; else tP+=x.amount; });
+    $('history-total-cost').innerText = '฿' + tC.toFixed(2); $('history-total-paid').innerText = '฿' + tP.toFixed(2);
+    sumBox.classList.remove('hidden');
+
+    // จัดกลุ่มข้อมูลตามวันที่ (Group by Date)
+    let grouped = {};
+    h.forEach(x => { if(!grouped[x.date]) grouped[x.date] = []; grouped[x.date].push(x); });
+    
+    // สร้าง HTML แบบ Timeline / List Card
+    let html = '';
+    Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).forEach(date => {
+        html += `<div class="text-sm font-bold text-gray-500 mt-5 mb-2 flex items-center gap-2"><i class="far fa-calendar-alt"></i> ${date}</div><div class="space-y-2">`;
+        grouped[date].forEach(x => {
+            let isPaid = x.type === 'ชำระเงิน'; let icon = isPaid ? '<i class="fas fa-hand-holding-usd text-green-500"></i>' : '<i class="fas fa-gamepad text-red-400"></i>';
+            let color = isPaid ? 'text-green-600' : 'text-gray-800'; let sign = isPaid ? '+' : '-';
+            html += `<div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"><div class="flex items-center gap-3"><div class="bg-gray-50 p-2 rounded-full w-10 h-10 flex items-center justify-center text-lg">${icon}</div><div><div class="font-bold text-gray-800">${escapeHtml(x.name)}</div><div class="text-xs text-gray-500">${x.type}</div></div></div><div class="font-bold ${color} text-base">${sign}฿${(x.totalCost||x.amount).toFixed(2)}</div></div>`;
+        });
+        html += `</div>`;
+    });
+    $('overall-summary-content').innerHTML = html;
 }
 
 // --- ACTIONS & EXPORT ---
@@ -912,6 +958,23 @@ function exportAccountImg() {
         const link = document.createElement('a'); link.download = `account-${getTodayString()}.png`; link.href = canvas.toDataURL('image/png'); link.click();
     });
 }
+
+function exportHistoryCSV() {
+    let start = $('summaryStartDate').value; let end = $('summaryEndDate').value;
+    let h = [...state.allTransactions.map(t=>({...t, type:'เกม'})), ...state.allPayments.map(p=>({...p, type:'ชำระเงิน'}))];
+    if(start) h = h.filter(x=>x.date>=start); if(end) h = h.filter(x=>x.date<=end);
+    h.sort((a,b)=>new Date(b.date) - new Date(a.date));
+    if(!h.length) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลประวัติให้ส่งออกในช่วงเวลานี้', 'info');
+
+    let csv = "\uFEFFวันที่,ประเภท,ชื่อ,ยอดเงิน (บาท)\n"; // ใส่ BOM (\uFEFF) เพื่อให้ Excel อ่านภาษาไทยได้
+    h.forEach(x => { let amt=(x.totalCost||x.amount).toFixed(2); let name=`"${x.name.replace(/"/g,'""')}"`; csv+=`${x.date},${x.type},${name},${amt}\n`; });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); 
+    a.href = url; a.download = `history-${getTodayString()}.csv`; 
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
 function confirmSaveToAccount() {
     try {
         updateAndRender(); 
@@ -1067,6 +1130,7 @@ function bindEvents() {
     document.getElementById('btnExportAccountText').addEventListener('click', exportAccountText);
     document.getElementById('btnPayAllUnpaid').addEventListener('click', payAllUnpaid);
     document.getElementById('btnFilterHistory').addEventListener('click', renderHistory);
+    document.getElementById('btnExportHistoryCSV').addEventListener('click', exportHistoryCSV);
 
     document.getElementById('settingDefaultPrice').addEventListener('change', (e) => {
         state.settings.shuttlecockPrice = parseFloat(e.target.value) || 0;
