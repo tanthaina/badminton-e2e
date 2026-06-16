@@ -21,10 +21,7 @@ describe('02 - Player Management & Security', () => {
     const players = ['ก้อง', 'แทน', 'หมู', 'แมน'];
     players.forEach(p => { cy.addPlayer(p); });
     
-    cy.get('#player1').select('ก้อง'); cy.get('#player2').select('แทน');
-    cy.get('#player3').select('หมู'); cy.get('#player4').select('แมน');
-    cy.get('#shuttlecockSpeeds').type('1'); cy.get('#shuttlecockPrice').clear().type('20');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('ก้อง', 'แทน', 'หมู', 'แมน', '1', '20');
 
     cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
     cy.contains('.player-chip', 'ก้อง').find('.fa-trash-alt').click();
@@ -88,10 +85,7 @@ describe('02 - Player Management & Security', () => {
     const players = ['A', 'B', 'C', 'D'];
     players.forEach(p => cy.addPlayer(p));
     
-    cy.get('#player1').select('A'); cy.get('#player2').select('B');
-    cy.get('#player3').select('C'); cy.get('#player4').select('D');
-    cy.get('#shuttlecockSpeeds').type('1'); cy.get('#shuttlecockPrice').clear().type('20');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('A', 'B', 'C', 'D', '1', '20');
 
     cy.get('#btnClearTodayPlayers').click();
     cy.get('.swal2-popup').should('be.visible');

@@ -17,9 +17,12 @@ describe('08 - Mobile UI & Responsive Design', () => {
   it('ทดสอบ 2: กลุ่มปุ่มใน Header ของการ์ดรองรับ Flex Wrap (ไม่ตกขอบจอ)', () => {
     cy.get('button[data-tab="account"]').click();
     
-    // ตรวจสอบว่ากล่องที่ครอบปุ่มต่างๆ (ส่งออกรูป, เพิ่มหนี้, ชำระทั้งหมด) มีคลาส flex-wrap
+    // ตรวจสอบว่ากล่องที่ครอบปุ่มต่างๆ (ส่งออกรูป, เพิ่มหนี้, ส่ง LINE, ชำระทั้งหมด) มีคลาส flex-wrap
     cy.get('#tab-account .card-header > div.ml-auto').should('have.class', 'flex-wrap');
     
+    // เช็คว่าปุ่ม "แชร์/บันทึกรูป" แสดงผลได้ปกติและไม่ล้นจอ
+    cy.get('#btnExportAccountImg').should('be.visible');
+
     // เช็คว่าปุ่ม "ชำระทั้งหมด" ซึ่งอยู่ท้ายสุด ยังสามารถมองเห็นและคลิกได้
     cy.get('#btnPayAllUnpaid').should('be.visible');
   });

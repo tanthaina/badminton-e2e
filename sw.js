@@ -1,4 +1,4 @@
-const CACHE_NAME = 'badminton-pay-v2';
+const CACHE_NAME = 'badminton-pay-v3';
 const urlsToCache = [
   './',
   './index.html',

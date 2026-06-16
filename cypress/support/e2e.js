@@ -16,11 +16,17 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
-// ป้องกัน Cypress ติด Cache ของ Service Worker (PWA)
-beforeEach(() => {
-  if (window.navigator && navigator.serviceWorker) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
+// ล้าง Cache และ Service Worker ของหน้าต่างแอปพลิเคชัน (AUT) อย่างถูกต้องก่อนโหลดหน้าเว็บ
+Cypress.on('window:before:load', (win) => {
+  if (win.navigator && win.navigator.serviceWorker) {
+    win.navigator.serviceWorker.getRegistrations().then((registrations) => {
       registrations.forEach((registration) => registration.unregister());
+    });
+  }
+  // ระเบิด Cache Storage ทิ้งเพื่อให้ Cypress โหลดไฟล์โค้ดล่าสุดเสมอ
+  if (win.caches) {
+    win.caches.keys().then((keyList) => {
+      return Promise.all(keyList.map((key) => win.caches.delete(key)));
     });
   }
 });

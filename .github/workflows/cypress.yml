@@ -15,5 +15,5 @@ jobs:
       - name: Run Cypress Tests
         uses: cypress-io/github-action@v6
         with:
-          start: npx http-server -p 5500
+          start: npx http-server -p 5500 -c-1
           wait-on: 'http://127.0.0.1:5500'

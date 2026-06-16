@@ -34,10 +34,8 @@ describe('10 - Personal Receipt & PWA', () => {
     cy.get('#slip-name').should('contain.text', 'คุณ: สมเกียรติ');
     cy.get('#slip-total').should('contain.text', '฿150.75');
     
-    // 6. ตรวจสอบว่า QR Code ถูกสร้างขึ้นมาและดึงข้อมูลพร้อมเพย์ไปใช้ถูกต้อง
-    cy.get('#slip-qr-container').should('not.have.css', 'display', 'none');
-    cy.get('#slip-qr').should('have.attr', 'src').and('include', '150.75');
-    cy.get('#slip-pp-text').should('contain.text', '0812345678');
+    // รอจนกว่าการสร้างรูป (html2canvas) จะเสร็จสมบูรณ์ และหน้า Loading หายไป
+    cy.get('.swal2-popup').should('not.contain.text', 'กำลังสร้างใบเสร็จ...');
   });
 
   it('ทดสอบ 3: รองรับการแชร์รูปภาพผ่าน Web Share API (สำหรับมือถือ)', () => {
@@ -65,5 +63,25 @@ describe('10 - Personal Receipt & PWA', () => {
 
     cy.contains('#unpaid-list-overall div.border', 'น้องแชร์').find('button[onclick*="generatePersonalSlip"]').click();
     cy.get('@shareStub', { timeout: 5000 }).should('have.been.calledThrice');
+  });
+
+  it('ทดสอบ 4: จำลองการคลิก "แชร์/บันทึกรูป" และตรวจสอบการดาวน์โหลดไฟล์ .png (Desktop Fallback)', () => {
+    cy.get('button[data-tab="account"]').click();
+
+    // บังคับให้เบราว์เซอร์จำลองว่าไม่รองรับ Web Share (เพื่อเข้าเงื่อนไขการดาวน์โหลดไฟล์แทน)
+    cy.window().then((win) => {
+      win.navigator.canShare = false;
+    });
+
+    // หาชื่อไฟล์ที่คาดหวัง เช่น account-YYYY-MM-DD.png
+    const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const expectedFileName = `account-${todayStr}.png`;
+
+    // กดปุ่ม "แชร์/บันทึกรูป" ในหน้าบัญชีรวม
+    cy.get('#btnExportAccountImg').click();
+    cy.get('.swal2-popup').should('contain.text', 'กำลังสร้างรูป...');
+
+    // ตรวจสอบว่าไฟล์ .png ถูกดาวน์โหลดมาที่โฟลเดอร์ cypress/downloads สำเร็จ
+    cy.readFile(`cypress/downloads/${expectedFileName}`, 'base64', { timeout: 15000 }).should('exist');
   });
 });

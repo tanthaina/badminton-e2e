@@ -5,16 +5,10 @@ describe('09 - Game Management (Move & Edit)', () => {
     ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(p => cy.addPlayer(p));
 
     // บันทึกเกมที่ 1
-    cy.get('#player1').select('A'); cy.get('#player2').select('B');
-    cy.get('#player3').select('C'); cy.get('#player4').select('D');
-    cy.get('#shuttlecockSpeeds').type('101'); cy.get('#shuttlecockPrice').clear().type('20');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('A', 'B', 'C', 'D', '101', '20');
 
     // บันทึกเกมที่ 2
-    cy.get('#player1').select('E'); cy.get('#player2').select('F');
-    cy.get('#player3').select('G'); cy.get('#player4').select('H');
-    cy.get('#shuttlecockSpeeds').type('202'); cy.get('#shuttlecockPrice').clear().type('20');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('E', 'F', 'G', 'H', '202', '20');
 
     // ตรวจสอบก่อนเลื่อน (เกม 1 = 101, เกม 2 = 202)
     cy.get('#gamesList .game-card').eq(0).should('contain.text', 'ลูก 101');
@@ -37,10 +31,7 @@ describe('09 - Game Management (Move & Edit)', () => {
     ['เอก', 'บอย', 'แคท', 'ดิว', 'จอย'].forEach(p => cy.addPlayer(p));
     
     // บันทึกเกม
-    cy.get('#player1').select('เอก'); cy.get('#player2').select('บอย');
-    cy.get('#player3').select('แคท'); cy.get('#player4').select('ดิว');
-    cy.get('#shuttlecockSpeeds').type('55'); cy.get('#shuttlecockPrice').clear().type('20');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('เอก', 'บอย', 'แคท', 'ดิว', '55', '20');
     
     // กดปุ่มแก้ไขที่เกมแรก
     cy.get('#gamesList .game-card').eq(0).find('button[title="แก้ไข"]').click();
@@ -63,5 +54,29 @@ describe('09 - Game Management (Move & Edit)', () => {
     // UI กลับสู่โหมดบันทึกเกมใหม่ปกติ
     cy.get('#btnRecordGame').should('contain.text', 'บันทึกเกมนี้').and('have.class', 'btn-success');
     cy.get('#btnCancelEditGame').should('have.class', 'hidden');
+  });
+
+  it('ทดสอบป้องกันบั๊กข้อมูลฟอร์มหายเวลากดแก้ไขเกม (Edit Form State Preservation)', () => {
+    ['หมู', 'หมา', 'กา', 'ไก่'].forEach(p => cy.addPlayer(p));
+
+    // บันทึกเกม
+    cy.recordGame('หมู', 'หมา', 'กา', 'ไก่', '1, 2', '25');
+
+    // กดปุ่มแก้ไขที่เกมแรก
+    cy.get('#gamesList .game-card').eq(0).find('button[title="แก้ไข"]').click();
+
+    // ข้อมูลต้องถูกดึงมาใส่ฟอร์มอย่างครบถ้วน ไม่ว่างเปล่า (ยืนยันว่าบั๊กเก่าถูกแก้แล้ว 100%)
+    cy.get('#player1').should('have.value', 'หมู');
+    cy.get('#player2').should('have.value', 'หมา');
+    cy.get('#player3').should('have.value', 'กา');
+    cy.get('#player4').should('have.value', 'ไก่');
+    cy.get('#shuttlecockSpeeds').should('have.value', '1, 2');
+    cy.get('#shuttlecockPrice').should('have.value', '25');
+
+    // กดยกเลิกการแก้ไข ฟอร์มต้องถูกล้างค่าและกลับสู่สถานะปกติ
+    cy.get('#btnCancelEditGame').click();
+    cy.get('#player1').should('have.value', '');
+    cy.get('#shuttlecockSpeeds').should('have.value', '');
+    cy.get('#btnRecordGame').should('contain.text', 'บันทึกเกมนี้').and('have.class', 'btn-success');
   });
 });

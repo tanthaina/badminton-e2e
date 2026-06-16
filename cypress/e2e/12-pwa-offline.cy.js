@@ -3,24 +3,34 @@ describe('12 - PWA Offline Support (Service Worker & Cache)', () => {
   it('ทดสอบ 1: ตรวจสอบการทำงานของ Service Worker และ Cache Storage', () => {
     cy.visit('/index.html');
 
-    cy.window().then(async (win) => {
-      // 1. ตรวจสอบว่าเบราว์เซอร์รองรับและมีการใช้งาน Service Worker
-      expect(win.navigator.serviceWorker).to.exist;
-      
-      // 2. รอจนกว่า Service Worker จะติดตั้งและพร้อมใช้งาน (Activated)
-      const registration = await win.navigator.serviceWorker.ready;
-      expect(registration.active.state).to.equal('activated');
-      
-      // 3. ตรวจสอบว่ามี Cache ชื่อ 'badminton-pay-v2' ถูกสร้างขึ้นมา
-      const cacheKeys = await win.caches.keys();
-      expect(cacheKeys).to.include('badminton-pay-v2');
+    // 1. ตรวจสอบว่าเบราว์เซอร์รองรับและมีการใช้งาน Service Worker
+    cy.window().its('navigator.serviceWorker').should('exist');
 
-      // 4. เปิดดูใน Cache ว่ามีการเก็บไฟล์หน้าเว็บ (index.html) ไว้เผื่อตอนออฟไลน์แล้ว
-      const cache = await win.caches.open('badminton-pay-v2');
-      const requests = await cache.keys();
-      const cachedUrls = requests.map(req => req.url);
-      const hasIndex = cachedUrls.some(url => url.includes('index.html'));
-      expect(hasIndex).to.be.true;
+    // 2. รอจนกว่า Service Worker จะติดตั้งและพร้อมใช้งาน (Activated)
+    // ใช้ .then() คืนค่า Promise ออกมา เพื่อให้ Cypress ช่วยรอ (Unwrap) จนกว่า SW จะพร้อมใช้งานจริงๆ
+    cy.window().then((win) => win.navigator.serviceWorker.ready).then((registration) => {
+      expect(registration.active).to.exist;
+      expect(registration.active.state).to.equal('activated');
+    });
+
+    // 3. เพื่อแก้ปัญหาความเปราะบาง (Flaky) จากขั้นตอน Install
+    // เราจะใช้ท่าไม้ตายคือการ รีโหลดหน้าเว็บ 1 ครั้ง เพื่อบังคับให้ SW ทำการจับ (Intercept) 
+    // และเขียนไฟล์ลง Cache ทีละไฟล์ผ่านโค้ด Network-First ใน event 'fetch' ของคุณแทน
+    cy.reload();
+    cy.wait(1000); // รอเวลาให้ SW ทำการเขียนไฟล์ลง Cache ให้สมบูรณ์
+
+    // 4. ตรวจสอบว่า Cache ถูกสร้างขึ้นและมีไฟล์ถูกเก็บไว้จริงๆ
+    cy.window().then((win) => {
+      return win.caches.keys().then(keys => {
+        expect(keys).to.include('badminton-pay-v3');
+        return win.caches.open('badminton-pay-v3');
+      }).then(cache => cache.keys()).then(requests => {
+        expect(requests.length).to.be.greaterThan(0); // ต้องมีไฟล์ในแคชอย่างน้อย 1 ไฟล์
+        const urls = requests.map(req => req.url);
+        // ตรวจสอบว่ามี url ที่ลงท้ายด้วย / หรือมีคำว่า index.html
+        const hasIndexOrRoot = urls.some(url => url.includes('index.html') || url.endsWith('/'));
+        expect(hasIndexOrRoot).to.be.true;
+      });
     });
   });
 

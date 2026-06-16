@@ -28,6 +28,26 @@ describe('05 - Settings & Data Integrity', () => {
     cy.get('.swal2-html-container').should('contain.text', 'ไฟล์ไม่ถูกต้องหรือชำรุด');
   });
 
+  it('ทดสอบ Data Integrity: โหลดไฟล์ JSON เก่าที่มีการชำระเงินแบบแมนนวล (Legacy Data Migration)', () => {
+    // จำลองโครงสร้างไฟล์ JSON จากเวอร์ชันเก่าที่ยังไม่มี property isAutoDaily
+    const legacyJson = {
+      masterPlayerList: ["สมปอง"],
+      settings: { shuttlecockPrice: 20 },
+      dailyData: {},
+      allTransactions: [{ id: 1, date: "2023-01-01", name: "สมปอง", totalCost: 500 }], // ไม่มี isAutoDaily
+      allPayments: [{ id: 2, date: "2023-01-01", name: "สมปอง", amount: 200 }] // ไม่มี isAutoDaily
+    };
+    
+    cy.get('#loadFile').selectFile({ contents: Cypress.Buffer.from(JSON.stringify(legacyJson)), fileName: 'legacy.json', mimeType: 'application/json' }, { force: true });
+    
+    cy.get('.swal2-popup').should('contain.text', 'โหลดข้อมูลสำเร็จ!');
+    
+    cy.get('button[data-tab="account"]').click();
+    cy.contains('#unpaid-list-overall div.border', 'สมปอง').should('contain.text', 'ค้าง 300.00'); // 500 - 200 = 300
+    cy.get('button[data-tab="history"]').click();
+    cy.get('#overall-summary-content').should('contain.text', 'สมปอง').and('contain.text', 'ชำระเงิน').and('contain.text', '200.00');
+  });
+
   it('ทดสอบการดาวน์โหลดไฟล์ข้อมูล (Export JSON Validation)', () => {
     cy.addPlayer('สมหมาย');
     

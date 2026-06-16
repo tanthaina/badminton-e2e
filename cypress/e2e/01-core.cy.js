@@ -8,10 +8,7 @@ describe('01 - Core Flow & Game Management', () => {
     });
 
     cy.get('#playerList').children().should('have.length', 4);
-    cy.get('#player1').select('ก้อง'); cy.get('#player2').select('แทน');
-    cy.get('#player3').select('หมู'); cy.get('#player4').select('แมน');
-    cy.get('#shuttlecockSpeeds').type('75, 76'); cy.get('#shuttlecockPrice').clear().type('20');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('ก้อง', 'แทน', 'หมู', 'แมน', '75, 76', '20');
 
     cy.get('#gamesList').children().should('have.length', 1);
     cy.get('#gamesList').should('contain.text', 'ลูก 75,76 (10.00 บ./คน)');
@@ -27,8 +24,7 @@ describe('01 - Core Flow & Game Management', () => {
   it('ทดสอบกรณีเลือกผู้เล่นซ้ำกันหรือลืมกรอกเบอร์ลูก (Negative Test)', () => {
     cy.addPlayer('ก้อง');
     cy.addPlayer('แทน');
-    cy.get('#player1').select('ก้อง'); cy.get('#player2').select('ก้อง'); 
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('ก้อง', 'ก้อง');
     cy.get('.swal2-popup').should('be.visible');
     cy.get('.swal2-html-container').should('contain.text', 'เลือก 4 คนไม่ซ้ำกัน');
   });
@@ -44,10 +40,7 @@ describe('01 - Core Flow & Game Management', () => {
     cy.viewport('iphone-xr');
     const players = ['ก้อง', 'แทน', 'หมู', 'ชื่อยาวมากยาวสุดๆทะลุจอ'];
     players.forEach(p => { cy.addPlayer(p); });
-    cy.get('#player1').select('ก้อง'); cy.get('#player2').select('แทน');
-    cy.get('#player3').select('หมู'); cy.get('#player4').select('ชื่อยาวมากยาวสุดๆทะลุจอ');
-    cy.get('#shuttlecockSpeeds').type('1'); cy.get('#shuttlecockPrice').clear().type('20');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('ก้อง', 'แทน', 'หมู', 'ชื่อยาวมากยาวสุดๆทะลุจอ', '1', '20');
 
     cy.get('#summaryTable').scrollIntoView();
     cy.get('#summaryTable').parent().should('have.class', 'overflow-x-auto');
@@ -60,10 +53,7 @@ describe('01 - Core Flow & Game Management', () => {
   it('ทดสอบการลบเกม และการคำนวณยอดเงินใหม่ (Delete Game)', () => {
     const players = ['A', 'B', 'C', 'D'];
     players.forEach(p => { cy.addPlayer(p); });
-    cy.get('#player1').select('A'); cy.get('#player2').select('B');
-    cy.get('#player3').select('C'); cy.get('#player4').select('D');
-    cy.get('#shuttlecockSpeeds').type('1'); cy.get('#shuttlecockPrice').clear().type('20');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('A', 'B', 'C', 'D', '1', '20');
     
     cy.get('#grandTotal').should('have.text', '20.00'); 
     cy.get('.game-card').find('.fa-trash').click();
@@ -76,9 +66,7 @@ describe('01 - Core Flow & Game Management', () => {
     cy.addPlayer('B');
     cy.addPlayer('C');
 
-    cy.get('#player1').select('A'); cy.get('#player2').select('B');
-    cy.get('#player3').select('C'); cy.get('#shuttlecockSpeeds').type('1');
-    cy.get('#btnRecordGame').click();
+    cy.recordGame('A', 'B', 'C', null, '1');
 
     cy.get('.swal2-popup').should('be.visible');
     cy.get('.swal2-html-container').should('contain.text', 'เลือก 4 คนไม่ซ้ำกัน');
@@ -109,12 +97,8 @@ describe('01 - Core Flow & Game Management', () => {
     const players = ['A', 'B', 'C', 'D'];
     players.forEach(p => cy.addPlayer(p));
     
-    cy.get('#player1').select('A'); cy.get('#player2').select('B');
-    cy.get('#player3').select('C'); cy.get('#player4').select('D');
-
-    cy.get('#shuttlecockSpeeds').type('1');
-    cy.get('#shuttlecockPrice').clear().type('-50'); // จงใจใส่ค่าติดลบ
-    cy.get('#btnRecordGame').click();
+    // จงใจใส่ค่าติดลบ
+    cy.recordGame('A', 'B', 'C', 'D', '1', '-50');
 
     // ตรวจสอบว่าระบบป้องกันราคาติดลบ (ปัดเป็น 0 อัตโนมัติ)
     cy.get('#gamesList').should('contain.text', '0.00 บ./คน');
