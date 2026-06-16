@@ -104,6 +104,11 @@
         @media (max-width: 640px) {
             .court-input { font-size: 13px !important; padding: 10px 24px 10px 4px !important; letter-spacing: -0.5px; }
             .court-grid { gap: 16px 8px !important; }
+            
+            .fab-mobile { position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 90 !important; width: 60px !important; height: 60px !important; border-radius: 50% !important; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.5) !important; padding: 0 !important; font-size: 24px !important; justify-content: center !important; transition: transform 0.15s !important; }
+            .fab-mobile:active { transform: scale(0.9) !important; }
+            .fab-mobile span { display: none !important; }
+            .fab-mobile i { margin: 0 !important; }
         }
     </style>
 </head>
@@ -181,7 +186,8 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <button id="btnRecordGame" class="btn btn-success flex-1 py-3"><i class="fas fa-plus-circle"></i>บันทึกเกมนี้</button>
-                    <button id="btnOpenPenInput" class="btn btn-indigo py-3 px-5"><i class="fas fa-pen-nib"></i>กระดานจัดทัพ</button>
+                    <button id="btnCancelEditGame" class="btn btn-secondary hidden py-3 px-4" title="ยกเลิกการแก้ไข" onclick="cancelEditGame()"><i class="fas fa-times"></i></button>
+                    <button id="btnOpenPenInput" class="btn btn-indigo py-3 px-5 fab-mobile"><i class="fas fa-pen-nib"></i><span>กระดานจัดทัพ</span></button>
                     <button id="btnUseLastTeam" class="btn btn-secondary py-3"><i class="fas fa-redo-alt"></i>ทีมเดิม</button>
                 </div>
             </div>
@@ -331,16 +337,42 @@
     </div>
 </div>
 
+<!-- Hidden Slip Template -->
+<div id="slip-template" style="position: fixed; top: 0; left: -2000px; width: 380px; background: white; z-index: -50; padding: 24px; font-family: 'Sarabun', sans-serif;">
+    <div style="text-center; margin-bottom: 16px;">
+        <div style="font-size: 30px; text-align: center; margin-bottom: 8px;">🏸</div>
+        <h2 style="font-size: 20px; font-weight: 700; color: #1d4ed8; text-align: center; margin: 0;">ใบแจ้งยอดค่าแบดมินตัน</h2>
+        <p style="font-size: 14px; color: #64748b; text-align: center; margin: 4px 0;" id="slip-date"></p>
+    </div>
+    <div style="margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px dashed #e2e8f0;">
+        <div style="font-weight: 700; font-size: 18px;" id="slip-name"></div>
+    </div>
+    <div style="margin-bottom: 16px; min-height: 40px;" id="slip-details"></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-weight: 700; font-size: 18px;">
+        <span>ยอดชำระสุทธิ:</span><span style="color: #dc2626;" id="slip-total"></span>
+    </div>
+    <div id="slip-qr-container" style="text-align: center; display: none;">
+        <img id="slip-qr" src="" style="margin: 0 auto; border: 1px solid #e2e8f0; padding: 4px; background: white; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: 180px; height: 180px;">
+        <p style="font-size: 12px; color: #64748b; margin-top: 8px;" id="slip-pp-text"></p>
+    </div>
+    <div style="text-align: center; margin-top: 24px; font-size: 12px; color: #cbd5e1;">สร้างโดยโปรแกรมคำนวณค่าลูกแบดมินตัน</div>
+</div>
+
 <div id="payment-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-green-700">ชำระเงิน</h3><button class="btn-ghost" id="btnClosePayment"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-3"><p id="payment-name" class="font-bold mb-2"></p><input type="hidden" id="payment-hidden-name"><input type="number" id="payment-amount" class="form-control text-lg" placeholder="0.00"><div id="qr-container" class="hidden text-center mt-4"><img id="promptpay-qr" src="" alt="PromptPay QR Code" class="mx-auto border p-2 bg-white rounded-lg shadow-sm"><p class="text-xs text-gray-500 mt-2">สแกนเพื่อชำระเงิน</p></div></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelPayment">ยกเลิก</button><button class="btn btn-success" id="btnSubmitPayment">ยืนยัน</button></div></div></div>
 <div id="debt-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-red-700">เพิ่มยอดค้างชำระ (ตั้งหนี้)</h3><button class="btn-ghost" id="btnCloseDebt"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-3"><div><label class="form-label">ชื่อผู้เล่น</label><input type="text" id="debt-name" class="form-control" placeholder="พิมพ์ชื่อผู้เล่น..." list="debt-player-list"><datalist id="debt-player-list"></datalist></div><div><label class="form-label">จำนวนเงิน (บาท)</label><input type="number" id="debt-amount" class="form-control text-lg" placeholder="0.00"></div></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelDebt">ยกเลิก</button><button class="btn btn-danger" id="btnSubmitDebt">บันทึกหนี้</button></div></div></div>
 <div id="rename-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold">เปลี่ยนชื่อ</h3><button class="btn-ghost" id="btnCloseRename"><i class="fas fa-times"></i></button></div><div class="modal-body"><input type="hidden" id="rename-old-name"><input type="text" id="rename-new-name" class="form-control"></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelRename">ยกเลิก</button><button class="btn btn-primary" id="btnSubmitRename">ยืนยัน</button></div></div></div>
 
 <script>
 'use strict';
+
+const $ = id => document.getElementById(id);
+const PEN_FIELDS = ['penP1', 'penP2', 'penP3', 'penP4'];
+const PLAYER_FIELDS = ['player1', 'player2', 'player3', 'player4'];
+
 const TOLERANCE = 0.005; const STORAGE_KEY = 'badmintonAppState_v2';
 const PLAYER_COLORS = [{bg:'#fee2e2',border:'#fca5a5',text:'#991b1b',tag:'#ef4444'},{bg:'#dbeafe',border:'#93c5fd',text:'#1e40af',tag:'#3b82f6'},{bg:'#dcfce7',border:'#86efac',text:'#166534',tag:'#22c55e'},{bg:'#fef9c3',border:'#fde047',text:'#713f12',tag:'#eab308'},{bg:'#ede9fe',border:'#c4b5fd',text:'#4c1d95',tag:'#8b5cf6'},{bg:'#fce7f3',border:'#f9a8d4',text:'#831843',tag:'#ec4899'},{bg:'#ccfbf1',border:'#5eead4',text:'#134e4a',tag:'#14b8a6'},{bg:'#ffedd5',border:'#fdba74',text:'#7c2d12',tag:'#f97316'}];
 let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = {player1:'',player2:'',player3:'',player4:''}; let _gameIdCounter = Date.now(); let _isDailyDirty = false;
-let currentPenMatchedBalls = []; let focusedFieldId = 'penP1';
+let currentPenMatchedBalls = []; let focusedFieldId = 'penP1'; let _editGameId = null;
 
 function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0 } }; }
 function getTodayString() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
@@ -353,7 +385,7 @@ function loadFromStorage() { try{ const raw = localStorage.getItem(STORAGE_KEY);
 function ensureIntegrity() {
     state.settings = state.settings || { shuttlecockPrice:0 }; state.masterPlayerList = (state.masterPlayerList||[]).filter(Boolean);
     state.allTransactions = state.allTransactions||[]; state.allPayments = state.allPayments||[]; state.dailyData = state.dailyData||{};
-    Object.values(state.dailyData).forEach(d => { d.players=(d.players||[]); d.games=(d.games||[]); d.games.forEach(g => g.shuttlecockSpeeds=(g.shuttlecockSpeeds||[])); });
+    Object.values(state.dailyData).forEach(d => { d.players=(d.players||[]); d.games=(d.games||[]); d.games.forEach(g => { g.shuttlecockSpeeds=(g.shuttlecockSpeeds||[]); if(!g.id) g.id=++_gameIdCounter; }); });
 }
 function syncGameIdCounter() { let max = _gameIdCounter; Object.values(state.dailyData).forEach(d => (d.games||[]).forEach(g => { if(g.id>max) max=g.id; })); _gameIdCounter = max; }
 
@@ -379,11 +411,11 @@ function loadFromFile(event) {
 
 // --- PLAYER MGMT ---
 function addPlayer() {
-    const pfx = document.getElementById('newPlayerPrefix').value; const raw = document.getElementById('newPlayerName').value.trim(); if(!raw) return;
+    const pfx = $('newPlayerPrefix').value; const raw = $('newPlayerName').value.trim(); if(!raw) return;
     const name = pfx==='ทั่วไป'?raw:`${pfx}: ${raw}`; if(state.masterPlayerList.includes(name)) return;
     state.masterPlayerList.push(name); state.masterPlayerList.sort((a,b)=>a.localeCompare(b,'th'));
     const dd = getCurrentDailyData(); if(!dd.players.find(p=>p.name===name)) dd.players.push({name,paid:false,present:true});
-    document.getElementById('newPlayerName').value = ''; updateAndRender();
+    $('newPlayerName').value = ''; updateAndRender();
 }
 function togglePlayer(name) {
     const dd = getCurrentDailyData(); let p = dd.players.find(x=>x.name===name);
@@ -407,13 +439,13 @@ function deletePlayer(name) {
     });
 }
 function submitRename() {
-    const oldN = document.getElementById('rename-old-name').value; const newN = document.getElementById('rename-new-name').value.trim();
-    if(!newN || oldN===newN) { document.getElementById('rename-modal').classList.add('hidden'); return; }
+    const oldN = $('rename-old-name').value; const newN = $('rename-new-name').value.trim();
+    if(!newN || oldN===newN) { $('rename-modal').classList.add('hidden'); return; }
     if(state.masterPlayerList.includes(newN)) { Swal.fire('ซ้ำ!', 'ชื่อนี้มีในระบบแล้ว โปรดใช้ชื่ออื่น', 'warning'); return; }
     let idx = state.masterPlayerList.indexOf(oldN); if(idx!==-1) state.masterPlayerList[idx] = newN;
     state.allTransactions.forEach(t=>{if(t.name===oldN) t.name=newN;}); state.allPayments.forEach(t=>{if(t.name===oldN) t.name=newN;});
     Object.values(state.dailyData).forEach(d=>{ d.players.forEach(p=>{if(p.name===oldN) p.name=newN;}); d.games.forEach(g=>g.players=g.players.map(x=>x===oldN?newN:x)); });
-    document.getElementById('rename-modal').classList.add('hidden'); updateAndRender();
+    $('rename-modal').classList.add('hidden'); updateAndRender();
 }
 
 function togglePlayerPaidStatus(playerName) {
@@ -428,37 +460,37 @@ function togglePlayerPaidStatus(playerName) {
 
 // --- S PEN SMART BOARD (V4) ---
 function openPenInputModal() {
-    document.getElementById('pen-input-modal').classList.remove('hidden');
-    ['penP1','penP2','penP3','penP4'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; });
+    $('pen-input-modal').classList.remove('hidden');
+    PEN_FIELDS.forEach(id=>{ const el=$(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; });
     document.querySelectorAll('.ball-btn').forEach(b=>b.classList.remove('active')); currentPenMatchedBalls=[]; focusedFieldId='penP1';
-    document.getElementById('penReviewSection').classList.add('hidden'); document.getElementById('penQuickPad').classList.add('hidden'); document.getElementById('btnConfirmPenInput').classList.add('hidden');
+    $('penReviewSection').classList.add('hidden'); $('penQuickPad').classList.add('hidden'); $('btnConfirmPenInput').classList.add('hidden');
     
-    const dd = getCurrentDailyData(); const badge = document.getElementById('penShuttleCountBadge');
+    const dd = getCurrentDailyData(); const badge = $('penShuttleCountBadge');
     if(badge) badge.innerHTML = (dd.games.length>0 && dd.games[dd.games.length-1].shuttlecockSpeeds) ? `ลูกล่าสุด: <b>${dd.games[dd.games.length-1].shuttlecockSpeeds.join(', ')}</b>` : 'ยังไม่มีเกม';
 }
-function closePenInputModal() { document.getElementById('pen-input-modal').classList.add('hidden'); }
-function clearPenField(id) { const el=document.getElementById(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; el.focus(); focusedFieldId=id; scanPenInput(); }
+function closePenInputModal() { $('pen-input-modal').classList.add('hidden'); }
+function clearPenField(id) { const el=$(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; el.focus(); focusedFieldId=id; scanPenInput(); }
 function toggleBallBtn(btn, num) {
     btn.classList.toggle('active'); if(btn.classList.contains('active')) currentPenMatchedBalls.push(num); else currentPenMatchedBalls = currentPenMatchedBalls.filter(b=>b!==num);
     currentPenMatchedBalls.sort((a,b)=>a-b); scanPenInput();
 }
 
 function scanPenInput() {
-    let p1 = document.getElementById('penP1').value.trim(); let p2 = document.getElementById('penP2').value.trim();
-    let p3 = document.getElementById('penP3').value.trim(); let p4 = document.getElementById('penP4').value.trim();
+    let p1 = $('penP1').value.trim(); let p2 = $('penP2').value.trim();
+    let p3 = $('penP3').value.trim(); let p4 = $('penP4').value.trim();
     
     // Auto Split (Block if contains : )
     if (p1 && !p1.includes(':') && !state.masterPlayerList.includes(p1)) {
         let tk = p1.replace(/vs/ig,' ').replace(/[-,\/]/g,' ').split(/\s+/).filter(Boolean);
-        if (tk.length>1) { p1=tk[0]; document.getElementById('penP1').value=p1; if(!p2&&tk[1]){p2=tk[1]; document.getElementById('penP2').value=p2;} else if(!p3&&tk[1]){p3=tk[1]; document.getElementById('penP3').value=p3;} }
+        if (tk.length>1) { p1=tk[0]; $('penP1').value=p1; if(!p2&&tk[1]){p2=tk[1]; $('penP2').value=p2;} else if(!p3&&tk[1]){p3=tk[1]; $('penP3').value=p3;} }
     }
 
-    let fields = ['penP1','penP2','penP3','penP4']; let vals = [p1,p2,p3,p4]; let fNames = ['','','','']; let status = ['white','white','white','white'];
+    let vals = [p1,p2,p3,p4]; let fNames = ['','','','']; let status = ['white','white','white','white'];
     const autoMap = {'แกน':'แทน','หนู':'หมู','เบน':'แมน','สากล':'สากดา','พี่ปุ้ย':'พี่ปุ๋ย'};
     let aliasMap = state.masterPlayerList.map(n=>({full:n, short:n.includes(': ')?n.split(': ')[1].toLowerCase():n.toLowerCase()}));
 
-    fields.forEach((id, i) => {
-        let v = vals[i]; const el = document.getElementById(id);
+    PEN_FIELDS.forEach((id, i) => {
+        let v = vals[i]; const el = $(id);
         if(!v) { el.className='court-input'; el.dataset.confirmed=''; return; }
         
         let exact = state.masterPlayerList.find(m=>m.toLowerCase()===v.toLowerCase());
@@ -483,22 +515,22 @@ function scanPenInput() {
     let nonE = fNames.filter(Boolean); let dup = new Set(nonE).size !== nonE.length;
     if(dup) fNames.forEach((n,i)=>{ if(n && fNames.indexOf(n)!==fNames.lastIndexOf(n)) status[i]='yellow'; });
 
-    fields.forEach((id, i) => document.getElementById(id).className = 'court-input status-'+status[i]);
+    PEN_FIELDS.forEach((id, i) => $(id).className = 'court-input status-'+status[i]);
 
     let allG = status.every(c=>c==='green') && vals.every(v=>v!==''); let hasB = currentPenMatchedBalls.length>0;
-    const rev = document.getElementById('penReviewSection'); const pad = document.getElementById('penQuickPad'); const btnConf = document.getElementById('btnConfirmPenInput');
+    const rev = $('penReviewSection'); const pad = $('penQuickPad'); const btnConf = $('btnConfirmPenInput');
 
     if(dup || status.includes('yellow') || status.includes('red') || (!hasB && vals.some(v=>v!==''))) {
         rev.classList.remove('hidden'); btnConf.classList.add('hidden'); pad.classList.remove('hidden');
-        if(dup) document.getElementById('penErrorText').innerHTML="⚠️ พบชื่อซ้ำกันในสนาม"; else if(!hasB&&allG) document.getElementById('penErrorText').innerHTML="⚠️ อย่าลืมเลือกเบอร์ลูก"; else document.getElementById('penErrorText').innerHTML="⚠️ จิ้มรายชื่อด้านล่างเพื่อแก้กล่องที่ผิด";
+        if(dup) $('penErrorText').innerHTML="⚠️ พบชื่อซ้ำกันในสนาม"; else if(!hasB&&allG) $('penErrorText').innerHTML="⚠️ อย่าลืมเลือกเบอร์ลูก"; else $('penErrorText').innerHTML="⚠️ จิ้มรายชื่อด้านล่างเพื่อแก้กล่องที่ผิด";
         renderQuickPad(status);
     } else if(allG && hasB) { rev.classList.add('hidden'); pad.classList.add('hidden'); btnConf.classList.remove('hidden'); }
 }
 
 function renderQuickPad(status) {
-    const pad = document.getElementById('penQuickPadList'); let fields = ['penP1','penP2','penP3','penP4'];
-    let tIdx = status.indexOf('yellow'); if(tIdx===-1) tIdx = status.indexOf('red'); if(tIdx===-1) tIdx = fields.indexOf(focusedFieldId);
-    let targetId = fields[tIdx!==-1?tIdx:0]; let targetEl = document.getElementById(targetId);
+    const pad = $('penQuickPadList');
+    let tIdx = status.indexOf('yellow'); if(tIdx===-1) tIdx = status.indexOf('red'); if(tIdx===-1) tIdx = PEN_FIELDS.indexOf(focusedFieldId);
+    let targetId = PEN_FIELDS[tIdx!==-1?tIdx:0]; let targetEl = $(targetId);
     let cText = targetEl?targetEl.value.trim().toLowerCase():''; let isY = status[tIdx]==='yellow';
 
     let list = [...state.masterPlayerList].sort((a,b)=>a.localeCompare(b,'th'));
@@ -511,10 +543,10 @@ function renderQuickPad(status) {
     }).join('');
 }
 function selectPad(name, targetId) {
-    document.getElementById(targetId).value = name; document.getElementById(targetId).dataset.confirmed = '1'; scanPenInput();
-    let fields = ['penP1','penP2','penP3','penP4']; let nIdx = (fields.indexOf(targetId)+1)%4; let c=0;
-    while(document.getElementById(fields[nIdx]).value!=='' && c<4) { nIdx=(nIdx+1)%4; c++; }
-    focusedFieldId = fields[nIdx]; document.getElementById(focusedFieldId).focus(); scanPenInput();
+    $(targetId).value = name; $(targetId).dataset.confirmed = '1'; scanPenInput();
+    let nIdx = (PEN_FIELDS.indexOf(targetId)+1)%4; let c=0;
+    while($(PEN_FIELDS[nIdx]).value!=='' && c<4) { nIdx=(nIdx+1)%4; c++; }
+    focusedFieldId = PEN_FIELDS[nIdx]; $(focusedFieldId).focus(); scanPenInput();
 }
 function getEditDistance(a, b) {
     if(a.length===0) return b.length; if(b.length===0) return a.length; let m=[];
@@ -523,10 +555,10 @@ function getEditDistance(a, b) {
     return m[b.length][a.length];
 }
 function confirmPenData() {
-    const n = ['penP1','penP2','penP3','penP4'].map(id=>document.getElementById(id).value);
+    const n = PEN_FIELDS.map(id=>$(id).value);
     const dd = getCurrentDailyData(); n.forEach(x=>{ let p=dd.players.find(y=>y.name===x); if(!p) dd.players.push({name:x,paid:false,present:true}); else p.present=true; });
-    ['player1','player2','player3','player4'].forEach((id,i)=>{ currentGameSelection[id]=n[i]; document.getElementById(id).value=n[i]; });
-    document.getElementById('shuttlecockSpeeds').value = currentPenMatchedBalls.join(', ');
+    PLAYER_FIELDS.forEach((id,i)=>{ currentGameSelection[id]=n[i]; $(id).value=n[i]; });
+    $('shuttlecockSpeeds').value = currentPenMatchedBalls.join(', ');
     closePenInputModal(); updateAndRender(); Swal.fire({icon:'success',title:'ลงสนามสำเร็จ!',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
 }
 
@@ -554,13 +586,13 @@ function processVoiceCommand(transcript) {
 
     // 0. คำสั่งเสียงด่วน (Voice Shortcuts)
     if (/^(ล้างกระดาน|เริ่มใหม่|เคลียร์|ลบใหม่|เอาใหม่|ล้างข้อมูล|ล้าง)$/.test(cleanText)) {
-        ['penP1','penP2','penP3','penP4'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; });
+        PEN_FIELDS.forEach(id=>{ const el=$(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; });
         document.querySelectorAll('.ball-btn').forEach(b=>b.classList.remove('active')); currentPenMatchedBalls=[];
         scanPenInput();
         return Swal.fire({icon:'info', title:'🧹 ล้างกระดานแล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:2000});
     }
     if (/^(ยืนยัน|ตกลง|บันทึก|บันทึกทีม|ลงสนาม|เรียบร้อย|โอเค)$/.test(cleanText)) {
-        let allG = ['penP1','penP2','penP3','penP4'].every(id => document.getElementById(id).className.includes('status-green'));
+        let allG = PEN_FIELDS.every(id => $(id).className.includes('status-green'));
         let hasBalls = currentPenMatchedBalls.length > 0;
         if (allG && hasBalls) return confirmPenData();
         else return Swal.fire({icon:'error', title:'ยังยืนยันไม่ได้', text:'โปรดจัดชื่อให้ครบ 4 คน (สีเขียว) และเลือกเบอร์ลูกก่อน', toast:true, position:'top-end', showConfirmButton:false, timer:3000});
@@ -599,13 +631,13 @@ function processVoiceCommand(transcript) {
     document.querySelectorAll('.ball-btn').forEach(btn => { if(currentPenMatchedBalls.includes(btn.innerText)) btn.classList.add('active'); });
 
     // 6. เติมชื่อลงในช่องที่ยังว่างอยู่ (ไม่ล้างของเดิมที่พิมพ์ไว้)
-    let availableFields = ['penP1','penP2','penP3','penP4'].filter(id => !document.getElementById(id).value.trim());
-    f.forEach((name, idx) => { if(availableFields[idx]) document.getElementById(availableFields[idx]).value = name; });
+    let availableFields = PEN_FIELDS.filter(id => !$(id).value.trim());
+    f.forEach((name, idx) => { if(availableFields[idx]) $(availableFields[idx]).value = name; });
     
     scanPenInput(); 
     
-    let isWarning = ['penP1','penP2','penP3','penP4'].some(id => {
-        let cls = document.getElementById(id).className;
+    let isWarning = PEN_FIELDS.some(id => {
+        let cls = $(id).className;
         return cls.includes('status-yellow') || cls.includes('status-red');
     });
 
@@ -618,14 +650,60 @@ function processVoiceCommand(transcript) {
 
 // --- RECORD GAME ---
 function recordGame() {
-    const p = ['player1','player2','player3','player4'].map(id=>document.getElementById(id).value).filter(Boolean);
+    const p = PLAYER_FIELDS.map(id=>$(id).value).filter(Boolean);
     if(new Set(p).size!==4) { Swal.fire('ผิดพลาด','เลือก 4 คนไม่ซ้ำกัน','error'); return; }
-    const pr = Math.max(0, parseFloat(document.getElementById('shuttlecockPrice').value)||state.settings.shuttlecockPrice||0);
-    const sp = document.getElementById('shuttlecockSpeeds').value.split(/[,\s]+/).map(s=>s.trim()).filter(Boolean);
+    const pr = Math.max(0, parseFloat($('shuttlecockPrice').value)||state.settings.shuttlecockPrice||0);
+    const sp = $('shuttlecockSpeeds').value.split(/[,\s]+/).map(s=>s.trim()).filter(Boolean);
     if(!sp.length) { Swal.fire('ผิดพลาด','ใส่เบอร์ลูก','error'); return; }
     _isDailyDirty = true; state.settings.shuttlecockPrice = pr;
-    getCurrentDailyData().games.push({id:++_gameIdCounter, players:p, shuttlecocksUsed:sp.length, shuttlecockPrice:pr, shuttlecockSpeeds:sp});
-    document.getElementById('shuttlecockSpeeds').value=''; currentGameSelection={player1:'',player2:'',player3:'',player4:''}; updateAndRender();
+        
+    const dd = getCurrentDailyData();
+    if (_editGameId !== null) {
+        let g = dd.games.find(x => x.id === _editGameId);
+        if (g) { g.players = p; g.shuttlecocksUsed = sp.length; g.shuttlecockPrice = pr; g.shuttlecockSpeeds = sp; }
+        cancelEditGame();
+        Swal.fire({icon:'success', title:'อัปเดตเกมสำเร็จ', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+    } else {
+        dd.games.push({id:++_gameIdCounter, players:p, shuttlecocksUsed:sp.length, shuttlecockPrice:pr, shuttlecockSpeeds:sp});
+        $('shuttlecockSpeeds').value=''; currentGameSelection={player1:'',player2:'',player3:'',player4:''}; 
+    }
+    updateAndRender();
+}
+
+function editGame(id) {
+    const g = getCurrentDailyData().games.find(x => x.id === id);
+    if(!g) return;
+    _editGameId = id;
+    PLAYER_FIELDS.forEach((pid, i) => {
+        $(pid).value = g.players[i] || ''; currentGameSelection[pid] = g.players[i] || '';
+    });
+    $('shuttlecockSpeeds').value = (g.shuttlecockSpeeds || []).join(', ');
+    $('shuttlecockPrice').value = g.shuttlecockPrice || state.settings.shuttlecockPrice || 0;
+    
+    const btn = $('btnRecordGame');
+    btn.innerHTML = '<i class="fas fa-save"></i> อัปเดตเกม'; btn.classList.replace('btn-success', 'btn-warning');
+    $('btnCancelEditGame').classList.remove('hidden');
+    window.scrollTo({top: 0, behavior: 'smooth'}); updateAndRender();
+}
+
+function cancelEditGame() {
+    _editGameId = null; $('shuttlecockSpeeds').value = ''; currentGameSelection={player1:'',player2:'',player3:'',player4:''}; 
+    PLAYER_FIELDS.forEach(id => { $(id).value = ''; });
+    const btn = $('btnRecordGame');
+    btn.innerHTML = '<i class="fas fa-plus-circle"></i>บันทึกเกมนี้'; btn.classList.replace('btn-warning', 'btn-success');
+    $('btnCancelEditGame').classList.add('hidden'); updateAndRender();
+}
+
+function moveGame(idx, dir) {
+    const dd = getCurrentDailyData();
+    if (dir === -1 && idx > 0) { let t = dd.games[idx]; dd.games[idx] = dd.games[idx-1]; dd.games[idx-1] = t; } 
+    else if (dir === 1 && idx < dd.games.length - 1) { let t = dd.games[idx]; dd.games[idx] = dd.games[idx+1]; dd.games[idx+1] = t; }
+    updateAndRender();
+}
+
+function deleteGame(idx) {
+    const dd = getCurrentDailyData(); if (_editGameId === dd.games[idx].id) cancelEditGame();
+    dd.games.splice(idx, 1); updateAndRender();
 }
 
 // --- RENDER LOGIC ---
@@ -672,10 +750,18 @@ function renderDaily() {
     document.getElementById('shuttlecockSpeedSummary').innerHTML = `รวมเกม: ${dd.games.length} | รวมลูก: ${totalB}`;
    document.getElementById('gamesList').innerHTML = dd.games.map((g,i)=>{
         let c = ((g.shuttlecocksUsed||0)*(g.shuttlecockPrice||0)/4).toFixed(2);
-        // ย้ายบรรทัดนี้ขึ้นมาข้างบน ให้อยู่นอกเครื่องหมาย ` ` ครับ
         let fN = n => { if(!n) return '-'; let sh = n.includes(': ')?n.split(': ')[1]:n; let px = n.includes(': ')?n.split(': ')[0]:''; return px ? `${sh}(${px})` : sh; };
         
-        return `<div class="game-card p-2 text-sm"><div class="flex justify-between font-bold mb-1"><span>เกม ${i+1}</span><button onclick="getCurrentDailyData().games.splice(${i},1); updateAndRender();" class="text-red-500"><i class="fas fa-trash"></i></button></div>
+        return `<div class="game-card p-2 text-sm ${g.id === _editGameId ? 'border-yellow-400 bg-yellow-50 shadow-md' : ''}">
+            <div class="flex flex-wrap justify-between items-center mb-1 pb-1 border-b border-gray-100">
+                <span class="font-bold text-gray-700">เกม ${i+1}</span>
+                <div class="flex gap-1">
+                    <button onclick="moveGame(${i}, -1)" class="btn btn-ghost p-1 text-gray-500" title="เลื่อนขึ้น" ${i===0?'disabled style="opacity:0.3"':''}><i class="fas fa-arrow-up"></i></button>
+                    <button onclick="moveGame(${i}, 1)" class="btn btn-ghost p-1 text-gray-500" title="เลื่อนลง" ${i===dd.games.length-1?'disabled style="opacity:0.3"':''}><i class="fas fa-arrow-down"></i></button>
+                    <button onclick="editGame(${g.id})" class="btn btn-ghost p-1 text-blue-500" title="แก้ไข"><i class="fas fa-edit"></i></button>
+                    <button onclick="deleteGame(${i})" class="btn btn-ghost p-1 text-red-500" title="ลบ"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
         <div class="text-blue-600">A: ${escapeHtml(fN(g.players[0]))}, ${escapeHtml(fN(g.players[1]))}</div>
         <div class="text-red-600">B: ${escapeHtml(fN(g.players[2]))}, ${escapeHtml(fN(g.players[3]))}</div>
         <div class="text-gray-500 text-xs mt-1">ลูก ${g.shuttlecockSpeeds.join(',')} (${c} บ./คน)</div></div>`;
@@ -735,13 +821,61 @@ function renderAccount() {
     let un='', cr='', pf='', tu=0, tc=0;
     Object.values(sum).forEach(x=>{
         if (searchQuery && !x.n.toLowerCase().includes(searchQuery)) return;
-            let b=x.d-x.p; if(b > TOLERANCE){ tu+=b; un+=`<div class="p-2 border rounded flex flex-wrap justify-between items-center gap-2"><span class="font-semibold break-all">${escapeHtml(x.n)}</span><div class="flex gap-1 items-center ml-auto"><span class="text-red-600 font-bold mr-2 whitespace-nowrap">ค้าง ${b.toFixed(2)}</span><button class="btn btn-sm shrink-0" style="background:#00b900;color:white;padding:4px 8px;" onclick="sendPersonalLineReminder('${escapeHtml(x.n)}', ${b})" title="ทวงหนี้ส่วนตัว"><i class="fab fa-line"></i></button><button class="btn btn-sm btn-success shrink-0" onclick="openPaymentModal('${escapeHtml(x.n)}')">จ่าย</button></div></div>`; }
+            let b=x.d-x.p; if(b > TOLERANCE){ tu+=b; un+=`<div class="p-2 border rounded flex flex-wrap justify-between items-center gap-2"><span class="font-semibold break-all">${escapeHtml(x.n)}</span><div class="flex gap-1 items-center ml-auto"><span class="text-red-600 font-bold mr-2 whitespace-nowrap">ค้าง ${b.toFixed(2)}</span><button class="btn btn-sm shrink-0" style="background:#0ea5e9;color:white;padding:4px 8px;" onclick="generatePersonalSlip('${escapeHtml(x.n)}', ${b})" title="แชร์/บันทึกใบเสร็จ"><i class="fas fa-file-invoice-dollar"></i></button><button class="btn btn-sm shrink-0" style="background:#00b900;color:white;padding:4px 8px;" onclick="sendPersonalLineReminder('${escapeHtml(x.n)}', ${b})" title="คัดลอกข้อความ LINE"><i class="fab fa-line"></i></button><button class="btn btn-sm btn-success shrink-0" onclick="openPaymentModal('${escapeHtml(x.n)}')">จ่าย</button></div></div>`; }
         else if(b < -TOLERANCE){ tc-=b; cr+=`<div class="p-2 border rounded flex flex-wrap justify-between items-center gap-2"><span class="font-semibold break-all">${escapeHtml(x.n)}</span><span class="text-blue-600 font-bold ml-auto whitespace-nowrap">เครดิต ${(-b).toFixed(2)}</span></div>`; }
         else { pf+=`<div class="p-2 border rounded flex flex-wrap justify-between items-center gap-2"><span class="font-semibold break-all">${escapeHtml(x.n)}</span><span class="text-green-600 font-bold ml-auto whitespace-nowrap">ไม่มีค้างชำระ</span></div>`; }
     });
     document.getElementById('unpaid-list-overall').innerHTML=un; document.getElementById('credit-list-overall').innerHTML=cr;
     document.getElementById('paid-in-full-list-overall').innerHTML=pf;
     document.getElementById('total-unpaid-overall').innerText='฿'+tu.toFixed(2); document.getElementById('total-credit-overall').innerText='฿'+tc.toFixed(2);
+}
+
+function generatePersonalSlip(name, amount) {
+    const slip = $('slip-template');
+    $('slip-date').innerText = `วันที่ออกบิล: ${getTodayString()}`;
+    $('slip-name').innerText = `คุณ: ${name}`;
+    $('slip-total').innerText = `฿${amount.toFixed(2)}`;
+    
+    let txsByDate = {};
+    state.allTransactions.filter(t => t.name === name).forEach(t => {
+        if(!txsByDate[t.date]) txsByDate[t.date] = 0;
+        txsByDate[t.date] += t.totalCost;
+    });
+    let sortedDates = Object.keys(txsByDate).sort((a,b) => a.localeCompare(b));
+    let totalPaid = state.allPayments.filter(p => p.name === name).reduce((sum, p) => sum + p.amount, 0);
+    
+    let detailsHTML = '';
+    sortedDates.forEach(date => {
+        let cost = txsByDate[date];
+        if (totalPaid >= cost - TOLERANCE) { totalPaid -= cost; } 
+        else { 
+            let remain = cost - totalPaid; 
+            if(remain > TOLERANCE) detailsHTML += `<div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:4px;"><span style="color:#475569;">${date}</span><span>฿${remain.toFixed(2)}</span></div>`;
+            totalPaid = 0; 
+        }
+    });
+    $('slip-details').innerHTML = detailsHTML || '<div style="font-size:14px; color:#94a3b8;">ยอดยกมา</div>';
+
+    const ppId = state.settings.promptpayId;
+    if (ppId) {
+        $('slip-qr').src = `https://promptpay.io/${ppId}/${amount.toFixed(2)}`;
+        $('slip-pp-text').innerText = `สแกนพร้อมเพย์: ${ppId}`;
+        $('slip-qr-container').style.display = 'block';
+    } else { $('slip-qr-container').style.display = 'none'; }
+
+    Swal.fire({title: 'กำลังสร้างใบเสร็จ...', timer: 800, didOpen: () => { Swal.showLoading(); }}).then(() => {
+        html2canvas(slip, {scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false}).then(canvas => {
+            canvas.toBlob(blob => {
+                const fileName = `receipt-${name}.png`;
+                const file = new File([blob], fileName, { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({ files: [file], title: `ใบแจ้งยอด - ${name}`, text: `รบกวนชำระค่าแบดมินตันครับ/ค่ะ ยอด ${amount.toFixed(2)} บาท 🏸` }).catch(e => console.log('Share canceled', e));
+                } else {
+                    const link = document.createElement('a'); link.download = fileName; link.href = canvas.toDataURL('image/png'); link.click();
+                }
+            }, 'image/png');
+        });
+    });
 }
 
 function renderHistory() { 
@@ -970,6 +1104,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settingPromptPay) settingPromptPay.value = state.settings.promptpayId||''; 
     
     updateAndRender(); 
+    
+    // PWA Registration
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(err=>console.log(err)); }
 });
 </script>
 </body>

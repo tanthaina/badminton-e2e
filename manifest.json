@@ -1,0 +1,16 @@
+{
+  "name": "โปรแกรมคำนวณค่าลูกแบดมินตัน",
+  "short_name": "Badminton Pay",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#1d4ed8",
+  "description": "ระบบจัดการบัญชีค่าลูกแบดมินตันส่วนตัว",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1041/1041168.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

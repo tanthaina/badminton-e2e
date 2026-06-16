@@ -80,4 +80,17 @@ describe('08 - Mobile UI & Responsive Design', () => {
     cy.get('#pen-input-modal .modal-box').should('be.visible');
     cy.get('#btnClosePenInput').click();
   });
+
+  it('ทดสอบ 6: ปุ่มกระดานจัดทัพเปลี่ยนเป็น FAB บนหน้าจอมือถือ', () => {
+    // ใน Viewport มือถือ (iPhone X จาก beforeEach)
+    cy.get('button[data-tab="daily"]').click();
+    cy.get('#btnOpenPenInput').should('have.css', 'position', 'fixed');
+    cy.get('#btnOpenPenInput').should('have.css', 'bottom', '24px');
+    cy.get('#btnOpenPenInput span').should('not.be.visible'); // ข้อความต้องถูกซ่อน
+
+    // เมื่อขยายจอเป็น Tablet หรือ Desktop (กว้างกว่า 640px)
+    cy.viewport('ipad-2');
+    cy.get('#btnOpenPenInput').should('not.have.css', 'position', 'fixed');
+    cy.get('#btnOpenPenInput span').should('be.visible'); // ข้อความต้องกลับมาแสดง
+  });
 });

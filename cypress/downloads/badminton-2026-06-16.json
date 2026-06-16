@@ -1,0 +1,22 @@
+{
+  "masterPlayerList": [
+    "สมหมาย"
+  ],
+  "allTransactions": [],
+  "allPayments": [],
+  "dailyData": {
+    "2026-06-16": {
+      "players": [
+        {
+          "name": "สมหมาย",
+          "paid": false,
+          "present": true
+        }
+      ],
+      "games": []
+    }
+  },
+  "settings": {
+    "shuttlecockPrice": 0
+  }
+}
