@@ -57,6 +57,9 @@ describe('Badminton App - Daily Group Bill Feature', () => {
     cy.get('.swal2-popup').should('contain.text', 'สแกนเพื่อชำระเงิน')
       .and('contain.text', 'สำหรับ: ก้อง, แทน')
       .and('contain.text', 'ยอดรวมทั้งหมด: ฿100.00'); // 50+50
+      
+    // ตรวจสอบว่ามีปุ่มคัดลอกลง LINE อยู่ในหน้าจอ
+    cy.get('#btnCopyGroupLine').should('be.visible');
 
     // 7. กดปุ่มยืนยัน "บันทึกว่าจ่ายแล้ว"
     cy.get('.swal2-confirm').contains('บันทึกว่าจ่ายแล้ว').click();

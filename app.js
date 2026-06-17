@@ -1175,6 +1175,7 @@ function showGroupBillResult(members, isDaily = false) {
         html: `<div class="text-sm text-gray-600 dark:text-gray-400 mb-1">สำหรับ: <b>${escapeHtml(namesList)}</b></div>
                ${detailsHtml}
                <div class="text-lg mt-1 mb-2">ยอดรวมทั้งหมด: <span class="text-red-600 font-bold text-2xl ml-1">฿${totalAmount.toFixed(2)}</span></div>
+               <button id="btnCopyGroupLine" class="btn btn-sm btn-indigo w-full py-2 mb-2 text-sm shadow-sm"><i class="fab fa-line text-lg mr-1"></i> คัดลอกข้อความส่ง LINE</button>
                ${ppName}`,
         imageUrl: `https://promptpay.io/${ppId}/${totalAmount.toFixed(2)}`,
         imageWidth: 220,
@@ -1184,7 +1185,32 @@ function showGroupBillResult(members, isDaily = false) {
         confirmButtonText: '<i class="fas fa-check-circle"></i> บันทึกว่าจ่ายแล้ว',
         cancelButtonText: 'ปิด',
         confirmButtonColor: '#10b981',
-        cancelButtonColor: '#64748b'
+        cancelButtonColor: '#64748b',
+        didOpen: () => {
+            const btn = document.getElementById('btnCopyGroupLine');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    let txt = `รบกวนชำระค่าแบดมินตัน (รวมบิลกลุ่ม) ครับ/ค่ะ 🏸\n\nสำหรับ: ${namesList}\nยอดรวมทั้งหมด: ${totalAmount.toFixed(2)} บาท\n\nรายละเอียดที่ค้าง:\n`;
+                    members.forEach(m => { txt += `- ${m.name}: ${m.debt.toFixed(2)} บ.\n`; });
+                    txt += `\nสแกนจ่ายหรือโอนผ่านพร้อมเพย์: ${ppId}`;
+                    if (state.settings.promptpayName) txt += `\n(ชื่อบัญชี: ${state.settings.promptpayName})`;
+                    txt += `\n\nขอบคุณครับ 🙏`;
+                    
+                    navigator.clipboard.writeText(txt).then(() => {
+                        const oldHtml = btn.innerHTML;
+                        btn.innerHTML = '<i class="fas fa-check"></i> คัดลอกสำเร็จ!';
+                        btn.classList.replace('btn-indigo', 'btn-success');
+                        setTimeout(() => {
+                            btn.innerHTML = oldHtml;
+                            btn.classList.replace('btn-success', 'btn-indigo');
+                        }, 2000);
+                    }).catch(() => {
+                        btn.innerHTML = '<i class="fas fa-times"></i> คัดลอกไม่สำเร็จ';
+                        btn.classList.replace('btn-indigo', 'btn-danger');
+                    });
+                });
+            }
+        }
     }).then(res => {
         if (res.isConfirmed) {
             if (isDaily) {

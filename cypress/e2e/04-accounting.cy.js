@@ -296,6 +296,9 @@ describe('04 - Accounting & History', () => {
     cy.get('.swal2-popup').should('contain.text', 'ยอดรวมทั้งหมด: ฿250.00'); // 100 + 150
     cy.get('.swal2-image').should('have.attr', 'src').and('include', '250.00');
     
+    // ตรวจสอบว่ามีปุ่มคัดลอกลง LINE อยู่ในหน้าจอ
+    cy.get('#btnCopyGroupLine').should('be.visible').and('contain.text', 'คัดลอกข้อความส่ง LINE');
+
     // กดปุ่ม "บันทึกว่าจ่ายแล้ว"
     cy.get('.swal2-confirm').contains('บันทึกว่าจ่ายแล้ว').click();
 
