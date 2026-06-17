@@ -96,9 +96,8 @@ describe('10 - Personal Receipt & PWA', () => {
       Object.defineProperty(win.navigator, 'canShare', { value: false, configurable: true });
     });
 
-    // หาชื่อไฟล์ที่คาดหวัง เช่น account-YYYY-MM-DD.png
-    const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    const expectedFileName = `account-${todayStr}.png`;
+    // หาชื่อไฟล์ที่คาดหวัง (เนื่องจากเราแช่แข็งเวลาไว้ที่ 2024-01-01 แอปจะสร้างไฟล์ชื่อนี้เสมอ)
+    const expectedFileName = 'account-2024-01-01.png';
 
     // กดปุ่ม "แชร์/บันทึกรูป" ในหน้าบัญชีรวม
     cy.get('#btnExportAccountImg').click();
