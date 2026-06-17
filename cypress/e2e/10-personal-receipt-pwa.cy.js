@@ -18,6 +18,7 @@ describe('10 - Personal Receipt & PWA', () => {
     // 1. ตั้งค่าพร้อมเพย์เพื่อทดสอบระบบดึง QR Code
     cy.get('button[data-tab="settings"]').click();
     cy.get('#settingPromptPay').clear().type('0812345678').blur();
+    cy.get('#settingPromptPayName').clear().type('สมเกียรติ ยอดนักโอน').blur();
 
     // 2. ตั้งหนี้ให้ "สมเกียรติ" 150.75 บาท
     cy.get('button[data-tab="account"]').click();
@@ -45,6 +46,7 @@ describe('10 - Personal Receipt & PWA', () => {
     cy.get('#slip-template').should('exist');
     cy.get('#slip-name').should('contain.text', 'คุณ: สมเกียรติ');
     cy.get('#slip-total').should('contain.text', '฿150.75');
+    cy.get('#slip-promptpay-name').should('exist').and('contain.text', 'สมเกียรติ ยอดนักโอน');
     
     // รอจนกว่าการสร้างรูป (html2canvas) จะเสร็จสมบูรณ์ และขึ้น Popup สร้างรูปภาพสำเร็จ
     cy.get('.swal2-title', { timeout: 15000 }).should('contain.text', 'สร้างรูปภาพสำเร็จ');

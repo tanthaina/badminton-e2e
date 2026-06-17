@@ -128,6 +128,7 @@ describe('04 - Accounting & History', () => {
     cy.visit('/index.html');
     cy.get('button[data-tab="settings"]').click();
     cy.get('#settingPromptPay').clear().type('0812345678').blur();
+    cy.get('#settingPromptPayName').clear().type('นาย ใจดี แบดมินตัน').blur();
 
     cy.get('button[data-tab="account"]').click();
     cy.addDebt('สายสแกนด่วน', '99.50');
@@ -139,6 +140,7 @@ describe('04 - Accounting & History', () => {
     
     cy.get('.swal2-popup').should('be.visible').and('contain.text', 'สแกนเพื่อชำระเงิน');
     cy.get('.swal2-html-container').should('contain.text', 'สายสแกนด่วน').and('contain.text', '฿99.50');
+    cy.get('.swal2-html-container').should('contain.text', 'นาย ใจดี แบดมินตัน');
     cy.get('.swal2-image').should('have.attr', 'src').and('include', 'promptpay.io/0812345678/99.50');
     
     cy.wait('@qrCodeLoadAccount', { timeout: 10000 });
@@ -157,6 +159,7 @@ describe('04 - Accounting & History', () => {
     // 1. ตั้งค่าเบอร์พร้อมเพย์
     cy.get('button[data-tab="settings"]').click();
     cy.get('#settingPromptPay').clear().type('0899999999').blur();
+    cy.get('#settingPromptPayName').clear().type('นางสาว ตีแบด สนุก').blur();
 
     // 2. ไปที่หน้ารายวัน เพิ่มผู้เล่นและบันทึกเกม 1 เกม (40 บาท / 4 คน = 10 บาท)
     cy.get('button[data-tab="daily"]').click();
@@ -170,6 +173,7 @@ describe('04 - Accounting & History', () => {
     // 4. ตรวจสอบว่า Pop-up รูป QR Code และยอดเงินขึ้นมาถูกต้อง 100%
     cy.get('.swal2-popup').should('be.visible').and('contain.text', 'สแกนเพื่อชำระเงิน');
     cy.get('.swal2-html-container').should('contain.text', 'ไก่').and('contain.text', '฿10.00');
+    cy.get('.swal2-html-container').should('contain.text', 'นางสาว ตีแบด สนุก');
     cy.get('.swal2-image').should('have.attr', 'src').and('include', 'promptpay.io/0899999999/10.00');
     
     cy.wait('@qrCodeLoad3', { timeout: 10000 });
@@ -208,5 +212,46 @@ describe('04 - Accounting & History', () => {
     cy.get('#shuttlecockSpeeds').type(', 2');
     cy.get('#btnRecordGame').click();
     cy.get('#btnDraftWarning').should('not.have.class', 'hidden').and('contain.text', '1 วัน'); // ปุ่มเตือนต้องกลับมาอีกครั้ง!
+  });
+
+  it('ทดสอบฟีเจอร์ทวงแบบกลุ่ม (Group Bill)', () => {
+    cy.visit('/index.html');
+    cy.get('button[data-tab="settings"]').click();
+    cy.get('#settingPromptPay').clear().type('0812345678').blur();
+
+    cy.get('button[data-tab="account"]').click();
+    cy.addDebt('คู่รัก A', '100');
+    cy.addDebt('คู่รัก B', '150');
+    cy.addDebt('คนโสด C', '50');
+
+    cy.get('#btnGroupBill').click();
+    cy.get('.swal2-popup').should('contain.text', 'เลือกรวมบิลกลุ่ม');
+
+    // เลือกคน (คู่รัก A และ B)
+    cy.get('input.group-bill-cb[value="คู่รัก A"]').check({ force: true });
+    cy.get('input.group-bill-cb[value="คู่รัก B"]').check({ force: true });
+    
+    // จำลอง (Mock) Clipboard API ป้องกัน Error ในสภาพแวดล้อมทดสอบ
+    cy.window().then((win) => {
+      if (!win.navigator.clipboard) {
+        Object.defineProperty(win.navigator, 'clipboard', { value: { writeText: cy.stub().as('clipboardWrite').resolves() }, configurable: true });
+      } else {
+        cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite').resolves();
+      }
+    });
+
+    cy.get('.swal2-confirm').click();
+
+    // ตรวจสอบ Pop-up สรุปยอดรวม (QR)
+    cy.get('.swal2-popup').should('contain.text', 'สแกนเพื่อชำระเงิน');
+    cy.get('.swal2-popup').should('contain.text', 'สำหรับ: คู่รัก A, คู่รัก B');
+    cy.get('.swal2-popup').should('contain.text', 'คู่รัก A').and('contain.text', '฿100.00');
+    cy.get('.swal2-popup').should('contain.text', 'คู่รัก B').and('contain.text', '฿150.00');
+    cy.get('.swal2-popup').should('contain.text', 'ยอดรวมทั้งหมด');
+    cy.get('.swal2-popup').should('contain.text', '฿250.00'); // 100 + 150
+    cy.get('.swal2-image').should('have.attr', 'src').and('include', '250.00');
+    
+    // กดปิด
+    cy.get('.swal2-confirm').contains('ปิด').click();
   });
 });

@@ -293,6 +293,7 @@
                 <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-wallet"></i></div><h2 class="text-blue-700">สรุปยอดรวมบัญชีทั้งหมด</h2>
                 <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                     <button id="btnExportAccountImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-square"></i>แชร์/บันทึกรูป</button>
+                    <button id="btnGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i class="fas fa-users"></i> ทวงบิลกลุ่ม</button>
                     <button id="btnAddDebt" class="btn btn-sm btn-danger"><i class="fas fa-file-invoice-dollar"></i>เพิ่มหนี้</button>
                     <button id="btnExportAccountText" class="btn btn-sm btn-indigo"><i class="fab fa-line"></i>ส่ง LINE</button>
                     <button id="btnPayAllUnpaid" class="btn btn-sm btn-success"><i class="fas fa-hand-holding-usd"></i>ชำระทั้งหมด</button>
@@ -348,6 +349,11 @@
                     <label class="form-label">เบอร์โทรศัพท์/เลขบัตรประชาชน (พร้อมเพย์)</label>
                     <input type="text" id="settingPromptPay" class="form-control" style="max-width: 200px;" placeholder="เช่น 0812345678">
                     <p class="text-xs text-gray-500 mt-1">ใช้สำหรับสร้าง QR Code ในหน้าต่างชำระเงิน</p>
+                </div>
+                <div>
+                    <label class="form-label">ชื่อบัญชีพร้อมเพย์ (ตัวเลือก)</label>
+                    <input type="text" id="settingPromptPayName" class="form-control" style="max-width: 250px;" placeholder="เช่น นาย สมชาย ใจดี">
+                    <p class="text-xs text-gray-500 mt-1">แสดงคู่กับเบอร์พร้อมเพย์เพื่อความมั่นใจและป้องกันโอนผิด</p>
                 </div>
                 <hr class="border-gray-200">
                 <div>
@@ -443,6 +449,7 @@
     <div id="slip-promptpay" style="text-align: center; margin-top: 16px; display: none; padding-top: 16px; border-top: 2px dashed #e2e8f0;">
         <div style="font-size: 14px; color: #475569;">สแกน QR หรือโอนพร้อมเพย์</div>
         <div style="font-size: 16px; font-weight: 700; color: #1e293b;" id="slip-promptpay-number"></div>
+        <div id="slip-promptpay-name" style="font-size: 14px; font-weight: 600; color: #1d4ed8; margin-top: 2px;"></div>
     </div>
     <div style="text-align: center; margin-top: 24px; font-size: 12px; color: #cbd5e1;">สร้างโดยโปรแกรมคำนวณค่าลูกแบดมินตัน</div>
 </div>
@@ -1027,26 +1034,31 @@ function renderDaily() {
     });
     document.getElementById('summaryTableUnpaid').innerHTML = un; document.getElementById('summaryTablePaid').innerHTML = pd; document.getElementById('grandTotal').innerText = grand.toFixed(2);
 
-    const ppId = state.settings.promptpayId;
-    const qrContainer = document.getElementById('daily-summary-qr-container');
-    if (qrContainer) {
-        if (ppId && grand > TOLERANCE) {
-            qrContainer.classList.remove('hidden');
-            document.getElementById('daily-summary-pp-text').innerText = `พร้อมเพย์: ${ppId}`;
-            document.getElementById('daily-summary-qr').src = `https://promptpay.io/${ppId}.png`;
-        } else {
-            qrContainer.classList.add('hidden');
-        }
-    }
 }
 
 function showDailyQR(name, amount) {
     const ppId = state.settings.promptpayId;
+    const ppName = state.settings.promptpayName ? `<div class="text-sm font-bold text-indigo-700 mt-1">${escapeHtml(state.settings.promptpayName)}</div>` : '';
     if (!ppId) return Swal.fire('ผิดพลาด', 'กรุณาตั้งค่าเบอร์พร้อมเพย์ในแท็บตั้งค่าระบบก่อน', 'warning');
     Swal.fire({
         title: 'สแกนเพื่อชำระเงิน',
-        html: `<div class="text-lg mb-2"><b>${name}</b></div>ยอดของวันนี้: <span class="text-red-600 font-bold text-xl">฿${amount.toFixed(2)}</span>`,
+        html: `<div class="text-lg mb-2"><b>${name}</b></div>ยอดของวันนี้: <span class="text-red-600 font-bold text-xl">฿${amount.toFixed(2)}</span>${ppName}`,
         imageUrl: `https://promptpay.io/${ppId}/${amount.toFixed(2)}?t=${Date.now()}`,
+        imageWidth: 220,
+        imageHeight: 220,
+        imageAlt: 'PromptPay QR',
+        confirmButtonText: 'ปิด'
+    });
+}
+
+function showGlobalQR() {
+    const ppId = state.settings.promptpayId;
+    const ppName = state.settings.promptpayName ? `<div class="text-sm font-bold text-indigo-700 mt-1">${escapeHtml(state.settings.promptpayName)}</div>` : '';
+    if (!ppId) return Swal.fire('ผิดพลาด', 'กรุณาตั้งค่าเบอร์พร้อมเพย์ในแท็บตั้งค่าระบบก่อน', 'warning');
+    Swal.fire({
+        title: 'สแกนเพื่อโอนเงิน',
+        html: `<div class="text-sm text-gray-500 mb-2">พร้อมเพย์: ${ppId}</div>${ppName}<div class="text-xs text-gray-400 mt-1">สแกนแล้วระบุยอดเงินด้วยตนเอง</div>`,
+        imageUrl: `https://promptpay.io/${ppId}.png?t=${Date.now()}`,
         imageWidth: 220,
         imageHeight: 220,
         imageAlt: 'PromptPay QR',
@@ -1056,10 +1068,11 @@ function showDailyQR(name, amount) {
 
 function showAccountQR(name, amount) {
     const ppId = state.settings.promptpayId;
+    const ppName = state.settings.promptpayName ? `<div class="text-sm font-bold text-indigo-700 mt-1">${escapeHtml(state.settings.promptpayName)}</div>` : '';
     if (!ppId) return Swal.fire('ผิดพลาด', 'กรุณาตั้งค่าเบอร์พร้อมเพย์ในแท็บตั้งค่าระบบก่อน', 'warning');
     Swal.fire({
         title: 'สแกนเพื่อชำระเงิน',
-        html: `<div class="text-lg mb-2"><b>${name}</b></div>ยอดค้างชำระ: <span class="text-red-600 font-bold text-xl">฿${amount.toFixed(2)}</span>`,
+        html: `<div class="text-lg mb-2"><b>${name}</b></div>ยอดค้างชำระ: <span class="text-red-600 font-bold text-xl">฿${amount.toFixed(2)}</span>${ppName}`,
         imageUrl: `https://promptpay.io/${ppId}/${amount.toFixed(2)}`,
         imageWidth: 220,
         imageHeight: 220,
@@ -1214,8 +1227,13 @@ function _doGeneratePersonalSlip(name, amount, showPP) {
     const ppId = state.settings.promptpayId;
     const ppContainer = $('slip-promptpay');
     const ppNumberEl = $('slip-promptpay-number');
+    const ppNameEl = $('slip-promptpay-name');
     if (showPP && ppId && ppContainer && ppNumberEl) {
         ppNumberEl.innerText = ppId;
+        if (state.settings.promptpayName && ppNameEl) {
+            ppNameEl.innerText = state.settings.promptpayName;
+            ppNameEl.style.display = 'block';
+        } else if (ppNameEl) { ppNameEl.style.display = 'none'; }
         ppContainer.style.display = 'block';
     } else if (ppContainer) {
         ppContainer.style.display = 'none';
@@ -1261,7 +1279,7 @@ function renderHistory() {
     
     const sumBox = $('history-summary-box');
     if(!h.length) { 
-        $('overall-summary-content').innerHTML=`<div class="p-3 bg-gray-50 border rounded text-center text-gray-500">ไม่มีข้อมูลประวัติในช่วงเวลานี้</div>`; 
+        $('overall-summary-content').innerHTML=`<div class="py-10 flex flex-col items-center justify-center text-center bg-gray-50/50 dark:bg-slate-800/30 rounded-xl border border-dashed border-gray-200 dark:border-slate-700"><div class="w-14 h-14 bg-white dark:bg-slate-800 shadow-sm rounded-full flex items-center justify-center mb-3 text-gray-300 dark:text-gray-500"><i class="fas fa-box-open text-2xl"></i></div><h3 class="text-gray-500 dark:text-gray-400 font-bold text-sm">ไม่มีข้อมูลประวัติในช่วงเวลานี้</h3></div>`; 
         sumBox.classList.add('hidden');
         $('monthly-summary-container').classList.add('hidden');
         return; 
@@ -1301,30 +1319,42 @@ function renderHistory() {
         let dailyColor = dailyTotal >= 0 ? 'text-green-600' : 'text-red-500';
         let dailySign = dailyTotal > 0 ? '+' : (dailyTotal < 0 ? '-' : '');
 
-        html += `<div class="mb-4 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div class="p-3 bg-gray-50 border-b border-dashed border-gray-300 flex justify-between items-center">
-                <div class="font-bold text-gray-700 text-sm"><i class="fas fa-receipt text-indigo-500 mr-2"></i>บิลประจำวันที่ ${date}</div>
-                <div class="text-[10px] font-bold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">${grouped[date].length} รายการ</div>
+        html += `<div class="mb-5 bg-gray-50/50 dark:bg-slate-800/30 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+            <div class="p-3 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+                <div class="font-bold text-gray-800 dark:text-gray-200 text-sm flex items-center gap-2"><div class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 w-8 h-8 rounded-lg flex items-center justify-center"><i class="fas fa-calendar-day"></i></div> ${date}</div>
+                <div class="text-[11px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400 px-2.5 py-1 rounded-full">${grouped[date].length} รายการ</div>
             </div>
-            <div class="p-3 sm:p-4 space-y-2">`;
+            <div class="p-3 sm:p-4 space-y-3">`;
         
         grouped[date].forEach(x => {
             let isPaid = x.type === 'ชำระเงิน';
             let color = isPaid ? 'text-green-600' : 'text-red-500';
             let sign = isPaid ? '+' : '-';
-            html += `<div class="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-                <div>
-                    <span class="font-bold text-gray-800">${escapeHtml(x.name)}</span>
-                    <span class="text-[10px] text-gray-400 ml-1">(${x.type})</span>
+            
+            let nameHtml = escapeHtml(x.name);
+            let displayChar = nameHtml.includes(': ') ? nameHtml.split(': ')[1].charAt(0) : nameHtml.charAt(0);
+            let avatarChar = displayChar.toUpperCase();
+            let borderColor = isPaid ? 'border-green-500' : 'border-red-500';
+            let avatarBg = isPaid ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30';
+            let avatarColor = isPaid ? 'text-green-600' : 'text-red-600';
+            let iconHtml = isPaid ? '<i class="fas fa-hand-holding-usd mr-1 text-[10px]"></i>' : '<i class="fas fa-shuttlecock mr-1 text-[10px]"></i>';
+
+            html += `<div class="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border-l-4 ${borderColor} border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-2 transition-all hover:shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full ${avatarBg} ${avatarColor} flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
+                    <div>
+                        <div class="font-bold text-gray-800 dark:text-gray-200 leading-tight break-all">${nameHtml}</div>
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">${iconHtml}${x.type}</div>
+                    </div>
                 </div>
-                <div class="font-bold ${color}">${sign}฿${(x.totalCost||x.amount).toFixed(2)}</div>
+                <div class="font-bold ${color} text-base whitespace-nowrap bg-gray-50 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg">${sign}฿${(x.totalCost||x.amount).toFixed(2)}</div>
             </div>`;
         });
 
         html += `</div>
-            <div class="p-3 bg-gray-50 border-t border-dashed border-gray-300 flex justify-between items-center">
-                <div class="font-bold text-gray-600 text-sm">ยอดสุทธิประจำวัน</div>
-                <div class="font-bold ${dailyColor} text-base">${dailySign}฿${Math.abs(dailyTotal).toFixed(2)}</div>
+            <div class="p-3 sm:px-4 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 flex justify-between items-center">
+                <div class="font-bold text-gray-600 dark:text-gray-400 text-sm">ยอดสุทธิประจำวัน</div>
+                <div class="font-bold ${dailyColor} text-lg">${dailySign}฿${Math.abs(dailyTotal).toFixed(2)}</div>
             </div>
         </div>`;
     });
@@ -1514,6 +1544,7 @@ function exportAccountText() {
 
         let detailsText = unpaidDetails.length > 0 ? `\nรายละเอียดที่ค้าง:\n- ${unpaidDetails.join('\n- ')}\n` : '';
         let ppText = state.settings.promptpayId ? `\nสแกนจ่ายหรือโอนผ่านพร้อมเพย์: ${state.settings.promptpayId}` : '';
+        if (state.settings.promptpayName) ppText += `\n(ชื่อบัญชี: ${state.settings.promptpayName})`;
         const txt = `รบกวนชำระค่าแบดมินตันครับ/ค่ะ 🏸\n\nชื่อ: ${name}\nยอดค้างชำระ: ${amount.toFixed(2)} บาท\n${detailsText}${ppText}\n\nขอบคุณครับ 🙏`;
         navigator.clipboard.writeText(txt).then(() => {
             Swal.fire({
@@ -1522,6 +1553,66 @@ function exportAccountText() {
             });
         }).catch(() => Swal.fire('ข้อผิดพลาด', 'ไม่สามารถคัดลอกข้อความได้', 'error'));
     }
+
+function openGroupBillModal() {
+    const sum = calculateOverallBalances();
+    const unpaid = Object.values(sum).filter(x => x.d - x.p > TOLERANCE).sort((a,b)=>a.n.localeCompare(b.n, 'th'));
+
+    if(unpaid.length < 2) return Swal.fire('ข้อมูลไม่พอ', 'ต้องมีผู้ค้างชำระอย่างน้อย 2 คนจึงจะรวมบิลได้', 'info');
+
+    let html = '<div class="text-left space-y-2 max-h-[50vh] overflow-y-auto p-2">';
+    unpaid.forEach((x) => {
+        let b = x.d - x.p;
+        html += `<label class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer transition-colors">
+            <input type="checkbox" class="w-5 h-5 group-bill-cb accent-indigo-600 rounded" value="${escapeHtml(x.n)}" data-debt="${b}">
+            <span class="flex-1 font-bold text-gray-800 dark:text-gray-200">${escapeHtml(x.n)}</span>
+            <span class="text-red-600 font-bold">฿${b.toFixed(2)}</span>
+        </label>`;
+    });
+    html += '</div>';
+
+    Swal.fire({
+        title: 'เลือกรวมบิลกลุ่ม',
+        html: html,
+        showCancelButton: true,
+        confirmButtonText: 'รวมบิล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#8b5cf6',
+        preConfirm: () => {
+            const selected = Array.from(document.querySelectorAll('.group-bill-cb:checked'));
+            if(selected.length < 2) { Swal.showValidationMessage('กรุณาเลือกอย่างน้อย 2 คน'); return false; }
+            return selected.map(cb => ({ name: cb.value, debt: parseFloat(cb.dataset.debt) }));
+        }
+    }).then(res => { if(res.isConfirmed) showGroupBillResult(res.value); });
+}
+
+function showGroupBillResult(members) {
+    const totalAmount = members.reduce((sum, m) => sum + m.debt, 0);
+    const namesList = members.map(m => m.name).join(', ');
+    const ppId = state.settings.promptpayId;
+    const ppName = state.settings.promptpayName ? `<div class="text-sm font-bold text-indigo-700 mt-1">${escapeHtml(state.settings.promptpayName)}</div>` : '';
+
+    if (!ppId) return Swal.fire('ผิดพลาด', 'กรุณาตั้งค่าเบอร์พร้อมเพย์ในแท็บตั้งค่าระบบก่อน', 'warning');
+
+    let detailsHtml = '<div class="mt-3 mb-3 text-left bg-gray-50 dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700 text-sm w-full">';
+    members.forEach(m => {
+        detailsHtml += `<div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700 last:border-0"><span class="text-gray-700 dark:text-gray-300">${escapeHtml(m.name)}</span><span class="font-bold text-red-500">฿${m.debt.toFixed(2)}</span></div>`;
+    });
+    detailsHtml += '</div>';
+
+    Swal.fire({
+        title: 'สแกนเพื่อชำระเงิน',
+        html: `<div class="text-sm text-gray-600 dark:text-gray-400 mb-1">สำหรับ: <b>${escapeHtml(namesList)}</b></div>
+               ${detailsHtml}
+               <div class="text-lg mt-1 mb-2">ยอดรวมทั้งหมด: <span class="text-red-600 font-bold text-2xl ml-1">฿${totalAmount.toFixed(2)}</span></div>
+               ${ppName}`,
+        imageUrl: `https://promptpay.io/${ppId}/${totalAmount.toFixed(2)}`,
+        imageWidth: 220,
+        imageHeight: 220,
+        imageAlt: 'PromptPay QR',
+        confirmButtonText: 'ปิด'
+    });
+}
 
 function payAllUnpaid() {
     Swal.fire({title:'ชำระทั้งหมด?', text:'บันทึกว่าทุกคนชำระเงินค้างจ่ายครบแล้ว', icon:'question', showCancelButton:true}).then(r=>{
@@ -1640,6 +1731,7 @@ function bindEvents() {
     });
 
     $('btnExportAccountText').addEventListener('click', exportAccountText);
+    $('btnGroupBill').addEventListener('click', openGroupBillModal);
     $('btnPayAllUnpaid').addEventListener('click', payAllUnpaid);
     $('btnFilterHistory').addEventListener('click', renderHistory);
     $('btnExportHistoryCSV').addEventListener('click', exportHistoryCSV);
@@ -1657,6 +1749,15 @@ function bindEvents() {
             saveToStorage(); 
             updateAndRender(); // อัปเดต UI ทันทีเพื่อให้ปุ่ม QR Code โผล่
             Swal.fire({icon:'success', title:'บันทึกเบอร์พร้อมเพย์แล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+        });
+    }
+    const settingPromptPayName = $('settingPromptPayName');
+    if (settingPromptPayName) {
+        settingPromptPayName.addEventListener('change', (e) => {
+            state.settings.promptpayName = e.target.value.trim();
+            saveToStorage(); 
+            updateAndRender(); 
+            Swal.fire({icon:'success', title:'บันทึกชื่อบัญชีแล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
         });
     }
 
@@ -1712,6 +1813,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const settingPromptPay = document.getElementById('settingPromptPay');
     if (settingPromptPay) settingPromptPay.value = state.settings.promptpayId||''; 
+    
+    const settingPromptPayName = document.getElementById('settingPromptPayName');
+    if (settingPromptPayName) settingPromptPayName.value = state.settings.promptpayName||''; 
     
     $('settingTubeCost').value = state.settings.settingTubeCost || '';
     $('settingTubeAmount').value = state.settings.settingTubeAmount || 12;
