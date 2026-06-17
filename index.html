@@ -90,7 +90,7 @@
         <div class="card">
             <div class="card-header">
                 <div class="section-icon bg-orange-100 text-orange-600"><i class="fas fa-list"></i></div><h2 class="text-orange-700">รายการเกมที่บันทึก</h2>
-                <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportGamesImg" class="btn btn-sm" style="background:#f97316;color:white;"><i class="fas fa-share-square"></i>แชร์/บันทึกรูป</button></div>
+                <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportGamesImg" class="btn btn-sm" style="background:#f97316;color:white;"><i class="fas fa-download"></i>บันทึกรูปภาพ</button></div>
             </div>
             <div class="card-body">
                 <div id="shuttlecockSpeedSummary" class="text-sm font-semibold text-gray-700 mb-3 bg-gray-50 p-2 rounded"></div>
@@ -102,7 +102,7 @@
             <div class="card-header">
                 <div class="section-icon bg-teal-100 text-teal-600"><i class="fas fa-receipt"></i></div><h2 class="text-teal-700">สรุปค่าใช้จ่ายประจำวัน</h2>
                 <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button id="btnExportSummaryImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-square"></i>แชร์/บันทึกรูป</button>
+                    <button id="btnExportSummaryImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-download"></i>บันทึกรูปภาพ</button>
                     <button id="btnDailyGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i class="fas fa-qrcode"></i> QR จ่ายกลุ่ม</button>
                     <button id="btnConfirmSave" class="btn btn-primary btn-sm"><i class="fas fa-lock"></i>ปิดยอดวันนี้</button>
                     <button id="btnClearToday" class="btn btn-danger btn-sm"><i class="fas fa-eraser"></i>ล้างวันนี้</button>
@@ -150,7 +150,7 @@
             <div class="card-header">
                 <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-wallet"></i></div><h2 class="text-blue-700">สรุปยอดรวมบัญชีทั้งหมด</h2>
                 <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button id="btnExportAccountImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-square"></i>แชร์/บันทึกรูป</button>
+                    <button id="btnExportAccountImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-download"></i>บันทึกรูปภาพ</button>
                     <button id="btnGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i class="fas fa-users"></i> ทวงบิลกลุ่ม</button>
                     <button id="btnAddDebt" class="btn btn-sm btn-danger"><i class="fas fa-file-invoice-dollar"></i>เพิ่มหนี้</button>
                     <button id="btnExportAccountText" class="btn btn-sm btn-indigo"><i class="fab fa-line"></i>ส่ง LINE</button>
@@ -164,9 +164,10 @@
                         <div class="bg-red-50 p-2 rounded-lg"><div class="text-red-700 font-bold text-xl" id="total-unpaid-overall">฿0</div><div class="text-xs text-gray-500">ค้างชำระรวม</div></div>
                         <div class="bg-blue-50 p-2 rounded-lg"><div class="text-blue-700 font-bold text-xl" id="total-credit-overall">฿0</div><div class="text-xs text-gray-500">เครดิตรวม</div></div>
                     </div>
+                    <div id="account-export-date" class="hidden text-center text-sm font-bold text-gray-500 mt-2 mb-2 bg-gray-100 p-2 rounded-lg"></div>
                     <div><div class="font-bold text-red-600 mb-2">⚠️ ผู้ที่ค้างชำระ</div><div id="unpaid-list-overall" class="grid sm:grid-cols-2 gap-2"></div></div>
                     <div><div class="font-bold text-blue-600 mb-2">💰 มีเครดิต</div><div id="credit-list-overall" class="grid sm:grid-cols-2 gap-2"></div></div>
-                    <div><div class="font-bold text-green-600 mb-2">✅ ชำระครบแล้ว</div><div id="paid-in-full-list-overall" class="grid sm:grid-cols-2 gap-2"></div></div>
+                    <div id="paid-section-container"><div><div class="font-bold text-green-600 mb-2 mt-4">✅ ชำระครบแล้ว</div><div id="paid-in-full-list-overall" class="grid sm:grid-cols-2 gap-2"></div></div></div>
                 </div>
             </div>
         </div>

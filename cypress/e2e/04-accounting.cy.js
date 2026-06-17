@@ -307,4 +307,31 @@ describe('04 - Accounting & History', () => {
     cy.get('#unpaid-list-overall').should('contain.text', 'คนโสด C'); // คนโสด C ต้องยังอยู่
     cy.get('#paid-in-full-list-overall').should('contain.text', 'คู่รัก A').and('contain.text', 'คู่รัก B');
   });
+
+  it('ทดสอบการส่งออกรูปภาพหน้าบัญชีรวม (Export Account Image)', () => {
+    // 1. Setup state ให้มีทั้งคนค้าง, มีเครดิต, และจ่ายครบแล้ว
+    cy.seedSessionState('accountExportSetup', {
+      masterPlayerList: ['คนค้าง', 'คนจ่ายครบ', 'คนมีเครดิต'],
+      allTransactions: [
+        { id: 1, date: '2024-01-01', name: 'คนค้าง', totalCost: 100, isAutoDaily: false },
+        { id: 2, date: '2024-01-01', name: 'คนจ่ายครบ', totalCost: 50, isAutoDaily: false },
+        { id: 3, date: '2024-01-01', name: 'คนมีเครดิต', totalCost: 200, isAutoDaily: false }
+      ],
+      allPayments: [
+        { id: 4, date: '2024-01-01', name: 'คนจ่ายครบ', amount: 50, isAutoDaily: false },
+        { id: 5, date: '2024-01-01', name: 'คนมีเครดิต', amount: 250, isAutoDaily: false }
+      ]
+    });
+    cy.mockTime('2024-01-01T12:00:00Z');
+    cy.visit('/index.html');
+    cy.get('button[data-tab="account"]').click();
+
+    // 2. กดปุ่ม "บันทึกรูปภาพ"
+    cy.get('#btnExportAccountImg').click();
+    cy.get('.swal2-popup').should('contain.text', 'กำลังสร้างรูป...');
+
+    // 3. ตรวจสอบว่าไฟล์ถูกดาวน์โหลดลงเครื่องสำเร็จ
+    const expectedFileName = 'account-2024-01-01.png';
+    cy.readFile(`cypress/downloads/${expectedFileName}`, 'base64', { timeout: 15000 }).should('exist');
+  });
 });

@@ -829,21 +829,7 @@ function _doGeneratePersonalSlip(name, amount, showPP) {
     setTimeout(() => {
         html2canvas(slip, {scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false}).then(canvas => {
             Swal.close();
-            canvas.toBlob(blob => {
-                const fileName = `receipt-${name}.png`;
-                try {
-                    const file = new File([blob], fileName, { type: 'image/png' });
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                            navigator.share({ files: [file], title: `ใบแจ้งยอด - ${name}`, text: shareText })
-                            .catch(e => {
-                                console.log('Share failed', e);
-                                if (e.name !== 'AbortError') handleShareFallback(blob, fileName);
-                            });
-                        return;
-                    }
-                } catch(e) { console.log('Share API fallback', e); }
-                    handleShareFallback(blob, fileName);
-            }, 'image/png');
+            downloadCanvasAsImage(canvas, `receipt-${name}.png`);
         }).catch(err => {
             console.error(err); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างใบเสร็จได้', 'error');
         });
@@ -953,38 +939,22 @@ function waitForImages(element) {
     }));
 }
 
-function handleShareFallback(blob, fileName) {
-    const url = URL.createObjectURL(blob);
-    Swal.fire({
-        title: 'สร้างรูปภาพสำเร็จ',
-        text: 'แตะค้างที่รูปภาพด้านล่าง แล้วเลือก "บันทึกรูปภาพ" (Save Image) หรือแชร์ต่อได้เลยครับ',
-        imageUrl: url,
-        imageAlt: 'Receipt Image',
-        showCancelButton: true,
-        confirmButtonText: 'ปิดหน้าต่าง',
-        cancelButtonText: '⬇️ โหลดลงเครื่อง'
-    }).then((res) => {
-        if (res.isDismissed && res.dismiss === Swal.DismissReason.cancel) {
-            const link = document.createElement('a'); link.download = fileName; link.href = url;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        }
-    });
-}
-
-function shareOrDownloadCanvas(canvas, fileName, title, text) {
+function downloadCanvasAsImage(canvas, fileName) {
     canvas.toBlob(blob => {
         try {
-            const file = new File([blob], fileName, { type: 'image/png' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({ files: [file], title: title, text: text })
-                .catch(e => {
-                    console.log('Share failed', e);
-                    if (e.name !== 'AbortError') handleShareFallback(blob, fileName);
-                });
-                return;
-            }
-        } catch(e) { console.log('Share API fallback', e); }
-        handleShareFallback(blob, fileName);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+            Swal.fire({icon: 'success', title: 'โหลดรูปลงเครื่องแล้ว', text: 'สามารถนำไปส่งใน LINE ได้เลยครับ', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
+        } catch(e) {
+            console.error('Download failed', e);
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกรูปลงเครื่องได้โดยตรง (ลองใช้เบราว์เซอร์อื่น)', 'error');
+        }
     }, 'image/png');
 }
 
@@ -995,7 +965,7 @@ function exportGamesImg() {
     waitForImages(el).then(() => {
         html2canvas(el, {scale: 2, useCORS: true, backgroundColor: document.documentElement.classList.contains('dark') ? '#1e293b' : '#f8fafc', scrollX: 0, scrollY: -window.scrollY, windowWidth: document.documentElement.offsetWidth}).then(canvas => {
             Swal.close();
-            shareOrDownloadCanvas(canvas, `games-${selectedDate}.png`, 'รายการเกม', `รายการเกมแบดมินตัน ประจำวันที่ ${selectedDate} 🏸`);
+            downloadCanvasAsImage(canvas, `games-${selectedDate}.png`);
         }).catch(err => {
             console.error(err); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปได้', 'error');
         });
@@ -1008,20 +978,37 @@ function exportSummaryImg() {
     waitForImages(el).then(() => {
         html2canvas(el, {scale: 2, useCORS: true, backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff', scrollX: 0, scrollY: -window.scrollY, windowWidth: document.documentElement.offsetWidth}).then(canvas => {
             Swal.close();
-            shareOrDownloadCanvas(canvas, `summary-${selectedDate}.png`, 'สรุปยอดรายวัน', `สรุปค่าใช้จ่ายแบดมินตัน ประจำวันที่ ${selectedDate} 🏸\nรบกวนตรวจสอบยอดด้วยครับ/ค่ะ 🙏`);
+            downloadCanvasAsImage(canvas, `summary-${selectedDate}.png`);
         }).catch(err => {
             console.error(err); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปได้', 'error');
         });
     });
 }
+
 function exportAccountImg() {
     const el = document.getElementById('accountExportArea');
+    const paidContainer = document.getElementById('paid-section-container');
+    const dateDisplay = document.getElementById('account-export-date');
+
+    // ซ่อนคนจ่ายครบ และแสดงวันที่ ก่อนถ่ายรูป
+    if (paidContainer) paidContainer.style.display = 'none';
+    if (dateDisplay) {
+        dateDisplay.innerText = `สรุปยอด ณ วันที่: ${getTodayString()}`;
+        dateDisplay.classList.remove('hidden');
+    }
+
     Swal.fire({title: 'กำลังสร้างรูป...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
     waitForImages(el).then(() => {
         html2canvas(el, {scale: 2, useCORS: true, backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff', scrollX: 0, scrollY: -window.scrollY, windowWidth: document.documentElement.offsetWidth}).then(canvas => {
             Swal.close();
-            shareOrDownloadCanvas(canvas, `account-${getTodayString()}.png`, 'สรุปบัญชีรวม', `สรุปยอดรวมบัญชีแบดมินตัน ณ วันที่ ${getTodayString()} 🏸\nรบกวนตรวจสอบด้วยครับ/ค่ะ 🙏`);
+            // คืนค่าการแสดงผลกลับมาหลังถ่ายเสร็จ
+            if (paidContainer) paidContainer.style.display = 'block';
+            if (dateDisplay) dateDisplay.classList.add('hidden');
+            
+            downloadCanvasAsImage(canvas, `account-${getTodayString()}.png`);
         }).catch(err => {
+            if (paidContainer) paidContainer.style.display = 'block';
+            if (dateDisplay) dateDisplay.classList.add('hidden');
             console.error(err); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปได้', 'error');
         });
     });

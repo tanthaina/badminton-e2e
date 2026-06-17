@@ -17,3 +17,6 @@ jobs:
         with:
           start: npx http-server -p 5500 -c-1
           wait-on: 'http://127.0.0.1:5500'
+          browser: chrome
+        env:
+          CYPRESS_BASE_URL: http://127.0.0.1:5500
