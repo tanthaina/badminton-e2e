@@ -246,6 +246,7 @@
                 <div class="section-icon bg-teal-100 text-teal-600"><i class="fas fa-receipt"></i></div><h2 class="text-teal-700">สรุปค่าใช้จ่ายประจำวัน</h2>
                 <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                     <button id="btnExportSummaryImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-square"></i>แชร์/บันทึกรูป</button>
+                    <button id="btnDailyGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i class="fas fa-qrcode"></i> QR จ่ายกลุ่ม</button>
                     <button id="btnConfirmSave" class="btn btn-primary btn-sm"><i class="fas fa-lock"></i>ปิดยอดวันนี้</button>
                     <button id="btnClearToday" class="btn btn-danger btn-sm"><i class="fas fa-eraser"></i>ล้างวันนี้</button>
                 </div>
@@ -1051,6 +1052,51 @@ function showDailyQR(name, amount) {
     });
 }
 
+function openDailyGroupBillModal() {
+    const dd = getCurrentDailyData();
+    let details = {};
+    dd.players.forEach(p => details[p.name] = { cost: 0, p: p.paid });
+    dd.games.forEach(game => { 
+        let costPerPlayer = (game.shuttlecocksUsed * (game.shuttlecockPrice || 0)) / 4; 
+        game.players.forEach(playerName => {
+            if (!details[playerName]) details[playerName] = { cost: 0, p: false };
+            details[playerName].cost += costPerPlayer; 
+        }); 
+    });
+
+    // คัดเฉพาะคนที่มียอดต้องจ่ายในวันนี้ และยังไม่ได้จ่าย
+    const unpaid = Object.keys(details)
+        .map(name => ({ n: name, cost: details[name].cost, p: details[name].p }))
+        .filter(x => x.cost > TOLERANCE && !x.p)
+        .sort((a,b)=>a.n.localeCompare(b.n, 'th'));
+
+    if(unpaid.length < 2) return Swal.fire('ข้อมูลไม่พอ', 'ต้องมีผู้ค้างชำระของวันนี้อย่างน้อย 2 คนจึงจะรวมบิลได้', 'info');
+
+    let html = '<div class="text-left space-y-2 max-h-[50vh] overflow-y-auto p-2">';
+    unpaid.forEach((x) => {
+        html += `<label class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer transition-colors">
+            <input type="checkbox" class="w-5 h-5 daily-group-bill-cb accent-indigo-600 rounded" value="${escapeHtml(x.n)}" data-debt="${x.cost}">
+            <span class="flex-1 font-bold text-gray-800 dark:text-gray-200">${escapeHtml(x.n)}</span>
+            <span class="text-red-600 font-bold">฿${x.cost.toFixed(2)}</span>
+        </label>`;
+    });
+    html += '</div>';
+
+    Swal.fire({
+        title: 'เลือกรวมบิลกลุ่ม (ประจำวัน)',
+        html: html,
+        showCancelButton: true,
+        confirmButtonText: 'รวมบิล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#8b5cf6',
+        preConfirm: () => {
+            const selected = Array.from(document.querySelectorAll('.daily-group-bill-cb:checked'));
+            if(selected.length < 2) { Swal.showValidationMessage('กรุณาเลือกอย่างน้อย 2 คน'); return false; }
+            return selected.map(cb => ({ name: cb.value, debt: parseFloat(cb.dataset.debt) }));
+        }
+    }).then(res => { if(res.isConfirmed) showGroupBillResult(res.value, true); });
+}
+
 function showGlobalQR() {
     const ppId = state.settings.promptpayId;
     const ppName = state.settings.promptpayName ? `<div class="text-sm font-bold text-indigo-700 mt-1">${escapeHtml(state.settings.promptpayName)}</div>` : '';
@@ -1583,10 +1629,10 @@ function openGroupBillModal() {
             if(selected.length < 2) { Swal.showValidationMessage('กรุณาเลือกอย่างน้อย 2 คน'); return false; }
             return selected.map(cb => ({ name: cb.value, debt: parseFloat(cb.dataset.debt) }));
         }
-    }).then(res => { if(res.isConfirmed) showGroupBillResult(res.value); });
+    }).then(res => { if(res.isConfirmed) showGroupBillResult(res.value, false); });
 }
 
-function showGroupBillResult(members) {
+function showGroupBillResult(members, isDaily = false) {
     const totalAmount = members.reduce((sum, m) => sum + m.debt, 0);
     const namesList = members.map(m => m.name).join(', ');
     const ppId = state.settings.promptpayId;
@@ -1610,7 +1656,28 @@ function showGroupBillResult(members) {
         imageWidth: 220,
         imageHeight: 220,
         imageAlt: 'PromptPay QR',
-        confirmButtonText: 'ปิด'
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-check-circle"></i> บันทึกว่าจ่ายแล้ว',
+        cancelButtonText: 'ปิด',
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#64748b'
+    }).then(res => {
+        if (res.isConfirmed) {
+            if (isDaily) {
+                const dd = getCurrentDailyData();
+                members.forEach(m => {
+                    let p = dd.players.find(x => x.name === m.name);
+                    if (p) p.paid = true;
+                    else dd.players.push({name: m.name, paid: true, present: true});
+                });
+            } else {
+                members.forEach(m => {
+                    state.allPayments.push({ id: Date.now() + Math.random(), date: getTodayString(), name: m.name, amount: m.debt, isAutoDaily: false });
+                });
+            }
+            updateAndRender();
+            Swal.fire({icon: 'success', title: 'บันทึกชำระเงินเรียบร้อย', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+        }
     });
 }
 
@@ -1714,6 +1781,7 @@ function bindEvents() {
     $('btnConfirmSave').addEventListener('click', confirmSaveToAccount);
     $('btnExportGamesImg').addEventListener('click', exportGamesImg);
     $('btnExportSummaryImg').addEventListener('click', exportSummaryImg);
+    $('btnDailyGroupBill').addEventListener('click', openDailyGroupBillModal);
     $('btnExportAccountImg').addEventListener('click', exportAccountImg);
     $('btnAddDebt').addEventListener('click', () => {
         $('debt-name').value = ''; $('debt-amount').value = '';

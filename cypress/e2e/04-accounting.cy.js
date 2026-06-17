@@ -1,15 +1,29 @@
 describe('04 - Accounting & History', () => {
   it('ทดสอบการชำระเงินบางส่วน (Partial Payment) ในแท็บบัญชีรวม', () => {
-    cy.seedPlayers(['ก้อง', 'แทน', 'หมู', 'แมน']);
+    const players = ['ก้อง', 'แทน', 'หมู', 'แมน'];
+    // 1. ตั้งค่า State เริ่มต้น: ผู้เล่นทุกคนมีหนี้คนละ 10 บาท
+    cy.seedSessionState('partialPaymentSetup', {
+      masterPlayerList: players,
+      allTransactions: players.map((player, index) => ({
+        id: index + 1,
+        date: '2024-01-01',
+        name: player,
+        totalCost: 10,
+        isAutoDaily: false
+      }))
+    });
+
     cy.visit('/index.html');
-
-    cy.recordGame('ก้อง', 'แทน', 'หมู', 'แมน', '1, 2', '20');
-
-    cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div.border', 'ก้อง').should('contain.text', 'ค้าง 10.00');
 
+    // 2. ตรวจสอบว่า 'ก้อง' มีหนี้ 10 บาท และยอดรวมหนี้คือ 40 บาท
+    cy.contains('#unpaid-list-overall div.border', 'ก้อง').should('contain.text', 'ค้าง 10.00');
+    cy.get('#total-unpaid-overall').should('have.text', '฿40.00');
+
+    // 3. จ่ายเงินบางส่วน (จ่าย 4 บาท)
     cy.payDebt('ก้อง', '4');
+
+    // 4. ตรวจสอบว่า 'ก้อง' เหลือหนี้ 6 บาท และยอดรวมหนี้ลดลงเหลือ 36 บาท
     cy.contains('#unpaid-list-overall div.border', 'ก้อง').should('contain.text', 'ค้าง 6.00');
     cy.get('#total-unpaid-overall').should('have.text', '฿36.00');
   });
@@ -59,35 +73,66 @@ describe('04 - Accounting & History', () => {
   });
 
   it('ทดสอบระบบบัญชี: การจ่ายเงินเกินยอดหนี้จนเกิดเป็นเครดิต (Overpayment)', () => {
-    cy.seedPlayers(['A', 'B', 'C', 'D']);
-    cy.visit('/index.html');
+    // 1. ตั้งค่า State เริ่มต้น: ผู้เล่น A มีหนี้ 5 บาท
+    cy.seedSessionState('overpaymentSetup', {
+      masterPlayerList: ['A', 'B', 'C', 'D'],
+      allTransactions: [
+        { id: 1, date: '2024-01-01', name: 'A', totalCost: 5, isAutoDaily: false }
+      ]
+    });
 
-    // หาร 4 = คนละ 5 บาท
-    cy.recordGame('A', 'B', 'C', 'D', '1', '20');
-    
-    cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
+    cy.visit('/index.html');
     cy.get('button[data-tab="account"]').click();
-    
+
+    // 2. ตรวจสอบว่า A มีหนี้ 5 บาทจริง
+    cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 5.00');
+
+    // 3. จ่ายเงินเกินยอด (จ่าย 20)
     cy.payDebt('A', '20');
     
-    cy.get('#credit-list-overall').should('contain.text', 'A');
-    cy.get('#credit-list-overall').should('contain.text', 'เครดิต 15.00');
+    // 4. ตรวจสอบว่า A มีเครดิต 15 บาท
+    cy.contains('#credit-list-overall div.border', 'A').should('contain.text', 'เครดิต 15.00');
     cy.get('#total-credit-overall').should('have.text', '฿15.00');
+    cy.get('#unpaid-list-overall').should('not.contain.text', 'A');
   });
 
   it('ทดสอบการซิงก์ข้อมูลบัญชีอัตโนมัติ และตั้งหนี้มือเพิ่ม (Mixed Transactions)', () => {
-    cy.seedPlayers(['A', 'B', 'C', 'D']);
+    const players = ['A', 'B', 'C', 'D'];
+    const today = '2024-01-01';
+
+    // 1. ตั้งค่า State เริ่มต้น: มีเกม 1 เกม และผู้เล่น A จ่ายเงินแล้ว
+    cy.seedSessionState('mixedTxSetup', {
+      masterPlayerList: players,
+      dailyData: {
+        [today]: {
+          players: [
+            { name: 'A', paid: true, present: true },
+            { name: 'B', paid: false, present: true },
+            { name: 'C', paid: false, present: true },
+            { name: 'D', paid: false, present: true }
+          ],
+          games: [{
+            id: 1,
+            players: players,
+            shuttlecocksUsed: 1,
+            shuttlecockPrice: 40,
+            shuttlecockSpeeds: ['1']
+          }]
+        }
+      }
+    });
+
+    cy.mockTime(today + 'T12:00:00Z');
     cy.visit('/index.html');
 
-    cy.recordGame('A', 'B', 'C', 'D', '1', '40');
-
-    cy.contains('#summaryTableUnpaid tr', 'A').find('button').contains('จ่าย').click();
+    // 2. ไปที่หน้าบัญชีและตรวจสอบว่า State เริ่มต้นถูกต้อง (A จ่ายแล้ว, B, C, D ค้างคนละ 10 บาท)
     cy.get('button[data-tab="account"]').click();
-    
     cy.get('#paid-in-full-list-overall').should('contain.text', 'A');
     
+    // 3. เพิ่มหนี้ให้ A ด้วยตนเอง 50 บาท
     cy.addDebt('A', '50');
 
+    // 4. ตรวจสอบผลลัพธ์: A ต้องย้ายมาอยู่ฝั่งค้างชำระด้วยยอด 50 บาท และยอดรวมค้างชำระต้องเป็น 80 บาท (B:10 + C:10 + D:10 + A:50)
     cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 50.00');
     cy.get('#total-unpaid-overall').should('have.text', '฿80.00');
   });
@@ -214,15 +259,25 @@ describe('04 - Accounting & History', () => {
     cy.get('#btnDraftWarning').should('not.have.class', 'hidden').and('contain.text', '1 วัน'); // ปุ่มเตือนต้องกลับมาอีกครั้ง!
   });
 
-  it('ทดสอบฟีเจอร์ทวงแบบกลุ่ม (Group Bill)', () => {
-    cy.visit('/index.html');
-    cy.get('button[data-tab="settings"]').click();
-    cy.get('#settingPromptPay').clear().type('0812345678').blur();
+  it('ทดสอบฟีเจอร์ทวงแบบกลุ่ม (Group Bill) และบันทึกการจ่ายเงิน', () => {
+    // ใช้ cy.seedSessionState เพื่อจำลอง State ของหน้าบัญชีรวม
+    cy.seedSessionState('groupBillSetup', {
+      masterPlayerList: ['คู่รัก A', 'คู่รัก B', 'คนโสด C'],
+      allTransactions: [
+        { id: 1, date: '2024-01-01', name: 'คู่รัก A', totalCost: 100, isAutoDaily: false },
+        { id: 2, date: '2024-01-01', name: 'คู่รัก B', totalCost: 150, isAutoDaily: false },
+        { id: 3, date: '2024-01-01', name: 'คนโสด C', totalCost: 50, isAutoDaily: false }
+      ],
+      settings: {
+        promptpayId: '0812345678'
+      }
+    });
 
+    cy.visit('/index.html');
     cy.get('button[data-tab="account"]').click();
-    cy.addDebt('คู่รัก A', '100');
-    cy.addDebt('คู่รัก B', '150');
-    cy.addDebt('คนโสด C', '50');
+
+    // ตรวจสอบว่าทุกคนอยู่ในรายการค้างชำระก่อน
+    cy.get('#unpaid-list-overall').should('contain.text', 'คู่รัก A').and('contain.text', 'คู่รัก B').and('contain.text', 'คนโสด C');
 
     cy.get('#btnGroupBill').click();
     cy.get('.swal2-popup').should('contain.text', 'เลือกรวมบิลกลุ่ม');
@@ -230,28 +285,26 @@ describe('04 - Accounting & History', () => {
     // เลือกคน (คู่รัก A และ B)
     cy.get('input.group-bill-cb[value="คู่รัก A"]').check({ force: true });
     cy.get('input.group-bill-cb[value="คู่รัก B"]').check({ force: true });
-    
-    // จำลอง (Mock) Clipboard API ป้องกัน Error ในสภาพแวดล้อมทดสอบ
-    cy.window().then((win) => {
-      if (!win.navigator.clipboard) {
-        Object.defineProperty(win.navigator, 'clipboard', { value: { writeText: cy.stub().as('clipboardWrite').resolves() }, configurable: true });
-      } else {
-        cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite').resolves();
-      }
-    });
 
-    cy.get('.swal2-confirm').click();
+    cy.get('.swal2-confirm').contains('รวมบิล').click();
 
     // ตรวจสอบ Pop-up สรุปยอดรวม (QR)
     cy.get('.swal2-popup').should('contain.text', 'สแกนเพื่อชำระเงิน');
     cy.get('.swal2-popup').should('contain.text', 'สำหรับ: คู่รัก A, คู่รัก B');
     cy.get('.swal2-popup').should('contain.text', 'คู่รัก A').and('contain.text', '฿100.00');
     cy.get('.swal2-popup').should('contain.text', 'คู่รัก B').and('contain.text', '฿150.00');
-    cy.get('.swal2-popup').should('contain.text', 'ยอดรวมทั้งหมด');
-    cy.get('.swal2-popup').should('contain.text', '฿250.00'); // 100 + 150
+    cy.get('.swal2-popup').should('contain.text', 'ยอดรวมทั้งหมด: ฿250.00'); // 100 + 150
     cy.get('.swal2-image').should('have.attr', 'src').and('include', '250.00');
     
-    // กดปิด
-    cy.get('.swal2-confirm').contains('ปิด').click();
+    // กดปุ่ม "บันทึกว่าจ่ายแล้ว"
+    cy.get('.swal2-confirm').contains('บันทึกว่าจ่ายแล้ว').click();
+
+    // ตรวจสอบ Toast และการอัปเดต UI
+    cy.get('.swal2-toast').should('contain.text', 'บันทึกชำระเงินเรียบร้อย');
+
+    // คู่รัก A และ B ต้องหายไปจากรายการค้างชำระ และไปอยู่ในรายการจ่ายครบแล้ว
+    cy.get('#unpaid-list-overall').should('not.contain.text', 'คู่รัก A').and('not.contain.text', 'คู่รัก B');
+    cy.get('#unpaid-list-overall').should('contain.text', 'คนโสด C'); // คนโสด C ต้องยังอยู่
+    cy.get('#paid-in-full-list-overall').should('contain.text', 'คู่รัก A').and('contain.text', 'คู่รัก B');
   });
 });

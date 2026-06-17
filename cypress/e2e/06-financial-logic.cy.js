@@ -18,21 +18,35 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
   });
 
   it('ทดสอบ 2: เครดิตหักลบหนี้เกมใหม่โดยอัตโนมัติ (Credit Auto-Offset)', () => {
-    cy.seedPlayers(['สายเปย์', 'A', 'B', 'C']);
+    const players = ['สายเปย์', 'A', 'B', 'C'];
+    const today = '2024-01-01';
+
+    // 1. ตั้งค่า State เริ่มต้น: 'สายเปย์' มีหนี้ 50 บาท และจ่าย 100 บาท (เครดิต 50 บาท)
+    cy.seedSessionState('creditAutoOffsetSetup', {
+      masterPlayerList: players,
+      allTransactions: [{ id: 1, date: today, name: 'สายเปย์', totalCost: 50, isAutoDaily: false }],
+      allPayments: [{ id: 2, date: today, name: 'สายเปย์', amount: 100, isAutoDaily: false }],
+      dailyData: {
+        [today]: {
+          players: players.map(name => ({ name, paid: false, present: true })),
+          games: []
+        }
+      }
+    });
+
+    cy.mockTime(today + 'T12:00:00Z');
     cy.visit('/index.html');
 
     cy.get('button[data-tab="account"]').click();
     
-    // 1. ตั้งหนี้ 50 บาท แล้วจ่าย 100 บาท -> จะต้องมีเครดิต 50 บาท
-    cy.addDebt('สายเปย์', '50');
-    cy.payDebt('สายเปย์', '100');
+    // 2. ตรวจสอบว่ามีเครดิต 50 บาทจริงในหน้าบัญชี
     cy.contains('#credit-list-overall div.border', 'สายเปย์').should('contain.text', 'เครดิต 50.00');
 
-    // 2. กลับไปเล่นเกมใหม่ 1 เกม (มูลค่า 80 บาท หาร 4 = คนละ 20 บาท)
+    // 3. กลับไปเล่นเกมใหม่ 1 เกม (มูลค่า 80 บาท หาร 4 = คนละ 20 บาท)
     cy.get('button[data-tab="daily"]').click();
     cy.recordGame('สายเปย์', 'A', 'B', 'C', '1', '80');
 
-    // 3. ซิงก์บัญชี -> เครดิตเดิม 50 หักลบหนี้ใหม่ 20 จะต้องเหลือเครดิต 30 บาท และไม่ติดหนี้
+    // 4. ซิงก์บัญชี -> เครดิตเดิม 50 หักลบหนี้ใหม่ 20 จะต้องเหลือเครดิต 30 บาท และไม่ติดหนี้
     cy.get('#btnConfirmSave').click(); 
     cy.get('.swal2-confirm').should('be.visible').click();
     cy.get('button[data-tab="account"]').click();
@@ -41,37 +55,43 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
   });
 
   it('ทดสอบ 3: ปัญหาทศนิยมดิ้น จ่ายยิบย่อยจนครบต้องไม่มียอดค้าง (Floating Point Precision)', () => {
-    cy.seedPlayers(['คนคิดมาก']);
-    cy.visit('/index.html');
+    // 1. ตั้งค่า State เริ่มต้น: 'คนคิดมาก' มีหนี้ 10 บาท
+    cy.seedSessionState('floatingPointSetup', {
+      masterPlayerList: ['คนคิดมาก'],
+      allTransactions: [{ id: 1, date: '2024-01-01', name: 'คนคิดมาก', totalCost: 10, isAutoDaily: false }]
+    });
 
+    cy.visit('/index.html');
     cy.get('button[data-tab="account"]').click();
     
-    // ตั้งหนี้ 10 บาท
-    cy.addDebt('คนคิดมาก', '10');
+    cy.contains('#unpaid-list-overall div.border', 'คนคิดมาก').should('contain.text', 'ค้าง 10.00');
 
-    // ทยอยจ่ายทีละนิด: 3.33 -> 3.33 -> 3.34 (รวม 10.00 พอดี)
+    // 2. ทยอยจ่ายทีละนิด: 3.33 -> 3.33 -> 3.34 (รวม 10.00 พอดี)
     cy.payDebt('คนคิดมาก', '3.33');
     cy.payDebt('คนคิดมาก', '3.33');
     cy.payDebt('คนคิดมาก', '3.34');
 
-    // ยอดต้องตัดเป็น 0 ไปอยู่ช่องจ่ายครบแล้ว (ห้ามค้าง 0.00 หรือติดลบ)
+    // 3. ยอดต้องตัดเป็น 0 ไปอยู่ช่องจ่ายครบแล้ว (ห้ามค้าง 0.00 หรือติดลบ)
     cy.get('#unpaid-list-overall').should('not.contain.text', 'คนคิดมาก');
     cy.get('#paid-in-full-list-overall').should('contain.text', 'คนคิดมาก');
   });
 
   it('ทดสอบ 4: ชำระทั้งหมด (Pay All) ยอดรวมต้องเป็นศูนย์โดยไม่กระทบคนที่มีเครดิต', () => {
-    cy.seedPlayers(['ค้างเยอะ', 'มีบุญคุณ']);
+    cy.seedSessionState('payAllSetup', {
+      masterPlayerList: ['ค้างเยอะ', 'มีบุญคุณ'],
+      allTransactions: [
+        { id: 1, date: '2024-01-01', name: 'ค้างเยอะ', totalCost: 100, isAutoDaily: false },
+        { id: 2, date: '2024-01-01', name: 'มีบุญคุณ', totalCost: 20, isAutoDaily: false }
+      ],
+      allPayments: [
+        { id: 3, date: '2024-01-01', name: 'มีบุญคุณ', amount: 50, isAutoDaily: false }
+      ]
+    });
+
     cy.visit('/index.html');
 
-    // รันการคำนวณหลายๆ ธุรกรรม
     cy.get('button[data-tab="account"]').click();
     
-    // ตั้งหนี้ "ค้างเยอะ" 100 บาท
-    cy.addDebt('ค้างเยอะ', '100');
-    // ตั้งหนี้ "มีบุญคุณ" 20 และจ่าย 50 -> เครดิต 30
-    cy.addDebt('มีบุญคุณ', '20');
-    cy.payDebt('มีบุญคุณ', '50');
-
     // เช็คยอดก่อนกด (หนี้รวม 100 / เครดิตรวม 30)
     cy.get('#total-unpaid-overall').should('have.text', '฿100.00');
     cy.get('#total-credit-overall').should('have.text', '฿30.00');

@@ -114,3 +114,34 @@ Cypress.Commands.add('recordGame', (p1, p2, p3, p4, speeds, price) => {
   if (price !== undefined && price !== null) cy.get('#shuttlecockPrice').should('be.visible').and('be.enabled').clear().type(price, { delay: 0 });
   cy.get('#btnRecordGame').should('be.visible').and('be.enabled').click();
 });
+
+// --- Custom Commands สำหรับการ Mock เวลา ---
+Cypress.Commands.add('mockTime', (dateString = '2024-01-01T12:00:00Z') => {
+  const now = new Date(dateString).getTime();
+  cy.clock(now, ['Date']);
+});
+
+// --- Custom Command สำหรับแคช State ของแอปพลิเคชันลง LocalStorage ผ่าน cy.session ---
+Cypress.Commands.add('seedSessionState', (sessionName, stateOverrides = {}) => {
+  cy.session(sessionName, () => {
+    // กำหนดโครงสร้าง State เริ่มต้นเพื่อป้องกัน Error หากไม่ได้ส่งค่ามา
+    const defaultState = {
+      masterPlayerList: [],
+      allTransactions: [],
+      allPayments: [],
+      dailyData: {},
+      settings: { shuttlecockPrice: 0, promptpayId: '' }
+    };
+
+    // นำ State ที่ต้องการ มาเขียนทับ State เริ่มต้น
+    const finalState = {
+      ...defaultState,
+      ...stateOverrides,
+      // Merge ส่วนของ Settings ย่อยๆ ไม่ให้ของเดิมหาย
+      settings: { ...defaultState.settings, ...(stateOverrides.settings || {}) }
+    };
+
+    // ยัด State ลง localStorage โดยตรง
+    window.localStorage.setItem('badmintonAppState_v2', JSON.stringify(finalState));
+  });
+});
