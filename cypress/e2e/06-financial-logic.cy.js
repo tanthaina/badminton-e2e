@@ -14,7 +14,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.get('#btnConfirmSave').click(); 
     cy.get('.swal2-confirm').should('be.visible').click();
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div', 'A').should('contain.text', 'ค้าง 18.75');
+    cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 18.75');
   });
 
   it('ทดสอบ 2: เครดิตหักลบหนี้เกมใหม่โดยอัตโนมัติ (Credit Auto-Offset)', () => {
@@ -26,7 +26,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     // 1. ตั้งหนี้ 50 บาท แล้วจ่าย 100 บาท -> จะต้องมีเครดิต 50 บาท
     cy.addDebt('สายเปย์', '50');
     cy.payDebt('สายเปย์', '100');
-    cy.contains('#credit-list-overall div', 'สายเปย์').should('contain.text', 'เครดิต 50.00');
+    cy.contains('#credit-list-overall div.border', 'สายเปย์').should('contain.text', 'เครดิต 50.00');
 
     // 2. กลับไปเล่นเกมใหม่ 1 เกม (มูลค่า 80 บาท หาร 4 = คนละ 20 บาท)
     cy.get('button[data-tab="daily"]').click();
@@ -36,7 +36,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.get('#btnConfirmSave').click(); 
     cy.get('.swal2-confirm').should('be.visible').click();
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#credit-list-overall div', 'สายเปย์').should('contain.text', 'เครดิต 30.00');
+    cy.contains('#credit-list-overall div.border', 'สายเปย์').should('contain.text', 'เครดิต 30.00');
     cy.get('#unpaid-list-overall').should('not.contain.text', 'สายเปย์');
   });
 

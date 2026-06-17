@@ -93,7 +93,7 @@ describe('10 - Personal Receipt & PWA', () => {
 
     // บังคับให้เบราว์เซอร์จำลองว่าไม่รองรับ Web Share (เพื่อเข้าเงื่อนไขการดาวน์โหลดไฟล์แทน)
     cy.window().then((win) => {
-      win.navigator.canShare = false;
+      Object.defineProperty(win.navigator, 'canShare', { value: false, configurable: true });
     });
 
     // หาชื่อไฟล์ที่คาดหวัง เช่น account-YYYY-MM-DD.png

@@ -1095,17 +1095,62 @@ function renderAccount() {
     const searchQuery = (document.getElementById('searchAccountInput').value || '').toLowerCase();
     const sum = calculateOverallBalances();
     let un='', cr='', pf='', tu=0, tc=0;
-    Object.values(sum).forEach(x=>{
+    
+    let sortedPlayers = Object.values(sum).sort((a,b)=>a.n.localeCompare(b.n, 'th'));
+    
+    sortedPlayers.forEach(x => {
         if (searchQuery && !x.n.toLowerCase().includes(searchQuery)) return;
-                let b=x.d-x.p; if(b > TOLERANCE){ tu+=b; 
-                let qrBtn = state.settings.promptpayId ? `<button onclick="showAccountQR('${escapeHtml(x.n)}', ${b})" class="btn btn-sm btn-indigo shrink-0" style="padding:4px 8px;" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
-                un+=`<div class="p-2 border rounded flex flex-wrap justify-between items-center gap-2"><span class="font-semibold break-all">${escapeHtml(x.n)}</span><div class="flex gap-1 items-center ml-auto"><span class="text-red-600 font-bold mr-2 whitespace-nowrap">ค้าง ${b.toFixed(2)}</span>${qrBtn}<button class="btn btn-sm shrink-0" style="background:#0ea5e9;color:white;padding:4px 8px;" onclick="generatePersonalSlip('${escapeHtml(x.n)}', ${b})" title="แชร์/บันทึกใบเสร็จ"><i class="fas fa-file-invoice-dollar"></i></button><button class="btn btn-sm shrink-0" style="background:#00b900;color:white;padding:4px 8px;" onclick="sendPersonalLineReminder('${escapeHtml(x.n)}', ${b})" title="คัดลอกข้อความ LINE"><i class="fab fa-line"></i></button><button class="btn btn-sm btn-success shrink-0" onclick="openPaymentModal('${escapeHtml(x.n)}')">จ่าย</button></div></div>`; }
-        else if(b < -TOLERANCE){ tc-=b; cr+=`<div class="p-2 border rounded flex flex-wrap justify-between items-center gap-2"><span class="font-semibold break-all">${escapeHtml(x.n)}</span><span class="text-blue-600 font-bold ml-auto whitespace-nowrap">เครดิต ${(-b).toFixed(2)}</span></div>`; }
-        else { pf+=`<div class="p-2 border rounded flex flex-wrap justify-between items-center gap-2"><span class="font-semibold break-all">${escapeHtml(x.n)}</span><span class="text-green-600 font-bold ml-auto whitespace-nowrap">ไม่มีค้างชำระ</span></div>`; }
+        
+        let b = x.d - x.p; 
+        let nameHtml = escapeHtml(x.n);
+        let displayChar = nameHtml.includes(': ') ? nameHtml.split(': ')[1].charAt(0) : nameHtml.charAt(0);
+        let avatarChar = displayChar.toUpperCase();
+        
+        if (b > TOLERANCE) { 
+            tu += b; 
+            let qrBtn = state.settings.promptpayId ? `<button onclick="showAccountQR('${nameHtml}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-400 transition-colors shrink-0" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
+            un += `<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white dark:bg-slate-800 border-l-4 border-red-500 border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-3 transition-all hover:shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
+                    <div>
+                        <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight">${nameHtml}</div>
+                        <div class="text-red-500 font-bold text-xs mt-0.5">ค้าง ${b.toFixed(2)}</div>
+                    </div>
+                </div>
+                <div class="flex gap-1.5 w-full sm:w-auto justify-end">
+                    ${qrBtn}
+                    <button onclick="generatePersonalSlip('${nameHtml}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-teal-100 text-teal-600 hover:bg-teal-200 dark:bg-teal-900/40 dark:text-teal-400 transition-colors shrink-0" title="แชร์/บันทึกใบเสร็จ"><i class="fas fa-file-invoice-dollar"></i></button>
+                    <button onclick="sendPersonalLineReminder('${nameHtml}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-400 transition-colors shrink-0" title="คัดลอกข้อความ LINE"><i class="fab fa-line"></i></button>
+                    <button class="btn btn-sm btn-success px-3 sm:px-4 shadow-sm shrink-0 ml-1" onclick="openPaymentModal('${nameHtml}')"><i class="fas fa-hand-holding-usd"></i> จ่าย</button>
+                </div>
+            </div>`; 
+        }
+        else if (b < -TOLERANCE) { 
+            tc -= b; 
+            cr += `<div class="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border-l-4 border-blue-500 border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-2 transition-all hover:shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
+                    <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight">${nameHtml}</div>
+                </div>
+                <span class="text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full text-xs whitespace-nowrap">เครดิต ${(-b).toFixed(2)}</span>
+            </div>`; 
+        }
+        else { 
+            pf += `<div class="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border-l-4 border-green-500 border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-2 opacity-75 hover:opacity-100 transition-all">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
+                    <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight">${nameHtml}</div>
+                </div>
+                <span class="text-green-600 font-bold text-xs whitespace-nowrap"><i class="fas fa-check-circle mr-1"></i>ไม่มีค้างชำระ</span>
+            </div>`; 
+        }
     });
-    document.getElementById('unpaid-list-overall').innerHTML=un; document.getElementById('credit-list-overall').innerHTML=cr;
-    document.getElementById('paid-in-full-list-overall').innerHTML=pf;
-    document.getElementById('total-unpaid-overall').innerText='฿'+tu.toFixed(2); document.getElementById('total-credit-overall').innerText='฿'+tc.toFixed(2);
+    
+    document.getElementById('unpaid-list-overall').innerHTML = un || '<div class="text-sm text-gray-400 col-span-full text-center py-6 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">ไม่มีผู้ค้างชำระ 🎉</div>'; 
+    document.getElementById('credit-list-overall').innerHTML = cr || '<div class="text-sm text-gray-400 col-span-full text-center py-6 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">ไม่มีผู้มีเครดิต</div>';
+    document.getElementById('paid-in-full-list-overall').innerHTML = pf || '<div class="text-sm text-gray-400 col-span-full text-center py-6 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">ไม่มีผู้ที่ชำระครบแล้ว</div>';
+    document.getElementById('total-unpaid-overall').innerText = '฿' + tu.toFixed(2); 
+    document.getElementById('total-credit-overall').innerText = '฿' + tc.toFixed(2);
 }
 
 function generatePersonalSlip(name, amount) {
@@ -1307,7 +1352,8 @@ function handleShareFallback(blob, fileName) {
         cancelButtonText: '⬇️ โหลดลงเครื่อง'
     }).then((res) => {
         if (res.isDismissed && res.dismiss === Swal.DismissReason.cancel) {
-            const link = document.createElement('a'); link.download = fileName; link.href = url; link.click();
+            const link = document.createElement('a'); link.download = fileName; link.href = url;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
     });
 }

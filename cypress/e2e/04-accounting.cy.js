@@ -7,10 +7,10 @@ describe('04 - Accounting & History', () => {
 
     cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div', 'ก้อง').should('contain.text', 'ค้าง 10.00');
+    cy.contains('#unpaid-list-overall div.border', 'ก้อง').should('contain.text', 'ค้าง 10.00');
 
     cy.payDebt('ก้อง', '4');
-    cy.contains('#unpaid-list-overall div', 'ก้อง').should('contain.text', 'ค้าง 6.00');
+    cy.contains('#unpaid-list-overall div.border', 'ก้อง').should('contain.text', 'ค้าง 6.00');
     cy.get('#total-unpaid-overall').should('have.text', '฿36.00');
   });
 
@@ -88,7 +88,7 @@ describe('04 - Accounting & History', () => {
     
     cy.addDebt('A', '50');
 
-    cy.contains('#unpaid-list-overall div', 'A').should('contain.text', 'ค้าง 50.00');
+    cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 50.00');
     cy.get('#total-unpaid-overall').should('have.text', '฿80.00');
   });
 

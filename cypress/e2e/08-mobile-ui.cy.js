@@ -39,9 +39,9 @@ describe('08 - Mobile UI & Responsive Design', () => {
     cy.get('#debt-amount').type('100');
     cy.get('#btnSubmitDebt').click();
 
-    // ตรวจสอบว่ากล่องค้างชำระใช้ flex-wrap และชื่อถูกสั่งให้ตัดคำ (break-all)
-    cy.contains('#unpaid-list-overall div.border', longName).should('have.class', 'flex-wrap');
-    cy.contains('#unpaid-list-overall div.border', longName).find('span').first().should('have.class', 'break-all');
+    // ตรวจสอบว่ากล่องค้างชำระใช้ flex-col (สำหรับมือถือ) และชื่อถูกสั่งให้ตัดคำ (break-all)
+    cy.contains('#unpaid-list-overall div.border', longName).should('have.class', 'flex-col');
+    cy.contains('#unpaid-list-overall div.border', longName).find('div.break-all').should('be.visible');
     
     // ปุ่ม 'ทวงส่วนตัว (LINE)' และ 'จ่าย' ต้องยังอยู่ในหน้าจอ
     cy.contains('#unpaid-list-overall div.border', longName).find('button').contains('จ่าย').should('be.visible');
