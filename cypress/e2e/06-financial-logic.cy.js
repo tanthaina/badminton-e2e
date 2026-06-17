@@ -1,10 +1,9 @@
 describe('06 - Deep Financial Logic & Edge Cases', () => {
-  beforeEach(() => { cy.visit('/index.html'); });
-
   it('ทดสอบ 1: การคำนวณทศนิยม (Fractional Cost) 3 ลูก ราคา 25 บาท', () => {
+    cy.seedPlayers(['A', 'B', 'C', 'D']);
+    cy.visit('/index.html');
+
     // 3 ลูก * 25 บาท = 75 บาท -> หาร 4 คน = 18.75 บาท/คน
-    const players = ['A', 'B', 'C', 'D'];
-    players.forEach(p => { cy.addPlayer(p); });
     cy.recordGame('A', 'B', 'C', 'D', '1, 2, 3', '25');
 
     // ตรวจสอบตารางหน้าคิดเงินรายวัน
@@ -12,13 +11,16 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.get('#grandTotal').should('have.text', '75.00');
 
     // ซิงก์ลงบัญชีและตรวจสอบหน้าบัญชีรวม
-    cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
+    cy.get('#btnConfirmSave').click(); 
+    cy.get('.swal2-confirm').should('be.visible').click();
     cy.get('button[data-tab="account"]').click();
     cy.contains('#unpaid-list-overall div', 'A').should('contain.text', 'ค้าง 18.75');
   });
 
   it('ทดสอบ 2: เครดิตหักลบหนี้เกมใหม่โดยอัตโนมัติ (Credit Auto-Offset)', () => {
-    cy.addPlayer('สายเปย์');
+    cy.seedPlayers(['สายเปย์', 'A', 'B', 'C']);
+    cy.visit('/index.html');
+
     cy.get('button[data-tab="account"]').click();
     
     // 1. ตั้งหนี้ 50 บาท แล้วจ่าย 100 บาท -> จะต้องมีเครดิต 50 บาท
@@ -28,18 +30,20 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
 
     // 2. กลับไปเล่นเกมใหม่ 1 เกม (มูลค่า 80 บาท หาร 4 = คนละ 20 บาท)
     cy.get('button[data-tab="daily"]').click();
-    ['A', 'B', 'C'].forEach(p => cy.addPlayer(p));
     cy.recordGame('สายเปย์', 'A', 'B', 'C', '1', '80');
 
     // 3. ซิงก์บัญชี -> เครดิตเดิม 50 หักลบหนี้ใหม่ 20 จะต้องเหลือเครดิต 30 บาท และไม่ติดหนี้
-    cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
+    cy.get('#btnConfirmSave').click(); 
+    cy.get('.swal2-confirm').should('be.visible').click();
     cy.get('button[data-tab="account"]').click();
     cy.contains('#credit-list-overall div', 'สายเปย์').should('contain.text', 'เครดิต 30.00');
     cy.get('#unpaid-list-overall').should('not.contain.text', 'สายเปย์');
   });
 
   it('ทดสอบ 3: ปัญหาทศนิยมดิ้น จ่ายยิบย่อยจนครบต้องไม่มียอดค้าง (Floating Point Precision)', () => {
-    cy.addPlayer('คนคิดมาก');
+    cy.seedPlayers(['คนคิดมาก']);
+    cy.visit('/index.html');
+
     cy.get('button[data-tab="account"]').click();
     
     // ตั้งหนี้ 10 บาท
@@ -56,8 +60,10 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
   });
 
   it('ทดสอบ 4: ชำระทั้งหมด (Pay All) ยอดรวมต้องเป็นศูนย์โดยไม่กระทบคนที่มีเครดิต', () => {
+    cy.seedPlayers(['ค้างเยอะ', 'มีบุญคุณ']);
+    cy.visit('/index.html');
+
     // รันการคำนวณหลายๆ ธุรกรรม
-    cy.addPlayer('ค้างเยอะ'); cy.addPlayer('มีบุญคุณ');
     cy.get('button[data-tab="account"]').click();
     
     // ตั้งหนี้ "ค้างเยอะ" 100 บาท
@@ -71,7 +77,8 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.get('#total-credit-overall').should('have.text', '฿30.00');
 
     // กดปุ่มชำระทั้งหมด
-    cy.get('#btnPayAllUnpaid').click(); cy.get('.swal2-confirm').click();
+    cy.get('#btnPayAllUnpaid').click(); 
+    cy.get('.swal2-confirm').should('be.visible').click();
 
     // หนี้รวมต้องเป็น 0 แต่เครดิตของคนมีบุญคุณต้องยังอยู่ 30 บาทเท่าเดิม
     cy.get('#total-unpaid-overall').should('have.text', '฿0.00');

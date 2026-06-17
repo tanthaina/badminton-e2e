@@ -1,8 +1,7 @@
 describe('09 - Game Management (Move & Edit)', () => {
-  beforeEach(() => { cy.visit('/index.html'); });
-
   it('ทดสอบระบบเลื่อนลำดับเกม (Move Game Up/Down)', () => {
-    ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(p => cy.addPlayer(p));
+    cy.seedPlayers(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+    cy.visit('/index.html');
 
     // บันทึกเกมที่ 1
     cy.recordGame('A', 'B', 'C', 'D', '101', '20');
@@ -28,7 +27,8 @@ describe('09 - Game Management (Move & Edit)', () => {
   });
 
   it('ทดสอบระบบแก้ไขเกม (Edit Game)', () => {
-    ['เอก', 'บอย', 'แคท', 'ดิว', 'จอย'].forEach(p => cy.addPlayer(p));
+    cy.seedPlayers(['เอก', 'บอย', 'แคท', 'ดิว', 'จอย']);
+    cy.visit('/index.html');
     
     // บันทึกเกม
     cy.recordGame('เอก', 'บอย', 'แคท', 'ดิว', '55', '20');
@@ -57,7 +57,8 @@ describe('09 - Game Management (Move & Edit)', () => {
   });
 
   it('ทดสอบป้องกันบั๊กข้อมูลฟอร์มหายเวลากดแก้ไขเกม (Edit Form State Preservation)', () => {
-    ['หมู', 'หมา', 'กา', 'ไก่'].forEach(p => cy.addPlayer(p));
+    cy.seedPlayers(['หมู', 'หมา', 'กา', 'ไก่']);
+    cy.visit('/index.html');
 
     // บันทึกเกม
     cy.recordGame('หมู', 'หมา', 'กา', 'ไก่', '1, 2', '25');

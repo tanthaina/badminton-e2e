@@ -1,7 +1,6 @@
 describe('05 - Settings & Data Integrity', () => {
-  beforeEach(() => { cy.visit('/index.html'); });
-
   it('ทดสอบหน้าตั้งค่า: เปลี่ยนราคาลูกแบดเริ่มต้น (Default Price Sync)', () => {
+    cy.visit('/index.html');
     cy.get('button[data-tab="settings"]').click();
     cy.get('#tab-settings').should('not.have.class', 'hidden');
 
@@ -13,7 +12,9 @@ describe('05 - Settings & Data Integrity', () => {
   });
 
   it('ทดสอบหน้าตั้งค่า: การล้างข้อมูลทั้งหมด (Factory Reset)', () => {
-    cy.addPlayer('สมชาย');
+    cy.seedPlayers(['สมชาย']);
+    cy.visit('/index.html');
+
     cy.get('button[data-tab="settings"]').click();
     cy.get('#btnFactoryReset').click();
     cy.get('.swal2-confirm').click();
@@ -21,6 +22,7 @@ describe('05 - Settings & Data Integrity', () => {
   });
 
   it('ทดสอบ Data Integrity: ป้องกันหน้าเว็บพังเมื่อโหลดไฟล์ JSON ที่ชำรุด', () => {
+    cy.visit('/index.html');
     const invalidJson = "{ bad_format: true, missing_quotes_and_brackets }";
     cy.get('#loadFile').selectFile({ contents: Cypress.Buffer.from(invalidJson), fileName: 'bad-data.json', mimeType: 'application/json' }, { force: true });
     
@@ -29,6 +31,7 @@ describe('05 - Settings & Data Integrity', () => {
   });
 
   it('ทดสอบ Data Integrity: โหลดไฟล์ JSON เก่าที่มีการชำระเงินแบบแมนนวล (Legacy Data Migration)', () => {
+    cy.visit('/index.html');
     // จำลองโครงสร้างไฟล์ JSON จากเวอร์ชันเก่าที่ยังไม่มี property isAutoDaily
     const legacyJson = {
       masterPlayerList: ["สมปอง"],
@@ -49,6 +52,7 @@ describe('05 - Settings & Data Integrity', () => {
   });
 
   it('ทดสอบ Data Migration: โหลดไฟล์ JSON จริงที่มีข้อมูลซับซ้อน (2026-06-15) ยอดต้องไม่เบิ้ลและคำนวณถูก', () => {
+    cy.visit('/index.html');
     // โหลดไฟล์จาก Fixture (ต้องมีไฟล์ badminton-2026-06-15.json ใน cypress/fixtures/)
     cy.fixture('badminton-2026-06-15.json').then((fileContent) => {
       cy.get('#loadFile').selectFile({ contents: Cypress.Buffer.from(JSON.stringify(fileContent)), fileName: 'badminton-2026-06-15.json', mimeType: 'application/json' }, { force: true });
@@ -64,6 +68,7 @@ describe('05 - Settings & Data Integrity', () => {
   });
 
   it('ทดสอบ Data Cleansing: ล้างบิลผีและซ่อมแซมข้อมูลวันที่ (Undefined Date Bug)', () => {
+    cy.visit('/index.html');
     const corruptedJson = {
       masterPlayerList: ["เหยื่อบั๊ก"],
       settings: { shuttlecockPrice: 20 },
@@ -80,7 +85,8 @@ describe('05 - Settings & Data Integrity', () => {
   });
 
   it('ทดสอบการดาวน์โหลดไฟล์ข้อมูล (Export JSON Validation)', () => {
-    cy.addPlayer('สมหมาย');
+    cy.seedPlayers(['สมหมาย']);
+    cy.visit('/index.html');
     
     cy.get('#btnSave').click();
     cy.get('.swal2-popup').should('contain.text', 'บันทึกไฟล์สำเร็จ');

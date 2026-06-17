@@ -59,4 +59,31 @@ describe('11 - History Summary & CSV Export', () => {
     cy.get('#overall-summary-content').should('contain.text', 'น้องก้อง').and('not.contain.text', 'น้องแทน');
     cy.get('#history-total-cost').should('contain.text', '฿100.00');
   });
+
+  it('ทดสอบ 4: ฟีเจอร์สรุปยอดรวมรายเดือน (Monthly Report)', () => {
+    cy.visit('/index.html');
+    
+    // จำลองการตั้งหนี้และจ่ายเงินแบบข้ามเดือน โดยยัดลง LocalStorage โดยตรง
+    const mockState = {
+      masterPlayerList: ["สายเปย์"],
+      allTransactions: [
+        { id: 1, date: "2024-01-15", name: "สายเปย์", totalCost: 500, isAutoDaily: false },
+        { id: 2, date: "2024-02-10", name: "สายเปย์", totalCost: 300, isAutoDaily: false }
+      ],
+      allPayments: [
+        { id: 3, date: "2024-01-20", name: "สายเปย์", amount: 600, isAutoDaily: false }
+      ],
+      dailyData: {},
+      settings: { shuttlecockPrice: 20 }
+    };
+    cy.window().then((win) => { win.localStorage.setItem('badmintonAppState_v2', JSON.stringify(mockState)); });
+    cy.reload();
+
+    cy.get('button[data-tab="history"]').click();
+    
+    // ตรวจสอบกล่องสรุปรายเดือน
+    cy.get('#monthly-summary-container').should('not.have.class', 'hidden');
+    cy.get('#monthly-summary-container').should('contain.text', 'ม.ค. 2024').and('contain.text', '+฿100.00'); // จ่าย 600 - ใช้ 500
+    cy.get('#monthly-summary-container').should('contain.text', 'ก.พ. 2024').and('contain.text', '-฿300.00'); // ใช้ 300
+  });
 });

@@ -17,7 +17,8 @@ describe('12 - PWA Offline Support (Service Worker & Cache)', () => {
 
     // สั่งดึงไฟล์เพื่อให้ Service Worker เก็บลง Cache แน่นอน 100% (จำลองพฤติกรรมจริง)
     cy.window().then(win => win.fetch('/index.html').catch(()=>{}));
-    cy.wait(2000);
+    // รอจนกว่า Cache จะถูกสร้างขึ้นมาจริงๆ แทนการใช้เวลาตายตัว
+    cy.window().then(win => win.caches.has('badminton-pay-v3')).should('be.true');
 
     // ใช้คำสั่งระดับลึกของ Chrome (CDP) เพื่อจำลองการตัดเน็ต
     cy.log('** กำลังตัดอินเทอร์เน็ต (Go Offline) **');

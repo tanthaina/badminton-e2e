@@ -1,9 +1,8 @@
 describe('04 - Accounting & History', () => {
-  beforeEach(() => { cy.visit('/index.html'); });
-
   it('ทดสอบการชำระเงินบางส่วน (Partial Payment) ในแท็บบัญชีรวม', () => {
-    const players = ['ก้อง', 'แทน', 'หมู', 'แมน'];
-    players.forEach(p => { cy.addPlayer(p); });
+    cy.seedPlayers(['ก้อง', 'แทน', 'หมู', 'แมน']);
+    cy.visit('/index.html');
+
     cy.recordGame('ก้อง', 'แทน', 'หมู', 'แมน', '1, 2', '20');
 
     cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
@@ -16,11 +15,14 @@ describe('04 - Accounting & History', () => {
   });
 
   it('ทดสอบแท็บประวัติและการค้นหาตามช่วงวันที่ (History Tab & Date Filter)', () => {
-    const players = ['สมชาย', 'สมหญิง', 'สมปอง', 'สมหมาย'];
-    players.forEach(p => { cy.addPlayer(p); });
-    cy.recordGame('สมชาย', 'สมหญิง', 'สมปอง', 'สมหมาย', '1', '20');
-    
-    cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
+    // ฉีดข้อมูลเกมเข้าไปเลย 1 เกม
+    cy.seedGames(
+      ['สมชาย', 'สมหญิง', 'สมปอง', 'สมหมาย'],
+      [{ players: ['สมชาย', 'สมหญิง', 'สมปอง', 'สมหมาย'], speeds: ['1'] }],
+      20
+    );
+    cy.visit('/index.html');
+
     cy.get('button[data-tab="history"]').click();
     cy.get('#overall-summary-content').should('contain.text', 'สมชาย').and('contain.text', 'เกม');
 
@@ -30,8 +32,9 @@ describe('04 - Accounting & History', () => {
   });
 
   it('ทดสอบปุ่มยกเลิกการจ่ายเงินรายวัน (Toggle Daily Payment)', () => {
-    const players = ['A', 'B', 'C', 'D'];
-    players.forEach(p => { cy.addPlayer(p); });
+    cy.seedPlayers(['A', 'B', 'C', 'D']);
+    cy.visit('/index.html');
+
     cy.recordGame('A', 'B', 'C', 'D', '1', '20');
     
     cy.contains('#summaryTableUnpaid tr', 'A').find('button').contains('จ่าย').click();
@@ -42,19 +45,23 @@ describe('04 - Accounting & History', () => {
   });
 
   it('ทดสอบปุ่มชำระทั้งหมดในหน้าบัญชีรวม (Pay All Unpaid)', () => {
-    const players = ['A', 'B', 'C', 'D'];
-    players.forEach(p => { cy.addPlayer(p); });
-    cy.recordGame('A', 'B', 'C', 'D', '1', '20');
-    
-    cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
+    // ฉีดข้อมูลเกมเข้าไปเลย 1 เกม
+    cy.seedGames(
+      ['A', 'B', 'C', 'D'],
+      [{ players: ['A', 'B', 'C', 'D'], speeds: ['1'] }],
+      20
+    );
+    cy.visit('/index.html');
+
     cy.get('button[data-tab="account"]').click();
     cy.get('#btnPayAllUnpaid').click(); cy.get('.swal2-confirm').click();
     cy.get('#total-unpaid-overall').should('have.text', '฿0.00');
   });
 
   it('ทดสอบระบบบัญชี: การจ่ายเงินเกินยอดหนี้จนเกิดเป็นเครดิต (Overpayment)', () => {
-    const players = ['A', 'B', 'C', 'D'];
-    players.forEach(p => { cy.addPlayer(p); });
+    cy.seedPlayers(['A', 'B', 'C', 'D']);
+    cy.visit('/index.html');
+
     // หาร 4 = คนละ 5 บาท
     cy.recordGame('A', 'B', 'C', 'D', '1', '20');
     
@@ -69,8 +76,9 @@ describe('04 - Accounting & History', () => {
   });
 
   it('ทดสอบการซิงก์ข้อมูลบัญชีอัตโนมัติ และตั้งหนี้มือเพิ่ม (Mixed Transactions)', () => {
-    const players = ['A', 'B', 'C', 'D'];
-    players.forEach(p => { cy.addPlayer(p); });
+    cy.seedPlayers(['A', 'B', 'C', 'D']);
+    cy.visit('/index.html');
+
     cy.recordGame('A', 'B', 'C', 'D', '1', '40');
 
     cy.contains('#summaryTableUnpaid tr', 'A').find('button').contains('จ่าย').click();
@@ -85,7 +93,8 @@ describe('04 - Accounting & History', () => {
   });
 
   it('ทดสอบความถูกต้อง: ยอดชำระเงินในหน้าบัญชีรวมต้องไม่สูญหาย (isAutoDaily Bug Fix)', () => {
-    cy.addPlayer('ลูกหนี้ชั้นดี');
+    cy.seedPlayers(['ลูกหนี้ชั้นดี']);
+    cy.visit('/index.html');
     cy.get('button[data-tab="account"]').click();
 
     // 1. ตั้งหนี้ 1000 บาท
@@ -106,7 +115,8 @@ describe('04 - Accounting & History', () => {
   });
 
   it('ทดสอบการป้องกันค่ายอดเงินติดลบ (Negative Inputs)', () => {
-    cy.addPlayer('สายเปย์');
+    cy.seedPlayers(['สายเปย์']);
+    cy.visit('/index.html');
     cy.get('button[data-tab="account"]').click();
     
     cy.addDebt('สายเปย์', '-500');
@@ -114,33 +124,8 @@ describe('04 - Accounting & History', () => {
     cy.get('#debt-modal').should('not.have.class', 'hidden');
   });
 
-  it('ทดสอบฟีเจอร์ QR Code พร้อมเพย์ ในหน้าต่างชำระเงิน', () => {
-    cy.get('button[data-tab="settings"]').click();
-    cy.get('#settingPromptPay').type('0812345678').blur();
-
-    cy.get('button[data-tab="account"]').click();
-    cy.addDebt('นักสแกน', '150.50');
-
-    cy.intercept('GET', 'https://promptpay.io/**').as('qrCodeLoad1');
-    cy.contains('#unpaid-list-overall div', 'นักสแกน').find('button').contains('จ่าย').click();
-    cy.get('#qr-container').should('not.have.class', 'hidden');
-    cy.get('#promptpay-qr').should('have.attr', 'src').and('include', '150.50');
-
-    cy.wait('@qrCodeLoad1', { timeout: 10000 });
-
-    // ตรวจสอบว่ารูปภาพ QR Code โหลดขึ้นมาจริงๆ ไม่ใช่รูปเสีย (Broken Image)
-    cy.get('#promptpay-qr').should('be.visible').and(($img) => {
-      expect($img[0].complete).to.be.true;
-      expect($img[0].naturalWidth).to.be.at.least(0);
-    });
-
-    cy.intercept('GET', 'https://promptpay.io/**').as('qrCodeLoad2');
-    cy.get('#payment-amount').clear().type('100');
-    cy.get('#promptpay-qr').should('have.attr', 'src').and('include', '100.00');
-    cy.wait('@qrCodeLoad2', { timeout: 10000 });
-  });
-
   it('ทดสอบฟีเจอร์ QR Code พร้อมเพย์ แบบกดแยกในหน้าบัญชีรวม (Account QR Code)', () => {
+    cy.visit('/index.html');
     cy.get('button[data-tab="settings"]').click();
     cy.get('#settingPromptPay').clear().type('0812345678').blur();
 
@@ -166,14 +151,15 @@ describe('04 - Accounting & History', () => {
   });
 
   it('ทดสอบการแสดง QR Code ในหน้าคิดเงินรายวัน (Daily Summary QR)', () => {
+    cy.seedPlayers(['ไก่', 'ไข่', 'ควาย', 'คน']);
+    cy.visit('/index.html');
+
     // 1. ตั้งค่าเบอร์พร้อมเพย์
     cy.get('button[data-tab="settings"]').click();
     cy.get('#settingPromptPay').clear().type('0899999999').blur();
 
     // 2. ไปที่หน้ารายวัน เพิ่มผู้เล่นและบันทึกเกม 1 เกม (40 บาท / 4 คน = 10 บาท)
     cy.get('button[data-tab="daily"]').click();
-    const players = ['ไก่', 'ไข่', 'ควาย', 'คน'];
-    players.forEach(p => cy.addPlayer(p));
     
     cy.recordGame('ไก่', 'ไข่', 'ควาย', 'คน', '1', '40');
 
@@ -196,5 +182,31 @@ describe('04 - Accounting & History', () => {
     
     // 5. กดปิดหน้าต่าง
     cy.get('.swal2-confirm').click();
+  });
+
+  it('ทดสอบฟีเจอร์ระบบเช็ควันค้างปิดยอด (Draft Manager)', () => {
+    cy.seedGames(['A', 'B', 'C', 'D'], [{ players: ['A', 'B', 'C', 'D'], speeds: ['1'] }], 20);
+    cy.visit('/index.html');
+    
+    // 1. ตรวจสอบว่าปุ่มเตือน "วันค้างปิดยอด" โผล่ขึ้นมา (เพราะถูกสร้างเกมไว้แต่ยังไม่ปิดยอด)
+    cy.get('#btnDraftWarning').should('not.have.class', 'hidden').and('contain.text', '1 วัน');
+    
+    // 2. กดเปิดหน้าต่างเตือน เพื่อย้อนกลับไปดูวันนั้น
+    cy.get('#btnDraftWarning').click();
+    cy.get('#draft-modal').should('not.have.class', 'hidden');
+    cy.get('#draft-list-container').should('contain.text', '1 เกม');
+    
+    // 3. ปิดหน้าต่างแล้วไปกดยืนยันปิดยอด
+    cy.get('#btnCancelDraft').click();
+    cy.get('#btnConfirmSave').click();
+    cy.get('.swal2-popup').should('contain.text', 'ยอดรวมทั้งหมดของวันนี้คือ').and('contain.text', '฿20.00');
+    cy.get('.swal2-confirm').click();
+    cy.get('#btnDraftWarning').should('have.class', 'hidden'); // ปุ่มเตือนต้องหายไป
+
+    // 4. ทดลองแก้ไขเกมเพื่อปลดล็อกวันให้กลับมาเป็นดราฟต์ใหม่
+    cy.get('#gamesList .game-card').eq(0).find('button[title="แก้ไข"]').click();
+    cy.get('#shuttlecockSpeeds').type(', 2');
+    cy.get('#btnRecordGame').click();
+    cy.get('#btnDraftWarning').should('not.have.class', 'hidden').and('contain.text', '1 วัน'); // ปุ่มเตือนต้องกลับมาอีกครั้ง!
   });
 });

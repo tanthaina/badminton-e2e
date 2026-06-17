@@ -185,6 +185,7 @@
                             <input type="date" id="workingDate" class="form-control" style="width:auto;">
                         </div>
                         <div class="flex gap-2 items-center">
+                            <button id="btnDraftWarning" class="btn btn-sm btn-warning hidden animate-pulse" title="มีวันที่ยังไม่ได้ปิดยอด"><i class="fas fa-exclamation-triangle"></i><span class="hidden sm:inline" id="draftWarningCount"></span></button>
                             <button id="btnSave" class="btn btn-success btn-sm"><i class="fas fa-save"></i><span class="hidden sm:inline">บันทึกไฟล์</span></button>
                             <label for="loadFile" class="btn btn-indigo btn-sm cursor-pointer"><i class="fas fa-folder-open"></i><span class="hidden sm:inline">โหลดไฟล์</span></label>
                             <input type="file" id="loadFile" class="hidden" accept=".json">
@@ -245,7 +246,7 @@
                 <div class="section-icon bg-teal-100 text-teal-600"><i class="fas fa-receipt"></i></div><h2 class="text-teal-700">สรุปค่าใช้จ่ายประจำวัน</h2>
                 <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                     <button id="btnExportSummaryImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-square"></i>แชร์/บันทึกรูป</button>
-                    <button id="btnConfirmSave" class="btn btn-primary btn-sm"><i class="fas fa-check-circle"></i>บันทึกลงบัญชี</button>
+                    <button id="btnConfirmSave" class="btn btn-primary btn-sm"><i class="fas fa-lock"></i>ปิดยอดวันนี้</button>
                     <button id="btnClearToday" class="btn btn-danger btn-sm"><i class="fas fa-eraser"></i>ล้างวันนี้</button>
                 </div>
             </div>
@@ -328,6 +329,7 @@
                     <div class="bg-red-50 p-2 rounded-lg"><div class="text-red-700 font-bold text-lg" id="history-total-cost">฿0.00</div><div class="text-xs text-gray-500">ค่าใช้จ่ายรวม</div></div>
                     <div class="bg-green-50 p-2 rounded-lg"><div class="text-green-700 font-bold text-lg" id="history-total-paid">฿0.00</div><div class="text-xs text-gray-500">ชำระเงินรวม</div></div>
                 </div>
+                <div id="monthly-summary-container" class="mb-4 hidden space-y-2"></div>
                 <div id="overall-summary-content"></div>
             </div>
         </div>
@@ -438,12 +440,17 @@
     <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-weight: 700; font-size: 18px;">
         <span>ยอดชำระสุทธิ:</span><span style="color: #dc2626;" id="slip-total"></span>
     </div>
+    <div id="slip-promptpay" style="text-align: center; margin-top: 16px; display: none; padding-top: 16px; border-top: 2px dashed #e2e8f0;">
+        <div style="font-size: 14px; color: #475569;">สแกน QR หรือโอนพร้อมเพย์</div>
+        <div style="font-size: 16px; font-weight: 700; color: #1e293b;" id="slip-promptpay-number"></div>
+    </div>
     <div style="text-align: center; margin-top: 24px; font-size: 12px; color: #cbd5e1;">สร้างโดยโปรแกรมคำนวณค่าลูกแบดมินตัน</div>
 </div>
 
-<div id="payment-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-green-700">ชำระเงิน</h3><button class="btn-ghost" id="btnClosePayment"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-3"><p id="payment-name" class="font-bold mb-2"></p><input type="hidden" id="payment-hidden-name"><input type="number" id="payment-amount" class="form-control text-lg" placeholder="0.00"><div id="qr-container" class="hidden text-center mt-4"><img id="promptpay-qr" src="" crossorigin="anonymous" alt="PromptPay QR Code" class="mx-auto border p-2 bg-white rounded-lg shadow-sm"><p class="text-xs text-gray-500 mt-2">สแกนเพื่อชำระเงิน</p></div></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelPayment">ยกเลิก</button><button class="btn btn-success" id="btnSubmitPayment">ยืนยัน</button></div></div></div>
+<div id="payment-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-green-700">ชำระเงิน</h3><button class="btn-ghost" id="btnClosePayment"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-3"><p id="payment-name" class="font-bold mb-2"></p><input type="hidden" id="payment-hidden-name"><input type="number" id="payment-amount" class="form-control text-lg" placeholder="0.00"></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelPayment">ยกเลิก</button><button class="btn btn-success" id="btnSubmitPayment">ยืนยัน</button></div></div></div>
 <div id="debt-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-red-700">เพิ่มยอดค้างชำระ (ตั้งหนี้)</h3><button class="btn-ghost" id="btnCloseDebt"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-3"><div><label class="form-label">ชื่อผู้เล่น</label><input type="text" id="debt-name" class="form-control" placeholder="พิมพ์ชื่อผู้เล่น..." list="debt-player-list"><datalist id="debt-player-list"></datalist></div><div><label class="form-label">จำนวนเงิน (บาท)</label><input type="number" id="debt-amount" class="form-control text-lg" placeholder="0.00"></div></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelDebt">ยกเลิก</button><button class="btn btn-danger" id="btnSubmitDebt">บันทึกหนี้</button></div></div></div>
 <div id="rename-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold">เปลี่ยนชื่อ</h3><button class="btn-ghost" id="btnCloseRename"><i class="fas fa-times"></i></button></div><div class="modal-body"><input type="hidden" id="rename-old-name"><input type="text" id="rename-new-name" class="form-control"></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelRename">ยกเลิก</button><button class="btn btn-primary" id="btnSubmitRename">ยืนยัน</button></div></div></div>
+<div id="draft-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-yellow-700"><i class="fas fa-exclamation-triangle"></i> วันที่ค้างปิดยอด</h3><button class="btn-ghost" id="btnCloseDraft"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-2" id="draft-list-container"></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelDraft">ปิด</button></div></div></div>
 
 <script>
 'use strict';
@@ -835,6 +842,7 @@ function recordGame() {
         dd.games.push({id:++_gameIdCounter, players:p, shuttlecocksUsed:sp.length, shuttlecockPrice:pr, shuttlecockSpeeds:sp});
         $('shuttlecockSpeeds').value=''; currentGameSelection={player1:'',player2:'',player3:'',player4:''}; 
     }
+    dd.isClosed = false;
     updateAndRender();
 }
 
@@ -880,12 +888,15 @@ function moveGame(idx, dir) {
     const dd = getCurrentDailyData();
     if (dir === -1 && idx > 0) { let t = dd.games[idx]; dd.games[idx] = dd.games[idx-1]; dd.games[idx-1] = t; } 
     else if (dir === 1 && idx < dd.games.length - 1) { let t = dd.games[idx]; dd.games[idx] = dd.games[idx+1]; dd.games[idx+1] = t; }
+    dd.isClosed = false;
     updateAndRender();
 }
 
 function deleteGame(idx) {
     const dd = getCurrentDailyData(); if (_editGameId === dd.games[idx].id) cancelEditGame();
-    dd.games.splice(idx, 1); updateAndRender();
+    dd.games.splice(idx, 1); 
+    dd.isClosed = false;
+    updateAndRender();
 }
 
 // --- RENDER LOGIC ---
@@ -903,7 +914,25 @@ function syncAllDailyToAccount() {
         dd.players.filter(p => p.paid).forEach(p => { if (det[p.name] && det[p.name].cost > TOLERANCE) state.allPayments.push({ id: Date.now() + Math.random(), date: date, name: p.name, amount: det[p.name].cost, isAutoDaily: true }); });
     });
 }
-function updateAndRender() { syncAllDailyToAccount(); saveToStorage(); renderDaily(); renderAccount(); renderHistory(); }
+
+function updateDraftWarning() {
+    let drafts = [];
+    Object.keys(state.dailyData).forEach(date => {
+        if (!date || date === 'undefined' || date === 'null') return;
+        const dd = state.dailyData[date];
+        if (dd.games && dd.games.length > 0 && !dd.isClosed) drafts.push(date);
+    });
+    const btn = $('btnDraftWarning');
+    if (!btn) return;
+    if (drafts.length > 0) {
+        btn.classList.remove('hidden');
+        $('draftWarningCount').innerText = ` ${drafts.length} วัน`;
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+function updateAndRender() { syncAllDailyToAccount(); saveToStorage(); renderDaily(); renderAccount(); renderHistory(); updateDraftWarning(); }
 function switchTab(name) { document.querySelectorAll('.tab-content').forEach(el=>el.classList.add('hidden')); document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active')); document.getElementById(`tab-${name}`).classList.remove('hidden'); document.querySelector(`[data-tab="${name}"]`).classList.add('active'); }
 
 function renderDaily() {
@@ -1080,6 +1109,29 @@ function renderAccount() {
 }
 
 function generatePersonalSlip(name, amount) {
+    const ppId = state.settings.promptpayId;
+    if (ppId) {
+        Swal.fire({
+            title: 'ตัวเลือกใบเสร็จ',
+            text: 'ต้องการแสดงเบอร์พร้อมเพย์ในใบเสร็จด้วยหรือไม่?',
+            icon: 'question',
+            showDenyButton: true,
+            showCancelButton: true,
+            confirmButtonText: '✅ แสดง',
+            denyButtonText: '❌ ซ่อน',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#10b981',
+            denyButtonColor: '#64748b'
+        }).then((result) => {
+            if (result.isConfirmed) _doGeneratePersonalSlip(name, amount, true);
+            else if (result.isDenied) _doGeneratePersonalSlip(name, amount, false);
+        });
+    } else {
+        _doGeneratePersonalSlip(name, amount, false);
+    }
+}
+
+function _doGeneratePersonalSlip(name, amount, showPP) {
     const slip = $('slip-template');
     $('slip-date').innerText = `วันที่ออกบิล: ${getTodayString()}`;
     $('slip-name').innerText = `คุณ: ${name}`;
@@ -1115,7 +1167,16 @@ function generatePersonalSlip(name, amount) {
     $('slip-details').innerHTML = detailsHTML || '<div style="font-size:14px; color:#94a3b8;">ยอดยกมา</div>';
 
     const ppId = state.settings.promptpayId;
-    const shareText = ppId ? `รบกวนชำระค่าแบดมินตันครับ/ค่ะ\nยอด ${amount.toFixed(2)} บาท 🏸\nโอนพร้อมเพย์: ${ppId}` : `รบกวนชำระค่าแบดมินตันครับ/ค่ะ ยอด ${amount.toFixed(2)} บาท 🏸`;
+    const ppContainer = $('slip-promptpay');
+    const ppNumberEl = $('slip-promptpay-number');
+    if (showPP && ppId && ppContainer && ppNumberEl) {
+        ppNumberEl.innerText = ppId;
+        ppContainer.style.display = 'block';
+    } else if (ppContainer) {
+        ppContainer.style.display = 'none';
+    }
+
+    const shareText = (showPP && ppId) ? `รบกวนชำระค่าแบดมินตันครับ/ค่ะ\nยอด ${amount.toFixed(2)} บาท 🏸\nโอนพร้อมเพย์: ${ppId}` : `รบกวนชำระค่าแบดมินตันครับ/ค่ะ ยอด ${amount.toFixed(2)} บาท 🏸`;
 
     Swal.fire({title: 'กำลังสร้างใบเสร็จ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
     // ลบการรอรูป QR Code ออก เพื่อให้สร้างใบเสร็จได้รวดเร็วทันใจ 100%
@@ -1157,12 +1218,31 @@ function renderHistory() {
     if(!h.length) { 
         $('overall-summary-content').innerHTML=`<div class="p-3 bg-gray-50 border rounded text-center text-gray-500">ไม่มีข้อมูลประวัติในช่วงเวลานี้</div>`; 
         sumBox.classList.add('hidden');
+        $('monthly-summary-container').classList.add('hidden');
         return; 
     }
     
     let tC=0, tP=0; h.forEach(x => { if(x.type==='เกม') tC+=x.totalCost; else tP+=x.amount; });
     $('history-total-cost').innerText = '฿' + tC.toFixed(2); $('history-total-paid').innerText = '฿' + tP.toFixed(2);
     sumBox.classList.remove('hidden');
+
+    let monthlyData = {};
+    h.forEach(x => {
+        let mKey = x.date.substring(0, 7);
+        if (!monthlyData[mKey]) monthlyData[mKey] = { cost: 0, paid: 0 };
+        if (x.type === 'เกม') monthlyData[mKey].cost += x.totalCost;
+        else monthlyData[mKey].paid += x.amount;
+    });
+    const mNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    $('monthly-summary-container').innerHTML = Object.keys(monthlyData).sort((a,b)=>b.localeCompare(a)).map(m => {
+        let [yy, mm] = m.split('-'); let d = monthlyData[m]; let net = d.paid - d.cost;
+        let netSign = net > 0 ? '+' : (net < 0 ? '-' : '');
+        return `<div class="bg-indigo-50 border border-indigo-100 p-2 rounded-lg flex flex-wrap justify-between items-center text-sm shadow-sm gap-2">
+            <div class="font-bold text-indigo-800"><i class="far fa-calendar-alt mr-1"></i> ${mNames[parseInt(mm,10)-1]} ${yy}</div>
+            <div class="flex gap-3 text-xs w-full sm:w-auto justify-between sm:justify-end"><div><span class="text-gray-500">ใช้:</span> <span class="font-bold text-red-600">฿${d.cost.toFixed(2)}</span></div><div><span class="text-gray-500">จ่าย:</span> <span class="font-bold text-green-600">฿${d.paid.toFixed(2)}</span></div><div class="border-l border-indigo-200 pl-3"><span class="text-gray-500">สุทธิ:</span> <span class="font-bold ${net>=0?'text-green-600':'text-red-500'}">${netSign}฿${Math.abs(net).toFixed(2)}</span></div></div>
+        </div>`;
+    }).join('');
+    $('monthly-summary-container').classList.remove('hidden');
 
     // จัดกลุ่มข้อมูลตามวันที่
     let grouped = {};
@@ -1307,19 +1387,60 @@ function exportHistoryCSV() {
 }
 
 function confirmSaveToAccount() {
-    try {
-        updateAndRender(); 
-        Swal.fire({
-            title: 'สำเร็จ',
-            text: 'ระบบทำการบันทึกและซิงก์ข้อมูลบัญชีให้เรียบร้อยแล้ว',
-            icon: 'success',
-            confirmButtonText: 'OK'
-        });
-    } catch (err) {
-        console.error("Error during save:", err);
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + err.message, 'error');
-    }
+    const dd = getCurrentDailyData();
+    if (!dd.games || dd.games.length === 0) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีเกมให้ปิดยอดในวันนี้', 'info');
+    
+    let grand = 0;
+    let details = {}; 
+    dd.players.forEach(p => details[p.name] = { cost: 0 });
+    dd.games.forEach(g => { 
+        let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; 
+        g.players.forEach(p => { if (!details[p]) details[p] = { cost: 0 }; details[p].cost += c; }); 
+    });
+    Object.values(details).forEach(d => { grand += d.cost; });
+
+    Swal.fire({
+        title: `ปิดยอดวันที่ ${selectedDate}`,
+        html: `ยอดรวมทั้งหมดของวันนี้คือ <span class="text-teal-600 font-bold text-xl">฿${grand.toFixed(2)}</span><br><br><span class="text-sm text-gray-500">ระบบซิงก์ข้อมูลบัญชีอัตโนมัติอยู่แล้ว<br>การปิดยอดเพื่อยืนยันว่าตรวจสอบครบถ้วน</span>`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-lock"></i> ยืนยันปิดยอด',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#1d4ed8'
+    }).then(r => {
+        if (r.isConfirmed) {
+            dd.isClosed = true;
+            updateAndRender();
+            Swal.fire({icon: 'success', title: 'ปิดยอดสำเร็จ', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+        }
+    });
 }
+
+function openDraftModal() {
+    let drafts = [];
+    Object.keys(state.dailyData).forEach(date => {
+        if (!date || date === 'undefined' || date === 'null') return;
+        const dd = state.dailyData[date];
+        if (dd.games && dd.games.length > 0 && !dd.isClosed) drafts.push(date);
+    });
+    drafts.sort((a, b) => b.localeCompare(a)); // เรียงจากล่าสุดไปเก่า
+    
+    let html = drafts.length === 0 ? '<div class="text-center text-gray-500 py-4">ไม่มีวันที่ค้างปิดยอด</div>' : drafts.map(d => {
+        let g = state.dailyData[d].games.length;
+        return `<div class="flex justify-between items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg"><div class="font-bold text-yellow-800">${d} <span class="text-xs font-normal text-yellow-600 ml-1">(${g} เกม)</span></div><button class="btn btn-sm btn-warning" onclick="jumpToDraft('${d}')">ตรวจสอบ</button></div>`;
+    }).join('');
+    
+    $('draft-list-container').innerHTML = html;
+    $('draft-modal').classList.remove('hidden');
+}
+
+function jumpToDraft(date) {
+    $('draft-modal').classList.add('hidden');
+    $('workingDate').value = date;
+    $('workingDate').dispatchEvent(new Event('change'));
+    switchTab('daily');
+}
+
 function exportAccountText() {
     const sum = calculateOverallBalances();
     let txt = 'สรุปยอดค้างชำระแบดมินตัน\n\n'; Object.values(sum).forEach(x=>{ let b=x.d-x.p; if(b>TOLERANCE) txt += `${x.n}: ${b.toFixed(2)} บาท\n`; });
@@ -1367,19 +1488,6 @@ function payAllUnpaid() {
 }
 
 // --- MODAL PAYMENT ---
-function updateQRCode(amount) {
-    const qrContainer = document.getElementById('qr-container');
-    const qrImg = document.getElementById('promptpay-qr');
-    const promptpayId = state.settings.promptpayId;
-
-    if (qrContainer && qrImg && promptpayId && amount > TOLERANCE) {
-        const formattedAmount = amount.toFixed(2);
-        qrImg.src = `https://promptpay.io/${promptpayId}/${formattedAmount}?t=${Date.now()}`;
-        qrContainer.classList.remove('hidden');
-    } else if (qrContainer) {
-        qrContainer.classList.add('hidden');
-    }
-}
 function openPaymentModal(name) {
     document.getElementById('payment-name').innerText = `ชำระเงินของ: ${name}`;
     document.getElementById('payment-hidden-name').value = name;
@@ -1388,7 +1496,6 @@ function openPaymentModal(name) {
     const paymentAmountInput = document.getElementById('payment-amount');
     paymentAmountInput.value = debt > TOLERANCE ? debt.toFixed(2) : '';
     document.getElementById('payment-modal').classList.remove('hidden');
-    updateQRCode(parseFloat(paymentAmountInput.value) || 0);
 }
 function submitPayment() {
     const name = document.getElementById('payment-hidden-name').value;
@@ -1444,6 +1551,9 @@ function bindEvents() {
     $('btnUseLastTeam').addEventListener('click',()=>{ const dd=getCurrentDailyData(); if(dd.games.length){ let p=dd.games[dd.games.length-1].players; ['player1','player2','player3','player4'].forEach((id,i)=>currentGameSelection[id]=p[i]); updateAndRender(); }});
     $('btnToggleTheme').addEventListener('click', toggleTheme);
 
+    $('btnDraftWarning').addEventListener('click', openDraftModal);
+    ['btnCloseDraft', 'btnCancelDraft'].forEach(id => $(id).addEventListener('click', () => $('draft-modal').classList.add('hidden')));
+
     $('workingDate').addEventListener('change', (e) => { 
         if(!e.target.value) { e.target.value = getTodayString(); } 
         selectedDate = e.target.value; 
@@ -1457,16 +1567,13 @@ function bindEvents() {
     ['btnCloseRename', 'btnCancelRename'].forEach(id => $(id).addEventListener('click', () => $('rename-modal').classList.add('hidden')));
     ['btnClosePayment', 'btnCancelPayment'].forEach(id => $(id).addEventListener('click', () => $('payment-modal').classList.add('hidden')));
     $('btnSubmitPayment').addEventListener('click', submitPayment);
-    $('payment-amount').addEventListener('input', debounce((e) => {
-        if (typeof updateQRCode === 'function') updateQRCode(parseFloat(e.target.value) || 0);
-    }, 300));
 
     $('btnClearTodayPlayers').addEventListener('click', () => { 
         if (getCurrentDailyData().games.length > 0) return Swal.fire('ล้างไม่ได้!', 'มีการบันทึกเกมไปแล้วในวันนี้<br>โปรดเคลียร์เกมออกก่อนเพื่อป้องกันยอดเงินสูญหาย', 'error');
         Swal.fire({title:'ล้างรายชื่อวันนี้?', icon:'warning', showCancelButton:true}).then(r=>{if(r.isConfirmed){ getCurrentDailyData().players=[]; updateAndRender(); }}) 
     });
     $('btnClearAllPlayers').addEventListener('click', () => { Swal.fire({title:'ล้างรายชื่อทั้งหมด?', text:'ล้างผู้เล่นในระบบทั้งหมด', icon:'warning', showCancelButton:true}).then(r=>{if(r.isConfirmed){ state.masterPlayerList=[]; Object.values(state.dailyData).forEach(d=>d.players=[]); updateAndRender(); }}) });
-    $('btnClearToday').addEventListener('click', () => { Swal.fire({title:'ล้างข้อมูลวันนี้?', text:'เกมและรายชื่อวันนี้จะหายไป', icon:'warning', showCancelButton:true}).then(r=>{if(r.isConfirmed){ state.dailyData[selectedDate]={players:[],games:[]}; updateAndRender(); }}) });
+    $('btnClearToday').addEventListener('click', () => { Swal.fire({title:'ล้างข้อมูลวันนี้?', text:'เกมและรายชื่อวันนี้จะหายไป', icon:'warning', showCancelButton:true}).then(r=>{if(r.isConfirmed){ state.dailyData[selectedDate]={players:[],games:[],isClosed:false}; updateAndRender(); }}) });
     $('btnConfirmSave').addEventListener('click', confirmSaveToAccount);
     $('btnExportGamesImg').addEventListener('click', exportGamesImg);
     $('btnExportSummaryImg').addEventListener('click', exportSummaryImg);
