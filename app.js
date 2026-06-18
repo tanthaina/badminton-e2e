@@ -4,6 +4,8 @@
 const firebaseConfig = {
     apiKey: "AIzaSyD7StlLRpU4VnQwTxujQp3ccah8HLIm1b4",
     authDomain: "badminton-6456a.firebaseapp.com",
+    databaseURL: "https://badminton-6456a-default-rtdb.asia-southeast1.firebasedatabase.app", // <--- วาง URL ที่คัดลอกมาตรงนี้ (อย่าลืมใส่ลูกน้ำต่อท้าย)
+    databaseURL: "https://badminton-6456a-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "badminton-6456a",
     storageBucket: "badminton-6456a.firebasestorage.app",
     messagingSenderId: "895370760778",
