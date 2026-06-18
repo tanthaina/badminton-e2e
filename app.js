@@ -120,7 +120,6 @@ function loadFromFile(event) {
         try {
             const loaded = JSON.parse(e.target.result);
             if (loaded && ('masterPlayerList' in loaded || 'dailyData' in loaded)) {
-                state = loaded; ensureIntegrity(); syncGameIdCounter(); document.getElementById('shuttlecockPrice').value = state.settings.shuttlecockPrice||0;
                 // เก็บค่าตั้งค่าของเครื่องปัจจุบันไว้ก่อน (ป้องกันไฟล์เก่ามาทับคีย์ API และพร้อมเพย์)
                 const currentSettings = state.settings ? JSON.parse(JSON.stringify(state.settings)) : {};
 
