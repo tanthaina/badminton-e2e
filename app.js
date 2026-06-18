@@ -1300,8 +1300,26 @@ function jumpToDraft(date) {
 
 function exportAccountText() {
     const sum = calculateOverallBalances();
-    let txt = 'สรุปยอดค้างชำระแบดมินตัน\n\n'; Object.values(sum).forEach(x=>{ let b=x.d-x.p; if(b>TOLERANCE) txt += `${x.n}: ${b.toFixed(2)} บาท\n`; });
-    if(txt === 'สรุปยอดค้างชำระแบดมินตัน\n\n') txt += 'ไม่มีผู้ค้างชำระ';
+    let txt = 'สรุปยอดบัญชีแบดมินตัน\n\n'; 
+    let unpaid = '';
+    let credit = '';
+    
+    Object.values(sum).sort((a,b)=>a.n.localeCompare(b.n, 'th')).forEach(x=>{ 
+        let b = x.d - x.p; 
+        if(b > TOLERANCE) unpaid += `- ${x.n}: ${b.toFixed(2)} บาท\n`; 
+        else if (b < -TOLERANCE) credit += `- ${x.n}: ${(-b).toFixed(2)} บาท\n`;
+    });
+    
+    if (unpaid) {
+        txt += '🔴 ค้างชำระ:\n' + unpaid;
+    } else {
+        txt += '🔴 ค้างชำระ: ไม่มี\n';
+    }
+    
+    if (credit) {
+        txt += '\n🟢 มีเครดิต:\n' + credit;
+    }
+    
     navigator.clipboard.writeText(txt).then(()=>Swal.fire({icon:'success', title:'คัดลอกลง Clipboard แล้ว', text:'สามารถนำไปวางใน LINE ได้เลย'}));
 }
 
