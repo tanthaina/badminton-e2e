@@ -9,7 +9,7 @@ const PLAYER_COLORS = [{bg:'#fee2e2',border:'#fca5a5',text:'#991b1b',tag:'#ef444
 let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = {player1:'',player2:'',player3:'',player4:''}; let _gameIdCounter = Date.now(); let _isDailyDirty = false;
 let currentPenMatchedBalls = []; let focusedFieldId = 'penP1'; let _editGameId = null;
 
-function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0 } }; }
+function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncApiKey: '', syncBinId: '' } }; }
 function getTodayString() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 function escapeHtml(str) { return String(str||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 function getPlayerColor(name) { if(!name) return PLAYER_COLORS[0]; const sum = [...String(name)].reduce((a,c)=>a+c.charCodeAt(0),0); return PLAYER_COLORS[sum%PLAYER_COLORS.length]; }
@@ -94,6 +94,151 @@ function loadFromFile(event) {
             } else throw new Error('Invalid');
         } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไฟล์ไม่ถูกต้องหรือชำรุด', 'error'); }
     }; reader.readAsText(file); event.target.value = null;
+}
+
+// --- CLOUD SYNC ---
+function setCloudSyncStatus(isSyncing) {
+    const pushIcon = document.querySelector('#btnPushCloud i');
+    const pullIcon = document.querySelector('#btnPullCloud i');
+    if (isSyncing) {
+        if (pushIcon) pushIcon.classList.add('fa-spin');
+        if (pullIcon) pullIcon.classList.add('fa-spin');
+    } else {
+        if (pushIcon) pushIcon.classList.remove('fa-spin');
+        if (pullIcon) pullIcon.classList.remove('fa-spin');
+    }
+}
+
+async function pushToCloud() {
+    const binId = state.settings.syncBinId;
+    const apiKey = state.settings.syncApiKey;
+    if (!binId || !apiKey) return Swal.fire('ข้อมูลไม่ครบ', 'โปรดตั้งค่า Bin ID และ API Key ในหน้าตั้งค่าก่อนครับ', 'warning');
+
+    setCloudSyncStatus(true);
+    Swal.fire({title: 'กำลังอัปโหลดขึ้นคลาวด์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+    try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+            body: JSON.stringify(state)
+        });
+        if (!response.ok) throw new Error('Sync Failed');
+        localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
+        Swal.fire({icon: 'success', title: 'ซิงก์ข้อมูลสำเร็จ!', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
+    } catch (err) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถซิงก์ขึ้นคลาวด์ได้ ตรวจสอบอินเทอร์เน็ตหรือตั้งค่า API ให้ถูกต้อง', 'error');
+    } finally {
+        setCloudSyncStatus(false);
+    }
+}
+
+async function pullFromCloud() {
+    const binId = state.settings.syncBinId;
+    const apiKey = state.settings.syncApiKey;
+    if (!binId || !apiKey) return Swal.fire('ข้อมูลไม่ครบ', 'โปรดตั้งค่า Bin ID และ API Key ในหน้าตั้งค่าก่อนครับ', 'warning');
+
+    setCloudSyncStatus(true);
+    Swal.fire({title: 'กำลังดึงข้อมูลจากคลาวด์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+    try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+            method: 'GET',
+            headers: { 'X-Master-Key': apiKey }
+        });
+        if (!response.ok) throw new Error('Pull Failed');
+        const data = await response.json();
+        if (data && data.record && ('masterPlayerList' in data.record || 'dailyData' in data.record)) {
+            state = data.record;
+            ensureIntegrity(); syncGameIdCounter(); saveToStorage();
+            localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
+            
+            $('shuttlecockPrice').value = state.settings.shuttlecockPrice||0;
+            $('settingDefaultPrice').value = state.settings.shuttlecockPrice||0;
+            $('settingSyncApiKey').value = state.settings.syncApiKey||'';
+            $('settingSyncBinId').value = state.settings.syncBinId||'';
+            
+            updateAndRender(); switchTab('daily');
+            Swal.fire({icon: 'success', title: 'ดึงข้อมูลสำเร็จ!', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
+        } else throw new Error('Invalid Data');
+    } catch (err) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบ Bin ID และอินเทอร์เน็ต', 'error');
+    } finally {
+        setCloudSyncStatus(false);
+    }
+}
+
+async function checkCloudUpdate() {
+    const binId = state.settings.syncBinId;
+    const apiKey = state.settings.syncApiKey;
+    if (!binId || !apiKey) return;
+
+    setCloudSyncStatus(true);
+    try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+            method: 'GET',
+            headers: { 'X-Master-Key': apiKey }
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data && data.record && ('masterPlayerList' in data.record || 'dailyData' in data.record)) {
+            const cloudStateStr = JSON.stringify(data.record);
+            const localStateStr = JSON.stringify(state);
+            if (cloudStateStr === localStateStr) return; // ข้อมูลตรงกันแล้ว ไม่ต้องทำอะไร
+
+            const lastSyncStr = localStorage.getItem(STORAGE_KEY + '_lastSync');
+            const isLocalEmpty = state.allTransactions.length === 0 && state.masterPlayerList.length === 0;
+            const isLocalClean = (localStateStr === lastSyncStr) || isLocalEmpty;
+
+            if (isLocalClean) {
+                // เครื่องคลีน (ไม่มีการแก้ไขค้าง) -> ดึงทับอัตโนมัติอย่างปลอดภัย
+                state = data.record; ensureIntegrity(); syncGameIdCounter(); saveToStorage();
+                localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
+                $('shuttlecockPrice').value = state.settings.shuttlecockPrice||0; $('settingDefaultPrice').value = state.settings.shuttlecockPrice||0;
+                $('settingSyncApiKey').value = state.settings.syncApiKey||''; $('settingSyncBinId').value = state.settings.syncBinId||'';
+                updateAndRender();
+                Swal.fire({icon: 'info', title: 'ซิงก์ข้อมูลอัตโนมัติ', text: 'ดึงข้อมูลล่าสุดจากคลาวด์เรียบร้อยแล้ว', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false});
+            } else {
+                // ป้องกัน Pop-up แจ้งเตือนคลาวด์ไปทับหน้าต่างที่ผู้ใช้กำลังใช้งานอยู่ (Modal Collision)
+                if (Swal.isVisible()) return;
+                
+                // เครื่องมีข้อมูลค้างอยู่ (Dirty) -> ถามผู้ใช้เพื่อป้องกันข้อมูลหาย
+                Swal.fire({
+                    title: 'พบข้อมูลใหม่บนคลาวด์', html: 'มีการอัปเดตจากอุปกรณ์อื่น แต่เครื่องนี้ก็มี <b>ข้อมูลที่ยังไม่ได้ซิงก์</b><br><br><span class="text-sm text-red-600">หากดึงข้อมูลใหม่ ข้อมูลที่ยังไม่ซิงก์บนเครื่องนี้จะหายไป</span>',
+                    icon: 'warning', showCancelButton: true, confirmButtonText: 'ดึงข้อมูลมาทับหน้าจอ', cancelButtonText: 'เก็บของเครื่องนี้ไว้', confirmButtonColor: '#0ea5e9', cancelButtonColor: '#64748b'
+                }).then((r) => {
+                    if (r.isConfirmed) {
+                        state = data.record; ensureIntegrity(); syncGameIdCounter(); saveToStorage(); localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
+                        $('shuttlecockPrice').value = state.settings.shuttlecockPrice||0; $('settingDefaultPrice').value = state.settings.shuttlecockPrice||0; $('settingSyncApiKey').value = state.settings.syncApiKey||''; $('settingSyncBinId').value = state.settings.syncBinId||'';
+                        updateAndRender(); Swal.fire({icon: 'success', title: 'ดึงข้อมูลสำเร็จ!', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
+                    }
+                });
+            }
+        }
+    } catch (err) { console.warn('Background sync check failed:', err); }
+    finally {
+        setCloudSyncStatus(false);
+    }
+}
+
+function updateNetworkStatus() {
+    const isOnline = navigator.onLine;
+    const btnPush = $('btnPushCloud');
+    const btnPull = $('btnPullCloud');
+    
+    if (btnPush && btnPull) {
+        btnPush.disabled = !isOnline;
+        btnPull.disabled = !isOnline;
+        if (isOnline) {
+            btnPush.style.background = '#0284c7';
+            btnPull.style.background = '#0ea5e9';
+            btnPush.title = 'ซิงก์ข้อมูลขึ้นคลาวด์';
+            btnPull.title = 'ดึงข้อมูลจากคลาวด์';
+        } else {
+            btnPush.style.background = '#94a3b8'; // สีเทา slate-400
+            btnPull.style.background = '#94a3b8';
+            btnPush.title = 'ออฟไลน์ (ไม่มีอินเทอร์เน็ต)';
+            btnPull.title = 'ออฟไลน์ (ไม่มีอินเทอร์เน็ต)';
+        }
+    }
 }
 
 // --- PLAYER MGMT ---
@@ -1302,6 +1447,8 @@ function bindEvents() {
     $('btnVoiceCommand').addEventListener('click',startVoiceCommand);
     $('btnSave').addEventListener('click',saveToFile);
     $('loadFile').addEventListener('change',loadFromFile);
+    $('btnPushCloud').addEventListener('click',pushToCloud);
+    $('btnPullCloud').addEventListener('click',pullFromCloud);
     $('btnUseLastTeam').addEventListener('click',()=>{ const dd=getCurrentDailyData(); if(dd.games.length){ let p=dd.games[dd.games.length-1].players; ['player1','player2','player3','player4'].forEach((id,i)=>currentGameSelection[id]=p[i]); updateAndRender(); }});
     $('btnToggleTheme').addEventListener('click', toggleTheme);
 
@@ -1389,6 +1536,20 @@ function bindEvents() {
         $('settingDefaultPrice').dispatchEvent(new Event('change'));
     });
 
+    ['settingSyncApiKey', 'settingSyncBinId'].forEach(id => {
+        const el = $(id);
+        if (el) {
+            el.addEventListener('change', (e) => {
+                const key = id === 'settingSyncApiKey' ? 'syncApiKey' : 'syncBinId';
+                state.settings[key] = e.target.value.trim();
+                saveToStorage(); Swal.fire({icon:'success', title:'บันทึกคีย์ซิงก์แล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+            });
+        }
+    });
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+
     $('btnForceUpdateApp').addEventListener('click', () => {
         if ('caches' in window) {
             caches.keys().then(names => {
@@ -1439,9 +1600,18 @@ document.addEventListener('DOMContentLoaded', () => {
     $('settingTubeAmount').value = state.settings.settingTubeAmount || 12;
     $('settingTargetProfit').value = state.settings.settingTargetProfit || 12;
     calcSellerPrice();
+    
+    const settingSyncApiKey = document.getElementById('settingSyncApiKey');
+    if (settingSyncApiKey) settingSyncApiKey.value = state.settings.syncApiKey||'';
+    const settingSyncBinId = document.getElementById('settingSyncBinId');
+    if (settingSyncBinId) settingSyncBinId.value = state.settings.syncBinId||'';
 
     updateAndRender(); 
     updateThemeIcon();
+    updateNetworkStatus();
+    
+    // รันการตรวจสอบคลาวด์เบื้องหลังอย่างเงียบๆ (หลังโหลดแอปเสร็จ 1.5 วินาที เพื่อให้แอปเปิดเร็ว)
+    setTimeout(checkCloudUpdate, 1500);
     
     // PWA Registration
     if ('serviceWorker' in navigator) { 
