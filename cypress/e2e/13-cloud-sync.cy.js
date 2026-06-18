@@ -162,4 +162,19 @@ describe('13 - Cloud Sync (Mock API)', () => {
     cy.wait('@slowPush');
     cy.get('#btnPushCloud i').should('not.have.class', 'fa-spin');
   });
+
+  it('ทดสอบ 8: Factory Reset ต้องไม่ทำให้ Default API Key หายไป', () => {
+    cy.visit('/index.html');
+    cy.get('button[data-tab="settings"]').click();
+
+    // แกล้งแก้ช่อง Bin ID เป็นค่าอื่น
+    cy.get('#settingSyncBinId').clear().type('custom_bin_id').blur();
+
+    // กด Factory Reset
+    cy.get('#btnFactoryReset').click();
+    cy.get('.swal2-confirm').contains('ล้างข้อมูลเลย').click();
+
+    // ตรวจสอบว่าค่าในช่องต้องเด้งกลับมาเป็น Default ที่เราฝังไว้ในโค้ด (6a335...) ทันที
+    cy.get('#settingSyncBinId').should('have.value', '6a33513dda38895dfed44a46');
+  });
 });

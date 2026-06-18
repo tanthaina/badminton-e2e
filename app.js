@@ -9,7 +9,7 @@ const PLAYER_COLORS = [{bg:'#fee2e2',border:'#fca5a5',text:'#991b1b',tag:'#ef444
 let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = {player1:'',player2:'',player3:'',player4:''}; let _gameIdCounter = Date.now(); let _isDailyDirty = false;
 let currentPenMatchedBalls = []; let focusedFieldId = 'penP1'; let _editGameId = null;
 
-function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncApiKey: '', syncBinId: '' } }; }
+function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncApiKey: '$2a$10$wtOEOimhCvPxvl6esVL9g.9RFKu3F1mgWAQ0rDBLEj38uNK7me7fW', syncBinId: '6a33513dda38895dfed44a46' } }; }
 function getTodayString() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 function escapeHtml(str) { return String(str||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 function getPlayerColor(name) { if(!name) return PLAYER_COLORS[0]; const sum = [...String(name)].reduce((a,c)=>a+c.charCodeAt(0),0); return PLAYER_COLORS[sum%PLAYER_COLORS.length]; }
@@ -18,7 +18,10 @@ function getCurrentDailyData() { if(!state.dailyData[selectedDate]) state.dailyD
 function saveToStorage() { try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.warn("Storage full"); } }
 function loadFromStorage() { try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) state = JSON.parse(raw)||createDefaultState(); }catch(e){ state = createDefaultState(); } }
 function ensureIntegrity() {
-    state.settings = state.settings || { shuttlecockPrice:0 }; state.masterPlayerList = (state.masterPlayerList||[]).filter(Boolean);
+    state.settings = state.settings || { shuttlecockPrice:0 };
+    if (!state.settings.syncApiKey) state.settings.syncApiKey = '$2a$10$wtOEOimhCvPxvl6esVL9g.9RFKu3F1mgWAQ0rDBLEj38uNK7me7fW';
+    if (!state.settings.syncBinId) state.settings.syncBinId = '6a33513dda38895dfed44a46';
+    state.masterPlayerList = (state.masterPlayerList||[]).filter(Boolean);
     state.allTransactions = state.allTransactions||[]; state.allPayments = state.allPayments||[]; state.dailyData = state.dailyData||{};
 
     // Data Cleansing: ล้างคีย์ 'undefined' หรือ 'null' ออกจากฐานข้อมูลเพื่อป้องกันบั๊กบิลผี
@@ -40,8 +43,8 @@ function ensureIntegrity() {
     let expectedDaily = {};
     Object.keys(state.dailyData).forEach(date => {
         const dd = state.dailyData[date]; if (!dd.players || !dd.games) return;
-        expectedDaily[date] = {}; dd.players.forEach(p => expectedDaily[date][p.name] = { cost: 0, paid: false });
-        dd.games.forEach(g => { let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; g.players.forEach(p => { if (!expectedDaily[date][p]) expectedDaily[date][p] = { cost: 0, paid: false }; expectedDaily[date][p].cost += c; }); });
+        expectedDaily[date] = {}; dd.players.forEach(p => expectedDaily[date][p.name] = { cost: (p.extraCost || 0), paid: false });
+        dd.games.forEach(g => { let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; g.players.forEach(p => { if (!expectedDaily[date][p]) { let px = dd.players.find(x=>x.name===p); expectedDaily[date][p] = { cost: (px ? px.extraCost || 0 : 0), paid: false }; } expectedDaily[date][p].cost += c; }); });
         dd.players.filter(p => p.paid).forEach(p => { if (expectedDaily[date][p.name]) expectedDaily[date][p.name].paid = true; });
     });
 
@@ -323,6 +326,32 @@ function togglePlayerPaidStatus(playerName) {
     player.paid = !player.paid; updateAndRender();
 }
 
+function addExtraCost(name) {
+    const dd = getCurrentDailyData();
+    let p = dd.players.find(x => x.name === name);
+    if (!p) { p = { name, paid: false, present: true, extraCost: 0 }; dd.players.push(p); }
+    let currentExtra = p.extraCost || 0;
+    
+    Swal.fire({
+        title: `ค่าจิปาถะ: ${name}`,
+        html: `
+            <div class="text-sm text-gray-500 mb-4">ระบุยอดรวมค่าใช้จ่ายอื่นๆ เช่น ค่าน้ำ ค่ากริป</div>
+            <input type="number" id="extraCostInput" class="swal2-input mt-0" value="${currentExtra > 0 ? currentExtra : ''}" placeholder="0.00" min="0" step="1">
+        `,
+        showCancelButton: true, showDenyButton: currentExtra > 0, denyButtonText: 'ล้างยอด', confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก',
+        preConfirm: () => {
+            const val = document.getElementById('extraCostInput').value;
+            if (val === '') return 0;
+            const num = parseFloat(val);
+            if (isNaN(num) || num < 0) { Swal.showValidationMessage('กรุณาใส่จำนวนเงินที่ถูกต้อง'); return false; }
+            return num;
+        }
+    }).then(r => {
+        if (r.isConfirmed) { p.extraCost = r.value; _isDailyDirty = true; updateAndRender(); Swal.fire({icon: 'success', title: 'อัปเดตยอดแล้ว', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); }
+        else if (r.isDenied) { p.extraCost = 0; _isDailyDirty = true; updateAndRender(); Swal.fire({icon: 'success', title: 'ล้างยอดแล้ว', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}); }
+    });
+}
+
 // --- S PEN SMART BOARD (V4) ---
 function openPenInputModal() {
     $('pen-input-modal').classList.remove('hidden');
@@ -598,8 +627,8 @@ function syncAllDailyToAccount() {
     Object.keys(state.dailyData).forEach(date => {
         if (!date || date === 'undefined' || date === 'null') return; // ดักจับไม่ให้คำนวณบิลผี
         const dd = state.dailyData[date]; if (!dd.players || !dd.games) return;
-        let det = {}; dd.players.forEach(p => det[p.name] = { cost: 0 });
-        dd.games.forEach(g => { let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; g.players.forEach(p => { if (!det[p]) det[p] = { cost: 0 }; det[p].cost += c; }); });
+        let det = {}; dd.players.forEach(p => det[p.name] = { cost: (p.extraCost || 0) });
+        dd.games.forEach(g => { let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; g.players.forEach(p => { if (!det[p]) { let px = dd.players.find(x=>x.name===p); det[p] = { cost: (px ? px.extraCost || 0 : 0) }; } det[p].cost += c; }); });
         Object.keys(det).forEach(name => { if (det[name].cost > TOLERANCE) state.allTransactions.push({ id: Date.now() + Math.random(), date: date, name: name, totalCost: det[name].cost, isAutoDaily: true }); });
         dd.players.filter(p => p.paid).forEach(p => { if (det[p.name] && det[p.name].cost > TOLERANCE) state.allPayments.push({ id: Date.now() + Math.random(), date: date, name: p.name, amount: det[p.name].cost, isAutoDaily: true }); });
     });
@@ -694,13 +723,14 @@ function renderDaily() {
 
     // 5. Cost Table
     let details = {}; 
-    dd.players.forEach(p => details[p.name] = { n: p.name, cost: 0, p: p.paid, games: 0, speeds: [] });
+    dd.players.forEach(p => details[p.name] = { n: p.name, cost: (p.extraCost || 0), extraCost: (p.extraCost || 0), p: p.paid, games: 0, speeds: [] });
     
     dd.games.forEach(game => { 
         let costPerPlayer = (game.shuttlecocksUsed * (game.shuttlecockPrice || 0)) / 4; 
         game.players.forEach(playerName => {
             if (!details[playerName]) {
-                details[playerName] = { n: playerName, cost: 0, p: false, games: 0, speeds: [] };
+                let px = dd.players.find(x=>x.name===playerName);
+                details[playerName] = { n: playerName, cost: (px ? px.extraCost || 0 : 0), extraCost: (px ? px.extraCost || 0 : 0), p: false, games: 0, speeds: [] };
             }
             details[playerName].cost += costPerPlayer; 
             details[playerName].games++; 
@@ -712,7 +742,12 @@ function renderDaily() {
         grand+=d.cost; let statusBadge = d.p ? '<span class="text-green-600 font-bold">จ่ายแล้ว</span>' : '<span class="text-red-600 font-bold">ค้างชำระ</span>'; 
         let spds = [...new Set(d.speeds)].join(', ') || '-';
         let qrBtn = (!d.p && state.settings.promptpayId && d.cost > TOLERANCE) ? `<button onclick="showDailyQR('${escapeHtml(d.n)}', ${d.cost})" class="btn btn-sm btn-indigo" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
-        let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${d.cost.toFixed(2)}</td><td class="text-center">${statusBadge}</td><td class="text-center"><div class="flex justify-center items-center gap-1"><button onclick="togglePlayerPaidStatus('${escapeHtml(d.n)}')" class="btn btn-sm ${d.p?'btn-secondary':'btn-warning'}">${d.p?'ยกเลิก':'จ่าย'}</button>${qrBtn}</div></td></tr>`;
+        let costDisplay = `<div class="flex items-center justify-center gap-1 cursor-pointer group" onclick="addExtraCost('${escapeHtml(d.n)}')" title="คลิกเพื่อบวกค่าจิปาถะ">
+            ${d.extraCost > 0 ? `<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1 rounded border border-indigo-100">+${d.extraCost.toFixed(0)}</span>` : ''}
+            <span>${d.cost.toFixed(2)}</span>
+            <i class="fas fa-plus-circle ${d.extraCost > 0 ? 'text-indigo-500' : 'text-gray-300 group-hover:text-indigo-500'} transition-colors"></i>
+        </div>`;
+        let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${costDisplay}</td><td class="text-center">${statusBadge}</td><td class="text-center"><div class="flex justify-center items-center gap-1"><button onclick="togglePlayerPaidStatus('${escapeHtml(d.n)}')" class="btn btn-sm ${d.p?'btn-secondary':'btn-warning'}">${d.p?'ยกเลิก':'จ่าย'}</button>${qrBtn}</div></td></tr>`;
         if(d.p) pd+=row; else un+=row;
     });
     document.getElementById('summaryTableUnpaid').innerHTML = un; document.getElementById('summaryTablePaid').innerHTML = pd; document.getElementById('grandTotal').innerText = grand.toFixed(2);
@@ -737,11 +772,11 @@ function showDailyQR(name, amount) {
 function openDailyGroupBillModal() {
     const dd = getCurrentDailyData();
     let details = {};
-    dd.players.forEach(p => details[p.name] = { cost: 0, p: p.paid });
+    dd.players.forEach(p => details[p.name] = { cost: (p.extraCost || 0), p: p.paid });
     dd.games.forEach(game => { 
         let costPerPlayer = (game.shuttlecocksUsed * (game.shuttlecockPrice || 0)) / 4; 
         game.players.forEach(playerName => {
-            if (!details[playerName]) details[playerName] = { cost: 0, p: false };
+            if (!details[playerName]) { let px = dd.players.find(x=>x.name===playerName); details[playerName] = { cost: (px ? px.extraCost || 0 : 0), p: false }; }
             details[playerName].cost += costPerPlayer; 
         }); 
     });
@@ -853,8 +888,8 @@ function renderAccount() {
             un += `<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white dark:bg-slate-800 border-l-4 border-red-500 border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-3 transition-all hover:shadow-md">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
-                    <div>
-                        <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight">${nameHtml}</div>
+                    <div class="cursor-pointer group" onclick="showDebtDetails('${nameHtml}', ${b})" title="คลิกเพื่อดูรายละเอียด">
+                        <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight group-hover:text-indigo-600 transition-colors">${nameHtml} <i class="fas fa-info-circle text-[10px] text-gray-400 group-hover:text-indigo-500 ml-1"></i></div>
                         <div class="text-red-500 font-bold text-xs mt-0.5">ค้าง ${b.toFixed(2)}</div>
                     </div>
                 </div>
@@ -892,6 +927,62 @@ function renderAccount() {
     document.getElementById('paid-in-full-list-overall').innerHTML = pf || '<div class="text-sm text-gray-400 col-span-full text-center py-6 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">ไม่มีผู้ที่ชำระครบแล้ว</div>';
     document.getElementById('total-unpaid-overall').innerText = '฿' + tu.toFixed(2); 
     document.getElementById('total-credit-overall').innerText = '฿' + tc.toFixed(2);
+}
+
+function showDebtDetails(name, amount) {
+    let txsByDate = {};
+    state.allTransactions.filter(t => t.name === name).forEach(t => {
+        if(!txsByDate[t.date]) txsByDate[t.date] = 0;
+        txsByDate[t.date] += t.totalCost;
+    });
+    let sortedDates = Object.keys(txsByDate).sort((a,b) => a.localeCompare(b));
+    let totalPaid = state.allPayments.filter(p => p.name === name).reduce((sum, p) => sum + p.amount, 0);
+    
+    let detailsHTML = '<div class="text-left space-y-3 mt-2">';
+    let hasDetails = false;
+    sortedDates.forEach(date => {
+        let cost = txsByDate[date];
+        if (totalPaid >= cost - TOLERANCE) { totalPaid -= cost; } 
+        else { 
+            let remain = cost - totalPaid; 
+            if(remain > TOLERANCE) {
+                hasDetails = true;
+                let shuttlesCount = 0, gamesCount = 0;
+                if (state.dailyData[date] && state.dailyData[date].games) {
+                    state.dailyData[date].games.forEach(g => {
+                        if (g.players.includes(name)) { shuttlesCount += (g.shuttlecocksUsed || 0); gamesCount++; }
+                    });
+                }
+                let pData = state.dailyData[date]?.players?.find(p => p.name === name);
+                let extra = pData ? (pData.extraCost || 0) : 0;
+                let extraStr = extra > 0 ? ` <span class="text-indigo-500 font-bold">+ จิปาถะ ${extra} บ.</span>` : '';
+                let ext = gamesCount > 0 ? `<div class="text-xs text-gray-500 mt-0.5">ตี ${gamesCount} เกม (ลูกรวมกลุ่ม ${shuttlesCount} ลูก)${extraStr}</div>` : (extra > 0 ? `<div class="text-xs text-gray-500 mt-0.5"><span class="text-indigo-500 font-bold">ค่าจิปาถะ ${extra} บ.</span></div>` : '');
+                
+                detailsHTML += `
+                <div class="flex justify-between items-start p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700">
+                    <div>
+                        <div class="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2"><div class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 w-6 h-6 rounded flex items-center justify-center"><i class="fas fa-calendar-day text-[10px]"></i></div> ${date}</div>
+                        ${ext}
+                    </div>
+                    <div class="font-bold text-red-500 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded">฿${remain.toFixed(2)}</div>
+                </div>`;
+            }
+            totalPaid = 0; 
+        }
+    });
+    detailsHTML += '</div>';
+
+    if (!hasDetails) detailsHTML = '<div class="text-gray-500 py-4 text-center">ไม่พบรายละเอียดที่มาของยอดค้าง<br><span class="text-xs">(อาจเป็นยอดยกมา หรือชำระครบแล้ว)</span></div>';
+
+    Swal.fire({
+        title: `รายละเอียดค้างชำระ`,
+        html: `<div class="text-lg font-bold text-indigo-700 dark:text-indigo-400 mb-1">${escapeHtml(name)}</div>
+               <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 border-b border-gray-200 dark:border-slate-700 pb-2">ยอดค้างรวม: <span class="text-red-600 font-bold text-lg ml-1">฿${amount.toFixed(2)}</span></div>
+               <div class="max-h-[50vh] overflow-y-auto px-1">${detailsHTML}</div>`,
+        showConfirmButton: true,
+        confirmButtonText: 'ปิดหน้าต่าง',
+        confirmButtonColor: '#64748b'
+    });
 }
 
 function generatePersonalSlip(name, amount) {
@@ -944,7 +1035,10 @@ function _doGeneratePersonalSlip(name, amount, showPP) {
                         if (g.players.includes(name)) { shuttlesCount += (g.shuttlecocksUsed || 0); gamesCount++; }
                     });
                 }
-                let ext = gamesCount > 0 ? `<div style="font-size:11px; color:#94a3b8; margin-top:2px;">ตี ${gamesCount} เกม (ลูกรวมกลุ่ม ${shuttlesCount} ลูก)</div>` : '';
+                let pData = state.dailyData[date]?.players?.find(p => p.name === name);
+                let extra = pData ? (pData.extraCost || 0) : 0;
+                let extraStr = extra > 0 ? ` + จิปาถะ ${extra} บ.` : '';
+                let ext = gamesCount > 0 ? `<div style="font-size:11px; color:#94a3b8; margin-top:2px;">ตี ${gamesCount} เกม (ลูกรวมกลุ่ม ${shuttlesCount} ลูก)${extraStr}</div>` : (extra > 0 ? `<div style="font-size:11px; color:#94a3b8; margin-top:2px;">ค่าจิปาถะ ${extra} บ.</div>` : '');
                 detailsHTML += `<div style="display:flex; justify-content:space-between; align-items:flex-start; font-size:14px; margin-bottom:8px;"><div><span style="color:#475569; font-weight:bold;">${date}</span>${ext}</div><span style="font-weight:bold;">฿${remain.toFixed(2)}</span></div>`;
             }
             totalPaid = 0; 
@@ -1183,10 +1277,10 @@ function confirmSaveToAccount() {
     
     let grand = 0;
     let details = {}; 
-    dd.players.forEach(p => details[p.name] = { cost: 0 });
+    dd.players.forEach(p => details[p.name] = { cost: (p.extraCost || 0) });
     dd.games.forEach(g => { 
         let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; 
-        g.players.forEach(p => { if (!details[p]) details[p] = { cost: 0 }; details[p].cost += c; }); 
+        g.players.forEach(p => { if (!details[p]) { let px = dd.players.find(x=>x.name===p); details[p] = { cost: (px ? px.extraCost || 0 : 0) }; } details[p].cost += c; }); 
     });
     Object.values(details).forEach(d => { grand += d.cost; });
 
@@ -1567,6 +1661,8 @@ function bindEvents() {
             if(r.isConfirmed){
                 state = createDefaultState(); updateAndRender();
                 document.getElementById('shuttlecockPrice').value = 0; document.getElementById('settingDefaultPrice').value = 0;
+                if (document.getElementById('settingSyncApiKey')) document.getElementById('settingSyncApiKey').value = state.settings.syncApiKey || '';
+                if (document.getElementById('settingSyncBinId')) document.getElementById('settingSyncBinId').value = state.settings.syncBinId || '';
                 Swal.fire('ล้างข้อมูลสำเร็จ', 'ระบบกลับคืนสู่ค่าเริ่มต้น', 'success');
             }
         });
