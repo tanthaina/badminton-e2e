@@ -8,6 +8,11 @@ describe('13 - Cloud Sync (Mock API)', () => {
   });
 
   it('ทดสอบ 1: แจ้งเตือนเมื่อกดซิงก์แต่ยังไม่ได้ตั้งค่า API Key และ Bin ID', () => {
+    // ล้างค่า Default ที่ฝังไว้ในโค้ดออกก่อน เพื่อทดสอบการแจ้งเตือน
+    cy.get('button[data-tab="settings"]').click();
+    cy.get('#settingSyncApiKey').clear().blur();
+    cy.get('#settingSyncBinId').clear().blur();
+
     // ตรวจสอบปุ่ม Push
     cy.get('#btnPushCloud').click();
     cy.get('.swal2-popup').should('contain.text', 'ข้อมูลไม่ครบ')
