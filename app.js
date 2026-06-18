@@ -623,7 +623,7 @@ function updateDraftWarning() {
     }
 }
 
-function updateAndRender() { syncAllDailyToAccount(); saveToStorage(); renderDaily(); renderAccount(); renderHistory(); updateDraftWarning(); }
+function updateAndRender(skipSave = false) { syncAllDailyToAccount(); if (skipSave !== true) saveToStorage(); renderDaily(); renderAccount(); renderHistory(); updateDraftWarning(); }
 function switchTab(name) { document.querySelectorAll('.tab-content').forEach(el=>el.classList.add('hidden')); document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active')); document.getElementById(`tab-${name}`).classList.remove('hidden'); document.querySelector(`[data-tab="${name}"]`).classList.add('active'); }
 
 function renderDaily() {
@@ -1668,7 +1668,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingSyncRoomId = document.getElementById('settingSyncRoomId');
     if (settingSyncRoomId) settingSyncRoomId.value = state.settings.syncRoomId||'';
 
-    updateAndRender(); 
+    updateAndRender(true); 
     updateThemeIcon();
     updateNetworkStatus();
     
