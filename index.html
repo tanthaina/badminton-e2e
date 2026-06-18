@@ -19,6 +19,11 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -46,8 +51,6 @@
                             <button id="btnSave" class="btn btn-success btn-sm"><i class="fas fa-save"></i><span class="hidden sm:inline">บันทึกไฟล์</span></button>
                             <label for="loadFile" class="btn btn-indigo btn-sm cursor-pointer"><i class="fas fa-folder-open"></i><span class="hidden sm:inline">โหลดไฟล์</span></label>
                             <input type="file" id="loadFile" class="hidden" accept=".json">
-                            <button id="btnPushCloud" class="btn btn-sm shadow-sm" style="background:#0284c7;color:white;" title="ซิงก์ข้อมูลขึ้นคลาวด์"><i class="fas fa-cloud-upload-alt"></i></button>
-                            <button id="btnPullCloud" class="btn btn-sm shadow-sm" style="background:#0ea5e9;color:white;" title="ดึงข้อมูลจากคลาวด์"><i class="fas fa-cloud-download-alt"></i></button>
                             <button id="btnToggleTheme" class="btn btn-ghost text-xl px-2" title="สลับโหมดมืด/สว่าง"></button>
                         </div>
                     </div>
@@ -234,12 +237,12 @@
                 </div>
                 <hr class="border-gray-200">
                 <div>
-                    <h3 class="font-bold text-sky-600 mb-3"><i class="fas fa-cloud"></i> ระบบคลาวด์ซิงก์ (Cloud Sync)</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-                        <div><label class="form-label">API Key (X-Master-Key)</label><input type="password" id="settingSyncApiKey" class="form-control" placeholder="เช่น $2a$10$..."></div>
-                        <div><label class="form-label">Bin ID</label><input type="text" id="settingSyncBinId" class="form-control" placeholder="เช่น 65a12345..."></div>
+                    <h3 class="font-bold text-sky-600 mb-3"><i class="fas fa-bolt"></i> ซิงก์ข้อมูลเรียลไทม์ (Firebase)</h3>
+                    <div>
+                        <label class="form-label">รหัสกลุ่ม (Room ID)</label>
+                        <input type="text" id="settingSyncRoomId" class="form-control" style="max-width: 250px;" placeholder="เช่น badminton_group_1">
+                        <p class="text-xs text-gray-500 mt-1">หากต้องการใช้งานร่วมกันหลายเครื่อง ให้ตั้งรหัสกลุ่มเป็นชื่อเดียวกัน</p>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">สมัครฟรีที่ <a href="https://jsonbin.io" target="_blank" class="text-blue-500 underline">jsonbin.io</a> (สร้าง Private Bin) เพื่อใช้เป็นฐานข้อมูลตัวกลางในการส่งผ่านข้อมูลระหว่าง 2 เครื่อง</p>
                 </div>
                 <hr class="border-gray-200">
                 <div>

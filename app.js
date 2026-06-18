@@ -1,5 +1,20 @@
 'use strict';
 
+// --- FIREBASE SETUP ---
+const firebaseConfig = {
+    apiKey: "AIzaSyD7StlLRpU4VnQwTxujQp3ccah8HLIm1b4",
+    authDomain: "badminton-6456a.firebaseapp.com",
+    projectId: "badminton-6456a",
+    storageBucket: "badminton-6456a.firebasestorage.app",
+    messagingSenderId: "895370760778",
+    appId: "1:895370760778:web:4b6ee0fbe3602696940cb3",
+    measurementId: "G-CS2QVLBMQH"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let isFirebaseUpdating = false;
+let firebaseListenerRef = null;
+
 const $ = id => document.getElementById(id);
 const PEN_FIELDS = ['penP1', 'penP2', 'penP3', 'penP4'];
 const PLAYER_FIELDS = ['player1', 'player2', 'player3', 'player4'];
@@ -9,18 +24,32 @@ const PLAYER_COLORS = [{bg:'#fee2e2',border:'#fca5a5',text:'#991b1b',tag:'#ef444
 let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = {player1:'',player2:'',player3:'',player4:''}; let _gameIdCounter = Date.now(); let _isDailyDirty = false;
 let currentPenMatchedBalls = []; let focusedFieldId = 'penP1'; let _editGameId = null;
 
-function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncApiKey: '$2a$10$wtOEOimhCvPxvl6esVL9g.9RFKu3F1mgWAQ0rDBLEj38uNK7me7fW', syncBinId: '6a33513dda38895dfed44a46' } }; }
+function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncRoomId: 'badminton_default' }, timestamp: 0 }; }
 function getTodayString() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 function escapeHtml(str) { return String(str||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 function getPlayerColor(name) { if(!name) return PLAYER_COLORS[0]; const sum = [...String(name)].reduce((a,c)=>a+c.charCodeAt(0),0); return PLAYER_COLORS[sum%PLAYER_COLORS.length]; }
 function getCurrentDailyData() { if(!state.dailyData[selectedDate]) state.dailyData[selectedDate] = { players:[], games:[] }; return state.dailyData[selectedDate]; }
 
-function saveToStorage() { try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.warn("Storage full"); } }
+function saveToStorage() { 
+    try { 
+        if (!isFirebaseUpdating) state.timestamp = Date.now();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); 
+        
+        // ผลักข้อมูลขึ้น Firebase หากไม่ได้เกิดจากการรับข้อมูลของคนอื่น
+        if (!isFirebaseUpdating && !window.Cypress) {
+            const roomId = state.settings.syncRoomId || 'badminton_default';
+            db.ref('rooms/' + roomId).set({
+                state: state,
+                timestamp: state.timestamp
+            }).catch(err => console.warn("Firebase sync error:", err));
+        }
+    } catch(e) { console.warn("Storage full"); } 
+}
+
 function loadFromStorage() { try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) state = JSON.parse(raw)||createDefaultState(); }catch(e){ state = createDefaultState(); } }
 function ensureIntegrity() {
     state.settings = state.settings || { shuttlecockPrice:0 };
-    if (!state.settings.syncApiKey) state.settings.syncApiKey = '$2a$10$wtOEOimhCvPxvl6esVL9g.9RFKu3F1mgWAQ0rDBLEj38uNK7me7fW';
-    if (!state.settings.syncBinId) state.settings.syncBinId = '6a33513dda38895dfed44a46';
+    if (!state.settings.syncRoomId) state.settings.syncRoomId = 'badminton_default';
     state.masterPlayerList = (state.masterPlayerList||[]).filter(Boolean);
     state.allTransactions = state.allTransactions||[]; state.allPayments = state.allPayments||[]; state.dailyData = state.dailyData||{};
 
@@ -92,142 +121,76 @@ function loadFromFile(event) {
             const loaded = JSON.parse(e.target.result);
             if (loaded && ('masterPlayerList' in loaded || 'dailyData' in loaded)) {
                 state = loaded; ensureIntegrity(); syncGameIdCounter(); document.getElementById('shuttlecockPrice').value = state.settings.shuttlecockPrice||0;
+                // เก็บค่าตั้งค่าของเครื่องปัจจุบันไว้ก่อน (ป้องกันไฟล์เก่ามาทับคีย์ API และพร้อมเพย์)
+                const currentSettings = state.settings ? JSON.parse(JSON.stringify(state.settings)) : {};
+
+                state = loaded; ensureIntegrity(); syncGameIdCounter(); 
+                
+                // คืนค่าตั้งค่าระบบที่สำคัญกลับมา (ไม่ยอมให้ไฟล์เก่าทับ)
+                state.settings.syncRoomId = currentSettings.syncRoomId || state.settings.syncRoomId;
+                state.settings.promptpayId = currentSettings.promptpayId || state.settings.promptpayId;
+                state.settings.promptpayName = currentSettings.promptpayName || state.settings.promptpayName;
+
+                document.getElementById('shuttlecockPrice').value = state.settings.shuttlecockPrice||0;
                 document.getElementById('settingDefaultPrice').value = state.settings.shuttlecockPrice||0;
+                const settingSyncRoomId = document.getElementById('settingSyncRoomId'); if (settingSyncRoomId) settingSyncRoomId.value = state.settings.syncRoomId||'';
                 updateAndRender(); switchTab('daily'); Swal.fire({icon:'success',title:'โหลดข้อมูลสำเร็จ!',toast:true,position:'top-end',showConfirmButton:false,timer:2500});
             } else throw new Error('Invalid');
         } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไฟล์ไม่ถูกต้องหรือชำรุด', 'error'); }
     }; reader.readAsText(file); event.target.value = null;
 }
 
-// --- CLOUD SYNC ---
-function setCloudSyncStatus(isSyncing) {
-    const pushIcon = document.querySelector('#btnPushCloud i');
-    const pullIcon = document.querySelector('#btnPullCloud i');
-    if (isSyncing) {
-        if (pushIcon) pushIcon.classList.add('fa-spin');
-        if (pullIcon) pullIcon.classList.add('fa-spin');
-    } else {
-        if (pushIcon) pushIcon.classList.remove('fa-spin');
-        if (pullIcon) pullIcon.classList.remove('fa-spin');
-    }
-}
+// --- FIREBASE REALTIME SYNC ---
+function initFirebaseListener() {
+    if (window.Cypress) return; // ป้องกันการดึง/ส่งข้อมูล Firebase ขณะรันเทส (ป้องกันข้อมูลขยะ)
 
-async function pushToCloud() {
-    const binId = state.settings.syncBinId;
-    const apiKey = state.settings.syncApiKey;
-    if (!binId || !apiKey) return Swal.fire('ข้อมูลไม่ครบ', 'โปรดตั้งค่า Bin ID และ API Key ในหน้าตั้งค่าก่อนครับ', 'warning');
-
-    setCloudSyncStatus(true);
-    Swal.fire({title: 'กำลังอัปโหลดขึ้นคลาวด์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-    try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
-            body: JSON.stringify(state)
+    const roomId = state.settings.syncRoomId || 'badminton_default';
+    if (firebaseListenerRef) firebaseListenerRef.off();
+    
+    firebaseListenerRef = db.ref('rooms/' + roomId);
+    
+    let isFirstLoad = true;
+    if (navigator.onLine) {
+        Swal.fire({
+            title: 'กำลังซิงก์คลาวด์...',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
         });
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`[Status ${response.status}] ${errText}`);
-        }
-        localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
-        Swal.fire({icon: 'success', title: 'ซิงก์ข้อมูลสำเร็จ!', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
-    } catch (err) {
-        console.error('Cloud Sync Error:', err);
-        Swal.fire('เกิดข้อผิดพลาดจากคลาวด์', err.message, 'error');
-    } finally {
-        setCloudSyncStatus(false);
+        // ป้องกัน Loading หมุนค้างกรณีอินเทอร์เน็ตช้าหรือมีปัญหา (ปิดอัตโนมัติใน 3 วินาที)
+        setTimeout(() => { 
+            if (isFirstLoad && Swal.isVisible() && Swal.getTitle()?.textContent === 'กำลังซิงก์คลาวด์...') Swal.close(); 
+        }, 3000);
     }
-}
 
-async function pullFromCloud() {
-    const binId = state.settings.syncBinId;
-    const apiKey = state.settings.syncApiKey;
-    if (!binId || !apiKey) return Swal.fire('ข้อมูลไม่ครบ', 'โปรดตั้งค่า Bin ID และ API Key ในหน้าตั้งค่าก่อนครับ', 'warning');
-
-    setCloudSyncStatus(true);
-    Swal.fire({title: 'กำลังดึงข้อมูลจากคลาวด์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-    try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-            method: 'GET',
-            headers: { 'X-Master-Key': apiKey }
-        });
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`[Status ${response.status}] ${errText}`);
+    firebaseListenerRef.on('value', (snapshot) => {
+        if (isFirstLoad) {
+            isFirstLoad = false;
+            if (Swal.isVisible() && Swal.getTitle()?.textContent === 'กำลังซิงก์คลาวด์...') Swal.close();
         }
-        const data = await response.json();
-        if (data && data.record && ('masterPlayerList' in data.record || 'dailyData' in data.record)) {
-            state = data.record;
-            ensureIntegrity(); syncGameIdCounter(); saveToStorage();
-            localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
+        
+        const data = snapshot.val();
+        // ถ้ารับข้อมูลมาจากคลาวด์และเป็นข้อมูลที่ใหม่กว่าของในเครื่อง
+        if (data && data.state && data.timestamp > (state.timestamp || 0)) {
+            isFirebaseUpdating = true; // ป้องกันการเซฟทับกลับขึ้นไปในจังหวะนี้
+            state = data.state;
+            state.timestamp = data.timestamp;
+            ensureIntegrity(); syncGameIdCounter();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             
             $('shuttlecockPrice').value = state.settings.shuttlecockPrice||0;
             $('settingDefaultPrice').value = state.settings.shuttlecockPrice||0;
-            $('settingSyncApiKey').value = state.settings.syncApiKey||'';
-            $('settingSyncBinId').value = state.settings.syncBinId||'';
+            const roomInput = $('settingSyncRoomId'); if(roomInput) roomInput.value = state.settings.syncRoomId||'';
             
-            updateAndRender(); switchTab('daily');
-            Swal.fire({icon: 'success', title: 'ดึงข้อมูลสำเร็จ!', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
-        } else throw new Error('Invalid Data');
-    } catch (err) {
-        console.error('Cloud Pull Error:', err);
-        Swal.fire('เกิดข้อผิดพลาดจากคลาวด์', err.message, 'error');
-    } finally {
-        setCloudSyncStatus(false);
-    }
-}
-
-async function checkCloudUpdate() {
-    const binId = state.settings.syncBinId;
-    const apiKey = state.settings.syncApiKey;
-    if (!binId || !apiKey) return;
-
-    setCloudSyncStatus(true);
-    try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-            method: 'GET',
-            headers: { 'X-Master-Key': apiKey }
-        });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (data && data.record && ('masterPlayerList' in data.record || 'dailyData' in data.record)) {
-            const cloudStateStr = JSON.stringify(data.record);
-            const localStateStr = JSON.stringify(state);
-            if (cloudStateStr === localStateStr) return; // ข้อมูลตรงกันแล้ว ไม่ต้องทำอะไร
-
-            const lastSyncStr = localStorage.getItem(STORAGE_KEY + '_lastSync');
-            const isLocalEmpty = state.allTransactions.length === 0 && state.masterPlayerList.length === 0;
-            const isLocalClean = (localStateStr === lastSyncStr) || isLocalEmpty;
-
-            if (isLocalClean) {
-                // เครื่องคลีน (ไม่มีการแก้ไขค้าง) -> ดึงทับอัตโนมัติอย่างปลอดภัย
-                state = data.record; ensureIntegrity(); syncGameIdCounter(); saveToStorage();
-                localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
-                $('shuttlecockPrice').value = state.settings.shuttlecockPrice||0; $('settingDefaultPrice').value = state.settings.shuttlecockPrice||0;
-                $('settingSyncApiKey').value = state.settings.syncApiKey||''; $('settingSyncBinId').value = state.settings.syncBinId||'';
-                updateAndRender();
-                Swal.fire({icon: 'info', title: 'ซิงก์ข้อมูลอัตโนมัติ', text: 'ดึงข้อมูลล่าสุดจากคลาวด์เรียบร้อยแล้ว', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false});
-            } else {
-                // ป้องกัน Pop-up แจ้งเตือนคลาวด์ไปทับหน้าต่างที่ผู้ใช้กำลังใช้งานอยู่ (Modal Collision)
-                if (Swal.isVisible()) return;
-                
-                // เครื่องมีข้อมูลค้างอยู่ (Dirty) -> ถามผู้ใช้เพื่อป้องกันข้อมูลหาย
-                Swal.fire({
-                    title: 'พบข้อมูลใหม่บนคลาวด์', html: 'มีการอัปเดตจากอุปกรณ์อื่น แต่เครื่องนี้ก็มี <b>ข้อมูลที่ยังไม่ได้ซิงก์</b><br><br><span class="text-sm text-red-600">หากดึงข้อมูลใหม่ ข้อมูลที่ยังไม่ซิงก์บนเครื่องนี้จะหายไป</span>',
-                    icon: 'warning', showCancelButton: true, confirmButtonText: 'ดึงข้อมูลมาทับหน้าจอ', cancelButtonText: 'เก็บของเครื่องนี้ไว้', confirmButtonColor: '#0ea5e9', cancelButtonColor: '#64748b'
-                }).then((r) => {
-                    if (r.isConfirmed) {
-                        state = data.record; ensureIntegrity(); syncGameIdCounter(); saveToStorage(); localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
-                        $('shuttlecockPrice').value = state.settings.shuttlecockPrice||0; $('settingDefaultPrice').value = state.settings.shuttlecockPrice||0; $('settingSyncApiKey').value = state.settings.syncApiKey||''; $('settingSyncBinId').value = state.settings.syncBinId||'';
-                        updateAndRender(); Swal.fire({icon: 'success', title: 'ดึงข้อมูลสำเร็จ!', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
-                    }
-                });
-            }
+            updateAndRender();
+            
+            const Toast = Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false, timer: 1000});
+            Toast.fire({icon: 'info', title: 'อัปเดตข้อมูลจากคลาวด์แล้ว'});
+            
+            isFirebaseUpdating = false;
         }
-    } catch (err) { console.warn('Background sync check failed:', err); }
-    finally {
-        setCloudSyncStatus(false);
-    }
+    });
 }
 
 function updateNetworkStatus() {
@@ -1549,8 +1512,6 @@ function bindEvents() {
     $('btnVoiceCommand').addEventListener('click',startVoiceCommand);
     $('btnSave').addEventListener('click',saveToFile);
     $('loadFile').addEventListener('change',loadFromFile);
-    $('btnPushCloud').addEventListener('click',pushToCloud);
-    $('btnPullCloud').addEventListener('click',pullFromCloud);
     $('btnUseLastTeam').addEventListener('click',()=>{ const dd=getCurrentDailyData(); if(dd.games.length){ let p=dd.games[dd.games.length-1].players; ['player1','player2','player3','player4'].forEach((id,i)=>currentGameSelection[id]=p[i]); updateAndRender(); }});
     $('btnToggleTheme').addEventListener('click', toggleTheme);
 
@@ -1638,16 +1599,15 @@ function bindEvents() {
         $('settingDefaultPrice').dispatchEvent(new Event('change'));
     });
 
-    ['settingSyncApiKey', 'settingSyncBinId'].forEach(id => {
-        const el = $(id);
-        if (el) {
-            el.addEventListener('change', (e) => {
-                const key = id === 'settingSyncApiKey' ? 'syncApiKey' : 'syncBinId';
-                state.settings[key] = e.target.value.trim();
-                saveToStorage(); Swal.fire({icon:'success', title:'บันทึกคีย์ซิงก์แล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
-            });
-        }
-    });
+    const roomInput = $('settingSyncRoomId');
+    if (roomInput) {
+        roomInput.addEventListener('change', (e) => {
+            state.settings.syncRoomId = e.target.value.trim() || 'badminton_default';
+            saveToStorage(); 
+            initFirebaseListener(); // รีเซ็ตตัวดักฟังให้ไปเกาะกลุ่มใหม่
+            Swal.fire({icon:'success', title:'เปลี่ยนรหัสกลุ่มเรียบร้อย', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+        });
+    }
 
     window.addEventListener('online', updateNetworkStatus);
     window.addEventListener('offline', updateNetworkStatus);
@@ -1669,8 +1629,7 @@ function bindEvents() {
             if(r.isConfirmed){
                 state = createDefaultState(); updateAndRender();
                 document.getElementById('shuttlecockPrice').value = 0; document.getElementById('settingDefaultPrice').value = 0;
-                if (document.getElementById('settingSyncApiKey')) document.getElementById('settingSyncApiKey').value = state.settings.syncApiKey || '';
-                if (document.getElementById('settingSyncBinId')) document.getElementById('settingSyncBinId').value = state.settings.syncBinId || '';
+                if (document.getElementById('settingSyncRoomId')) document.getElementById('settingSyncRoomId').value = state.settings.syncRoomId || 'badminton_default';
                 Swal.fire('ล้างข้อมูลสำเร็จ', 'ระบบกลับคืนสู่ค่าเริ่มต้น', 'success');
             }
         });
@@ -1705,17 +1664,15 @@ document.addEventListener('DOMContentLoaded', () => {
     $('settingTargetProfit').value = state.settings.settingTargetProfit || 12;
     calcSellerPrice();
     
-    const settingSyncApiKey = document.getElementById('settingSyncApiKey');
-    if (settingSyncApiKey) settingSyncApiKey.value = state.settings.syncApiKey||'';
-    const settingSyncBinId = document.getElementById('settingSyncBinId');
-    if (settingSyncBinId) settingSyncBinId.value = state.settings.syncBinId||'';
+    const settingSyncRoomId = document.getElementById('settingSyncRoomId');
+    if (settingSyncRoomId) settingSyncRoomId.value = state.settings.syncRoomId||'';
 
     updateAndRender(); 
     updateThemeIcon();
     updateNetworkStatus();
     
-    // รันการตรวจสอบคลาวด์เบื้องหลังอย่างเงียบๆ (หลังโหลดแอปเสร็จ 1.5 วินาที เพื่อให้แอปเปิดเร็ว)
-    setTimeout(checkCloudUpdate, 1500);
+    // เริ่มทำงานระบบ Real-time Sync ของ Firebase ทันที
+    initFirebaseListener();
     
     // PWA Registration
     if ('serviceWorker' in navigator) { 

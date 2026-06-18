@@ -16,14 +16,6 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
-// ป้องกันการเกิด Race Condition และ Pop-up กวนใจจาก Background Sync ในทุกๆ เทส
-beforeEach(() => {
-  cy.intercept('GET', 'https://api.jsonbin.io/v3/b/*/latest', {
-    statusCode: 200, 
-    body: { record: {} } // ส่งข้อมูลกลับไปว่างๆ เพื่อหลอกแอปว่าไม่มีอะไรอัปเดต
-  }).as('globalBgCheck');
-});
-
 // ล้าง Cache และ Service Worker ของหน้าต่างแอปพลิเคชัน (AUT) อย่างถูกต้องก่อนโหลดหน้าเว็บ
 Cypress.on('window:before:load', (win) => {
   if (win.navigator && win.navigator.serviceWorker) {
