@@ -125,11 +125,15 @@ async function pushToCloud() {
             headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
             body: JSON.stringify(state)
         });
-        if (!response.ok) throw new Error('Sync Failed');
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`[Status ${response.status}] ${errText}`);
+        }
         localStorage.setItem(STORAGE_KEY + '_lastSync', JSON.stringify(state));
         Swal.fire({icon: 'success', title: 'ซิงก์ข้อมูลสำเร็จ!', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
     } catch (err) {
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถซิงก์ขึ้นคลาวด์ได้ ตรวจสอบอินเทอร์เน็ตหรือตั้งค่า API ให้ถูกต้อง', 'error');
+        console.error('Cloud Sync Error:', err);
+        Swal.fire('เกิดข้อผิดพลาดจากคลาวด์', err.message, 'error');
     } finally {
         setCloudSyncStatus(false);
     }
@@ -147,7 +151,10 @@ async function pullFromCloud() {
             method: 'GET',
             headers: { 'X-Master-Key': apiKey }
         });
-        if (!response.ok) throw new Error('Pull Failed');
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`[Status ${response.status}] ${errText}`);
+        }
         const data = await response.json();
         if (data && data.record && ('masterPlayerList' in data.record || 'dailyData' in data.record)) {
             state = data.record;
@@ -163,7 +170,8 @@ async function pullFromCloud() {
             Swal.fire({icon: 'success', title: 'ดึงข้อมูลสำเร็จ!', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
         } else throw new Error('Invalid Data');
     } catch (err) {
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบ Bin ID และอินเทอร์เน็ต', 'error');
+        console.error('Cloud Pull Error:', err);
+        Swal.fire('เกิดข้อผิดพลาดจากคลาวด์', err.message, 'error');
     } finally {
         setCloudSyncStatus(false);
     }

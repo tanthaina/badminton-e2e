@@ -1,0 +1,24 @@
+{
+  "masterPlayerList": [
+    "สมหมาย"
+  ],
+  "allTransactions": [],
+  "allPayments": [],
+  "dailyData": {
+    "2026-06-18": {
+      "players": [
+        {
+          "name": "สมหมาย",
+          "paid": false,
+          "present": true
+        }
+      ],
+      "games": []
+    }
+  },
+  "settings": {
+    "shuttlecockPrice": 0,
+    "syncApiKey": "$2a$10$wtOEOimhCvPxvl6esVL9g.9RFKu3F1mgWAQ0rDBLEj38uNK7me7fW",
+    "syncBinId": "6a33513dda38895dfed44a46"
+  }
+}
