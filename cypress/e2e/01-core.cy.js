@@ -8,13 +8,13 @@ describe('01 - Core Flow & Game Management', () => {
     });
 
     cy.get('#playerList').children().should('have.length', 4);
-    cy.recordGame('ก้อง', 'แทน', 'หมู', 'แมน', '75, 76', '20');
+    cy.recordGame('ก้อง', 'แทน', 'หมู', 'แมน', '1, 2', '20');
 
     cy.get('#gamesList').children().should('have.length', 1);
-    cy.get('#gamesList').should('contain.text', 'ลูก 75,76').and('contain.text', '10.00 บ./คน');
+    cy.get('#gamesList').should('contain.text', 'ลูก 1,2').and('contain.text', '10.00 บ./คน');
     cy.get('#summaryTableUnpaid').find('tr').should('have.length', 4);
     cy.get('#grandTotal').should('have.text', '40.00');
-    cy.contains('#summaryTableUnpaid tr', 'ก้อง').should('contain.text', '75').and('contain.text', '76');
+    cy.contains('#summaryTableUnpaid tr', 'ก้อง').should('contain.text', '1').and('contain.text', '2');
     
     cy.contains('#summaryTableUnpaid tr', 'ก้อง').find('button').contains('จ่าย').click();
     cy.get('#summaryTablePaid').find('tr').should('have.length', 1);
@@ -94,17 +94,17 @@ describe('01 - Core Flow & Game Management', () => {
     cy.get('#player3').select('P3'); cy.get('#player4').select('P4');
     cy.get('#shuttlecockPrice').clear().type('20');
 
-    for(let i = 1; i <= 15; i++) {
+    for(let i = 1; i <= 12; i++) {
       if (i > 1) {
         cy.get('#btnUseLastTeam').click({ force: true });
       }
-      cy.get('#shuttlecockSpeeds').scrollIntoView().should('be.visible').clear().type(`${i}`, { force: true });
+      cy.contains('#shuttlecockSpeedButtons .shuttle-speed-btn', new RegExp(`^${i}$`)).click();
       cy.get('#btnRecordGame').click({ force: true });
       cy.get('#gamesList').children().should('have.length', i);
     }
 
-    cy.get('#gamesList').children().should('have.length', 15);
-    cy.get('#grandTotal').should('have.text', '300.00');
+    cy.get('#gamesList').children().should('have.length', 12);
+    cy.get('#grandTotal').should('have.text', '240.00');
   });
 
   it('ทดสอบ Edge Case: ป้องกันการบันทึกเกมด้วยราคาลูกติดลบ (Negative Price)', () => {

@@ -110,7 +110,12 @@ Cypress.Commands.add('recordGame', (p1, p2, p3, p4, speeds, price) => {
   if (p2) cy.get('#player2').should('be.visible').and('be.enabled').select(p2);
   if (p3) cy.get('#player3').should('be.visible').and('be.enabled').select(p3);
   if (p4) cy.get('#player4').should('be.visible').and('be.enabled').select(p4);
-  if (speeds !== undefined && speeds !== null) cy.get('#shuttlecockSpeeds').should('be.visible').and('be.enabled').clear().type(speeds, { delay: 0 });
+  if (speeds !== undefined && speeds !== null) {
+    const speedArr = String(speeds).split(/[,\s]+/).filter(Boolean);
+    speedArr.forEach(s => {
+      cy.contains('#shuttlecockSpeedButtons .shuttle-speed-btn', new RegExp(`^${s}$`)).click();
+    });
+  }
   if (price !== undefined && price !== null) cy.get('#shuttlecockPrice').should('be.visible').and('be.enabled').clear().type(price, { delay: 0 });
   cy.get('#btnRecordGame').should('be.visible').and('be.enabled').click();
 });

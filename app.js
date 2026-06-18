@@ -25,6 +25,7 @@ const TOLERANCE = 0.005; const STORAGE_KEY = 'badmintonAppState_v2';
 const PLAYER_COLORS = [{bg:'#fee2e2',border:'#fca5a5',text:'#991b1b',tag:'#ef4444'},{bg:'#dbeafe',border:'#93c5fd',text:'#1e40af',tag:'#3b82f6'},{bg:'#dcfce7',border:'#86efac',text:'#166534',tag:'#22c55e'},{bg:'#fef9c3',border:'#fde047',text:'#713f12',tag:'#eab308'},{bg:'#ede9fe',border:'#c4b5fd',text:'#4c1d95',tag:'#8b5cf6'},{bg:'#fce7f3',border:'#f9a8d4',text:'#831843',tag:'#ec4899'},{bg:'#ccfbf1',border:'#5eead4',text:'#134e4a',tag:'#14b8a6'},{bg:'#ffedd5',border:'#fdba74',text:'#7c2d12',tag:'#f97316'}];
 let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = {player1:'',player2:'',player3:'',player4:''}; let _gameIdCounter = Date.now(); let _isDailyDirty = false;
 let currentPenMatchedBalls = []; let focusedFieldId = 'penP1'; let _editGameId = null;
+let currentGameShuttlecockSpeeds = [];
 
 function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncRoomId: 'badminton_default' }, timestamp: 0 }; }
 function getTodayString() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
@@ -514,6 +515,59 @@ function processVoiceCommand(transcript) {
     }
 }
 
+function toggleShuttlecockSpeed(btn, speed) {
+    btn.classList.toggle('active');
+    const speedStr = String(speed);
+    if (btn.classList.contains('active')) {
+        if (!currentGameShuttlecockSpeeds.includes(speedStr)) {
+            currentGameShuttlecockSpeeds.push(speedStr);
+        }
+    } else {
+        currentGameShuttlecockSpeeds = currentGameShuttlecockSpeeds.filter(s => s !== speedStr);
+    }
+    updateShuttlecockDisplay();
+}
+
+function updateShuttlecockDisplay() {
+    currentGameShuttlecockSpeeds.sort((a, b) => parseInt(a) - parseInt(b));
+    $('shuttlecockSpeeds').value = currentGameShuttlecockSpeeds.join(', ');
+
+    const display = $('shuttlecockSpeedsDisplay');
+    if (!display) return;
+
+    if (currentGameShuttlecockSpeeds.length === 0) {
+        display.innerHTML = '<span class="text-gray-400 text-sm">คลิกเลือกเบอร์ลูกด้านล่าง</span>';
+    } else {
+        display.innerHTML = currentGameShuttlecockSpeeds.map(s => `<span class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 text-sm font-bold px-3 py-1 rounded-full">${s}</span>`).join('');
+    }
+}
+
+function renderShuttlecockSelector() {
+    const container = $('shuttlecockSpeedButtons');
+    if (!container) return;
+
+    let buttonsHtml = '';
+    for (let i = 1; i <= 12; i++) {
+        const isActive = currentGameShuttlecockSpeeds.includes(String(i));
+        buttonsHtml += `<button onclick="toggleShuttlecockSpeed(this, ${i})" class="shuttle-speed-btn ${isActive ? 'active' : ''}">${i}</button>`;
+    }
+    container.innerHTML = buttonsHtml;
+
+    const indicator = $('lastShuttlecockIndicator');
+    if (!indicator) return;
+    const dd = getCurrentDailyData();
+    indicator.innerHTML = '';
+    if (dd.games.length > 0) {
+        const lastGame = dd.games[dd.games.length - 1];
+        if (lastGame.shuttlecockSpeeds && lastGame.shuttlecockSpeeds.length > 0) {
+            const lastUsed = Math.max(...lastGame.shuttlecockSpeeds.map(s => parseInt(s, 10)).filter(n => !isNaN(n)));
+            if (isFinite(lastUsed)) {
+                 indicator.innerHTML = `ลูกล่าสุด: <b class="text-indigo-600 dark:text-indigo-400">${lastUsed}</b>`;
+            }
+        }
+    }
+}
+
 // --- RECORD GAME ---
 function recordGame() {
     const p = PLAYER_FIELDS.map(id=>$(id).value).filter(Boolean);
@@ -531,7 +585,9 @@ function recordGame() {
         Swal.fire({icon:'success', title:'อัปเดตเกมสำเร็จ', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
     } else {
         dd.games.push({id:++_gameIdCounter, players:p, shuttlecocksUsed:sp.length, shuttlecockPrice:pr, shuttlecockSpeeds:sp});
-        $('shuttlecockSpeeds').value=''; currentGameSelection={player1:'',player2:'',player3:'',player4:''}; 
+        $('shuttlecockSpeeds').value=''; 
+        currentGameShuttlecockSpeeds = [];
+        currentGameSelection={player1:'',player2:'',player3:'',player4:''}; 
     }
     dd.isClosed = false;
     updateAndRender();
@@ -559,6 +615,7 @@ function editGame(id) {
     else PLAYER_FIELDS.forEach((pid, i) => { $(pid).value = g.players[i] || ''; });
 
     $('shuttlecockSpeeds').value = (g.shuttlecockSpeeds || []).join(', ');
+    currentGameShuttlecockSpeeds = [...(g.shuttlecockSpeeds || [])];
     $('shuttlecockPrice').value = g.shuttlecockPrice || state.settings.shuttlecockPrice || 0;
     
     const btn = $('btnRecordGame');
@@ -569,6 +626,7 @@ function editGame(id) {
 
 function cancelEditGame() {
     _editGameId = null; $('shuttlecockSpeeds').value = ''; currentGameSelection={player1:'',player2:'',player3:'',player4:''}; 
+    currentGameShuttlecockSpeeds = [];
     PLAYER_FIELDS.forEach(id => { $(id).value = ''; });
     const btn = $('btnRecordGame');
     btn.innerHTML = '<i class="fas fa-plus-circle"></i>บันทึกเกมนี้'; btn.classList.replace('btn-warning', 'btn-success');
@@ -651,6 +709,8 @@ function renderDaily() {
         return `<option value="${escapeHtml(n)}">${escapeHtml(display)}</option>`;
     }).join('');
     ['player1','player2','player3','player4'].forEach(id=>{ const el=document.getElementById(id); el.innerHTML=opts; el.value=currentGameSelection[id]||''; });
+
+    renderShuttlecockSelector();
 
     // 3 & 4. Games & Summary
     let totalB = dd.games.reduce((s,g)=>s+(g.shuttlecocksUsed||0),0);
