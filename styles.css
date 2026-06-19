@@ -113,7 +113,7 @@ body { font-family: 'Sarabun', sans-serif; background: #f1f5f9; color: var(--tex
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
 }
-.tab-content:not(.hidden) { animation: fadeInSlide 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.tab-content:not(.hidden) { animation: fadeInSlide 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* --- DARK MODE --- */
 html.dark body { background: #0f172a; color: #e2e8f0; }
