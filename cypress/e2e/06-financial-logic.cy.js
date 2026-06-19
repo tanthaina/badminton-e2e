@@ -104,4 +104,86 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.get('#total-unpaid-overall').should('have.text', '฿0.00');
     cy.get('#total-credit-overall').should('have.text', '฿30.00');
   });
+
+  it('ทดสอบ 5: การแสดงผลหนี้สะสม (Accumulated Debt) และปุ่ม QR Code บนหน้ารายวัน', () => {
+    const today = '2024-01-01';
+    cy.seedSessionState('accumulatedDebtSetup', {
+      masterPlayerList: ['A', 'B', 'C', 'D'],
+      allTransactions: [
+        // A ค้างเก่า 100 บาท
+        { id: 1, date: '2023-12-31', name: 'A', totalCost: 100, isAutoDaily: false }
+      ],
+      dailyData: {
+        [today]: {
+          players: ['A', 'B', 'C', 'D'].map(name => ({ name, paid: false, present: true })),
+          games: []
+        }
+      },
+      settings: { promptpayId: '0812345678' }
+    });
+
+    cy.mockTime(today + 'T12:00:00Z');
+    cy.visit('/index.html');
+
+    // บันทึกเกมวันนี้ 80 บาท (หาร 4 = คนละ 20 บาท)
+    cy.recordGame('A', 'B', 'C', 'D', '1', '80');
+
+    // 1. ตรวจสอบสถานะบนหน้ารายวัน
+    // A ต้องขึ้น "ค้างชำระ (สะสม: ฿120)" (20 วันนี้ + 100 หนี้เก่า)
+    cy.contains('#summaryTableUnpaid tr', 'A').should('contain.text', 'ค้างชำระ (สะสม: ฿120)');
+    // B ต้องขึ้น "ค้างชำระ" ปกติ (เพราะไม่มีหนี้สะสมเดิม)
+    cy.contains('#summaryTableUnpaid tr', 'B').should('contain.text', 'ค้างชำระ').and('not.contain.text', 'สะสม');
+
+    // 2. ตรวจสอบการเปิด QR Code ของ A
+    cy.contains('#summaryTableUnpaid tr', 'A').find('button[title="สแกน QR Code"]').click();
+    cy.get('.swal2-popup').should('be.visible');
+    cy.get('.swal2-popup').should('contain.text', 'ยอดต้องชำระสุทธิ: ฿120.00');
+    cy.get('.swal2-popup').should('contain.text', 'ยอดเล่นวันนี้: ฿20.00');
+    cy.get('.swal2-popup').should('contain.text', 'ยอดค้างเก่าสะสม: +฿100.00');
+    
+    // ตรวจสอบลิ้งก์รูปภาพ QR Code ว่ามียอดเงิน 120.00
+    cy.get('.swal2-image').should('have.attr', 'src').and('include', 'promptpay.io/').and('include', '/120.00');
+    cy.get('.swal2-confirm').click(); // ปิด popup
+  });
+
+  it('ทดสอบ 6: การแสดงผลหนี้ค้างสุทธิกรณีหักเครดิตบางส่วน (Partial Credit Offset) บนหน้ารายวัน', () => {
+    const today = '2024-01-01';
+    cy.seedSessionState('partialCreditSetup', {
+      masterPlayerList: ['A', 'B', 'C', 'D'],
+      allTransactions: [
+        { id: 1, date: '2023-12-31', name: 'A', totalCost: 30, isAutoDaily: false }
+      ],
+      allPayments: [
+        // A เติมเงินล่วงหน้ามา 40 บาท (หักหนี้เก่า 30 จะมีเครดิตเหลือ 10 บาท)
+        { id: 2, date: '2023-12-31', name: 'A', amount: 40, isAutoDaily: false }
+      ],
+      dailyData: {
+        [today]: {
+          players: ['A', 'B', 'C', 'D'].map(name => ({ name, paid: false, present: true })),
+          games: []
+        }
+      },
+      settings: { promptpayId: '0812345678' }
+    });
+
+    cy.mockTime(today + 'T12:00:00Z');
+    cy.visit('/index.html');
+
+    // บันทึกเกมวันนี้ 160 บาท (หาร 4 = คนละ 40 บาท)
+    cy.recordGame('A', 'B', 'C', 'D', '1', '160');
+
+    // 1. ตรวจสอบสถานะบนหน้ารายวัน
+    // A ต้องขึ้น "ค้างชำระ (สุทธิ: ฿30)" (ค่าเล่น 40 - เครดิตเดิม 10)
+    cy.contains('#summaryTableUnpaid tr', 'A').should('contain.text', 'ค้างชำระ (สุทธิ: ฿30)');
+
+    // 2. ตรวจสอบการเปิด QR Code ของ A
+    cy.contains('#summaryTableUnpaid tr', 'A').find('button[title="สแกน QR Code"]').click();
+    cy.get('.swal2-popup').should('be.visible');
+    cy.get('.swal2-popup').should('contain.text', 'ยอดต้องชำระสุทธิ: ฿30.00');
+    cy.get('.swal2-popup').should('contain.text', 'ยอดเล่นวันนี้: ฿40.00');
+    cy.get('.swal2-popup').should('contain.text', 'หักเครดิตเก่า: -฿10.00');
+    
+    // QR Code ต้องถูกเจนสำหรับยอดเงิน 30.00
+    cy.get('.swal2-image').should('have.attr', 'src').and('include', '/30.00');
+  });
 });

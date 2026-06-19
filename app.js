@@ -1077,11 +1077,18 @@ function renderDaily() {
             let creditText = remainingCredit % 1 === 0 ? remainingCredit.toFixed(0) : remainingCredit.toFixed(2);
             statusBadge = `<span class="text-blue-600 font-bold" title="หักลบจากเครดิตคงเหลือในบัญชีอัตโนมัติ">จ่ายแล้ว (เครดิต: ฿${creditText})</span>`;
         } else {
-            statusBadge = '<span class="text-red-600 font-bold">ค้างชำระ</span>';
+            let debtText = b % 1 === 0 ? b.toFixed(0) : b.toFixed(2);
+            if (b > d.cost + TOLERANCE) {
+                statusBadge = `<span class="text-red-600 font-bold" title="ยอดค้างชำระสะสมทั้งหมดในบัญชี">ค้างชำระ (สะสม: ฿${debtText})</span>`;
+            } else if (b < d.cost - TOLERANCE) {
+                statusBadge = `<span class="text-red-600 font-bold" title="ยอดค้างชำระสุทธิหลังหักลบเครดิตเดิม">ค้างชำระ (สุทธิ: ฿${debtText})</span>`;
+            } else {
+                statusBadge = '<span class="text-red-600 font-bold">ค้างชำระ</span>';
+            }
         }
         
         let spds = [...new Set(d.speeds)].join(', ') || '-';
-        let qrBtn = (!isPaidToday && state.settings.promptpayId && d.cost > TOLERANCE) ? `<button onclick="showDailyQR('${escapeHtml(d.n)}', ${d.cost})" class="btn btn-sm btn-indigo" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
+        let qrBtn = (!isPaidToday && state.settings.promptpayId && b > TOLERANCE) ? `<button onclick="showDailyQR('${escapeHtml(d.n)}', ${b}, ${d.cost})" class="btn btn-sm btn-indigo" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
         let costDisplay = `<div class="flex items-center justify-center gap-1 cursor-pointer group" onclick="addExtraCost('${escapeHtml(d.n)}')" title="คลิกเพื่อบวกค่าจิปาถะ">
             ${d.extraCost > 0 ? `<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1 rounded border border-indigo-100">+${d.extraCost.toFixed(0)}</span>` : ''}
             <span>${d.cost.toFixed(2)}</span>
@@ -1094,14 +1101,39 @@ function renderDaily() {
 
 }
 
-function showDailyQR(name, amount) {
+function showDailyQR(name, totalAmount, dailyCost) {
     const ppId = state.settings.promptpayId;
     const ppName = state.settings.promptpayName ? `<div class="text-sm font-bold text-indigo-700 mt-1">${escapeHtml(state.settings.promptpayName)}</div>` : '';
     if (!ppId) return Swal.fire('ผิดพลาด', 'กรุณาตั้งค่าเบอร์พร้อมเพย์ในแท็บตั้งค่าระบบก่อน', 'warning');
+    
+    let breakdownHtml = '';
+    if (totalAmount > dailyCost + TOLERANCE) {
+        let prevDebt = totalAmount - dailyCost;
+        breakdownHtml = `
+            <div class="text-sm text-gray-500 mt-2 border-t pt-2 space-y-1">
+                <div class="flex justify-between"><span>ยอดเล่นวันนี้:</span> <span class="font-medium">฿${dailyCost.toFixed(2)}</span></div>
+                <div class="flex justify-between"><span>ยอดค้างเก่าสะสม:</span> <span class="font-medium text-red-500">+฿${prevDebt.toFixed(2)}</span></div>
+            </div>
+        `;
+    } else if (totalAmount < dailyCost - TOLERANCE) {
+        let creditOffset = dailyCost - totalAmount;
+        breakdownHtml = `
+            <div class="text-sm text-gray-500 mt-2 border-t pt-2 space-y-1">
+                <div class="flex justify-between"><span>ยอดเล่นวันนี้:</span> <span class="font-medium">฿${dailyCost.toFixed(2)}</span></div>
+                <div class="flex justify-between"><span>หักเครดิตเก่า:</span> <span class="font-medium text-blue-500">-฿${creditOffset.toFixed(2)}</span></div>
+            </div>
+        `;
+    }
+
     Swal.fire({
         title: 'สแกนเพื่อชำระเงิน',
-        html: `<div class="text-lg mb-2"><b>${name}</b></div>ยอดของวันนี้: <span class="text-red-600 font-bold text-xl">฿${amount.toFixed(2)}</span>${ppName}`,
-        imageUrl: `https://promptpay.io/${ppId}/${amount.toFixed(2)}?t=${Date.now()}`,
+        html: `
+            <div class="text-lg mb-2"><b>${name}</b></div>
+            <div class="text-base text-gray-600 dark:text-gray-400">ยอดต้องชำระสุทธิ: <span class="text-red-600 font-bold text-xl">฿${totalAmount.toFixed(2)}</span></div>
+            ${breakdownHtml}
+            ${ppName}
+        `,
+        imageUrl: `https://promptpay.io/${ppId}/${totalAmount.toFixed(2)}?t=${Date.now()}`,
         imageWidth: 220,
         imageHeight: 220,
         imageAlt: 'PromptPay QR',
