@@ -1073,7 +1073,9 @@ function renderDaily() {
         if (d.p) {
             statusBadge = '<span class="text-green-600 font-bold">จ่ายแล้ว</span>';
         } else if (isPaidToday) {
-            statusBadge = '<span class="text-blue-600 font-bold" title="หักลบจากเครดิตคงเหลือในบัญชีอัตโนมัติ">จ่ายแล้ว (เครดิต)</span>';
+            let remainingCredit = -b;
+            let creditText = remainingCredit % 1 === 0 ? remainingCredit.toFixed(0) : remainingCredit.toFixed(2);
+            statusBadge = `<span class="text-blue-600 font-bold" title="หักลบจากเครดิตคงเหลือในบัญชีอัตโนมัติ">จ่ายแล้ว (เครดิต: ฿${creditText})</span>`;
         } else {
             statusBadge = '<span class="text-red-600 font-bold">ค้างชำระ</span>';
         }
