@@ -1,0 +1,29 @@
+{
+  "masterPlayerList": [
+    "สมหมาย"
+  ],
+  "allTransactions": [],
+  "allPayments": [],
+  "dailyData": {
+    "2026-06-19": {
+      "players": [
+        {
+          "name": "สมหมาย",
+          "paid": false,
+          "present": true
+        }
+      ],
+      "games": []
+    }
+  },
+  "settings": {
+    "shuttlecockPrice": 0,
+    "prefixes": [
+      "ทั่วไป",
+      "ตากฟ้า",
+      "ตาคลี",
+      "นครสวรรค์"
+    ],
+    "syncRoomId": "badminton_default"
+  }
+}

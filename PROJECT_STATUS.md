@@ -6,7 +6,7 @@
 ## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
 - **Frontend:** HTML5, Vanilla JavaScript (ES6), Tailwind CSS (ผ่าน CDN)
 - **Storage:** `localStorage` (เก็บข้อมูลทั้งหมดในรูปแบบ JSON)
-- **Testing:** Cypress (E2E Testing จำนวน 12 ไฟล์ ครอบคลุม Logic ทั้งหมด)
+- **Testing:** Cypress (E2E Testing จำนวน 16 ไฟล์), Node.js Unit Tests (`test-financial.js`) สำหรับ Financial Logic
 - **PWA:** Service Worker (`sw.js`) และ `manifest.json` เพื่อรองรับการใช้งานออฟไลน์
 - **Libraries:** 
   - `SweetAlert2` (UI Popups / Modals)
@@ -55,6 +55,10 @@
 - **(ล่าสุด)** ปรับปรุงระบบประมวลผลเสียงให้แจ้งเตือนเป็น Warning Toast เมื่อจัดทัพผู้เล่นไม่ครบ 4 คน ป้องกันการบันทึกข้อมูลที่ไม่สมบูรณ์และผ่านการทดสอบ E2E ทั้งหมด 100% (109 เคสย่อย)
 - **(ล่าสุด)** เพิ่มระบบประเมินและตัดหนี้จากเครดิตสะสมแบบ Real-time บนหน้ารายวัน (Visual Reconcile) แสดงผลเป็น "จ่ายแล้ว (เครดิต: ฿ยอดเงินคงเหลือ)" สีฟ้าทันทีโดยไม่แก้ไข Database ป้องกันเงินหายหากแก้/ลบเกม
 - **(ล่าสุด)** เพิ่มปุ่มเติมเงินล่วงหน้า (Top-up Deposit) ทั้งปุ่มหลักด้านบนของหน้าบัญชี และปุ่มย่อยรายบุคคลข้างรายชื่อคนมีเครดิต/ชำระครบแล้ว พร้อมเพิ่มสคริปต์ Cypress ทดสอบครบถ้วน
+- **(ล่าสุด)** เพิ่มระบบแสดงยอดหนี้สะสม (Accumulated Debt) บนหน้ารายวัน แสดง "ค้างชำระ (สะสม: ฿ยอด)" และ "ค้างชำระ (สุทธิ: ฿ยอด)" หลังหักเครดิตเก่า
+- **(ล่าสุด)** ปรับปรุง QR Code Popup แสดง Breakdown ชัดเจน: ยอดเล่นวันนี้ / ยอดค้างเก่าสะสม / หักเครดิตเก่า / ยอดสุทธิที่ต้องชำระจริง
+- **(ล่าสุด)** เพิ่ม `test-financial.js` — Node.js Unit Test สำหรับ Financial Logic ทดสอบได้ทันทีด้วย `node test-financial.js` ไม่ต้องใช้ Browser (ผ่าน 26/26 tests ✅)
+- **(ล่าสุด)** อัปเดต `cypress.config.js` เพิ่ม `baseUrl: 'http://127.0.0.1:5500'` และ `package.json` เพิ่ม `http-server`, `start-server-and-test` สำหรับรัน E2E Tests บน local
 
 ---
 **🤖 Note to AI (Gemini Code Assist):**
