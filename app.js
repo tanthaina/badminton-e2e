@@ -779,7 +779,7 @@ function processVoiceCommand(transcript) {
     
     let isWarning = PEN_FIELDS.some(id => {
         let cls = $(id).className;
-        return cls.includes('status-yellow') || cls.includes('status-red');
+        return cls.includes('status-yellow') || cls.includes('status-red') || !$(id).value.trim();
     });
 
     // [5] แสดงผลลัพธ์
