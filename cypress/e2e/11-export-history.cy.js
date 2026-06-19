@@ -81,6 +81,11 @@ describe('11 - History Summary & CSV Export', () => {
 
     cy.get('button[data-tab="history"]').click();
     
+    // ล้าง date filters ก่อน เพื่อให้เห็นข้อมูลทุกช่วงเวลา
+    cy.get('#summaryStartDate').clear();
+    cy.get('#summaryEndDate').clear();
+    cy.get('#btnFilterHistory').click();
+    
     // ตรวจสอบกล่องสรุปรายเดือน
     cy.get('#monthly-summary-container').should('not.have.class', 'hidden');
     cy.get('#monthly-summary-container').should('contain.text', 'ม.ค. 2024').and('contain.text', '+฿100.00'); // จ่าย 600 - ใช้ 500

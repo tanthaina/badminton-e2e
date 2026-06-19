@@ -337,4 +337,49 @@ describe('04 - Accounting & History', () => {
     const expectedFileName = 'account-2024-01-01.png';
     cy.readFile(`cypress/downloads/${expectedFileName}`, 'base64', { timeout: 15000 }).should('exist');
   });
+
+  it('ทดสอบการเชื่อมโยงชำระเงินข้ามแท็บ (Auto-Reconcile Daily Debts)', () => {
+    // 1. จำลองข้อมูล: ผู้เล่น 'สายเปย์' มียอดค้างชำระในหน้ารายวัน 40 บาท (1 เกม)
+    const today = '2024-01-01';
+    cy.seedSessionState('autoReconcileSetup', {
+      masterPlayerList: ['สายเปย์', 'A', 'B', 'C'],
+      dailyData: {
+        [today]: {
+          players: [
+            { name: 'สายเปย์', paid: false, present: true },
+            { name: 'A', paid: false, present: true },
+            { name: 'B', paid: false, present: true },
+            { name: 'C', paid: false, present: true }
+          ],
+          games: [{
+            id: 1,
+            players: ['สายเปย์', 'A', 'B', 'C'],
+            shuttlecocksUsed: 1,
+            shuttlecockPrice: 160,
+            shuttlecockSpeeds: ['1']
+          }],
+          isClosed: false
+        }
+      }
+    });
+
+    cy.mockTime(today + 'T12:00:00Z');
+    cy.visit('/index.html');
+
+    // 2. ไปที่หน้าบัญชีรวม ตรวจสอบว่ามีหนี้ 40 บาท
+    cy.get('button[data-tab="account"]').click();
+    cy.contains('#unpaid-list-overall div.border', 'สายเปย์').should('contain.text', 'ค้าง 40.00');
+
+    // 3. กดจ่ายเงิน 40 บาท
+    cy.payDebt('สายเปย์', '40');
+
+    // 4. ไปที่หน้ารายวัน ตรวจสอบว่า 'สายเปย์' เปลี่ยนสถานะเป็น 'จ่ายแล้ว' อัตโนมัติ
+    cy.get('button[data-tab="daily"]').click();
+    cy.contains('#summaryTablePaid tr', 'สายเปย์').should('exist');
+    cy.contains('#summaryTablePaid tr', 'สายเปย์').should('contain.text', 'จ่ายแล้ว');
+
+    // 5. กลับไปที่หน้าบัญชี ตรวจสอบว่าไม่มียอดค้างชำระ
+    cy.get('button[data-tab="account"]').click();
+    cy.get('#paid-in-full-list-overall').should('contain.text', 'สายเปย์');
+  });
 });

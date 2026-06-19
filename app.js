@@ -50,6 +50,22 @@ function saveToStorage() {
 }
 
 function loadFromStorage() { try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) state = JSON.parse(raw)||createDefaultState(); }catch(e){ state = createDefaultState(); } }
+
+// --- CYPRESS TEST HOOK ---
+// expose state บน window เฉพาะตอนรัน Cypress เพื่อให้ test สามารถ inject/read state ได้โดยตรง
+if (typeof window !== 'undefined' && window.Cypress) {
+    Object.defineProperty(window, 'state', {
+        get: () => state,
+        set: (v) => { state = v; },
+        configurable: true
+    });
+    Object.defineProperty(window, 'currentPenMatchedBalls', {
+        get: () => currentPenMatchedBalls,
+        set: (v) => { currentPenMatchedBalls = v; },
+        configurable: true
+    });
+    window.loadFromStorage = loadFromStorage;
+}
 function ensureIntegrity() {
     state.settings = state.settings || { shuttlecockPrice:0 };
     if (!state.settings.prefixes) state.settings.prefixes = ['ทั่วไป', 'ตากฟ้า', 'ตาคลี', 'นครสวรรค์'];
@@ -890,8 +906,9 @@ function editGame(id) {
     else PLAYER_FIELDS.forEach((pid, i) => { $(pid).value = g.players[i] || ''; });
 
     $('shuttlecockSpeeds').value = (g.shuttlecockSpeeds || []).join(', ');
-    currentGameShuttlecockSpeeds = [...(g.shuttlecockSpeeds || [])];
+    currentGameShuttlecockSpeeds = [...(g.shuttlecockSpeeds || [])].map(String);
     $('shuttlecockPrice').value = g.shuttlecockPrice || state.settings.shuttlecockPrice || 0;
+    renderShuttlecockSelector(); // ซิงค์ active state ของปุ่มเบอร์ลูกให้ตรงกับข้อมูลที่ load มา
     
     const btn = $('btnRecordGame');
     btn.innerHTML = '<i class="fas fa-save"></i> อัปเดตเกม'; btn.classList.replace('btn-success', 'btn-warning');
@@ -1689,8 +1706,8 @@ function exportAccountText() {
                         });
                     }
                     let countInfo = '';
-                    if (gamesCount > 0) {
-                        countInfo = ` (${gamesCount} เกม, ${ballsCount} ลูก)`;
+                    if (ballsCount > 0) {
+                        countInfo = ` (${ballsCount} ลูก)`;
                     }
                     unpaidDetails.push(`${date}: ${remain.toFixed(2)} บ.${countInfo}`); 
                 }
@@ -1821,7 +1838,13 @@ function payAllUnpaid() {
     Swal.fire({title:'ชำระทั้งหมด?', text:'บันทึกว่าทุกคนชำระเงินค้างจ่ายครบแล้ว', icon:'question', showCancelButton:true}).then(r=>{
         if(r.isConfirmed) {
             const sum = calculateOverallBalances();
-                Object.values(sum).forEach(x=>{ let b=x.d-x.p; if(b > TOLERANCE) state.allPayments.push({ id: Date.now()+Math.random(), date: getTodayString(), name: x.n, amount: b, isAutoDaily: false }); });
+                Object.values(sum).forEach(x=>{ 
+                    let b=x.d-x.p; 
+                    if(b > TOLERANCE) {
+                        state.allPayments.push({ id: Date.now()+Math.random(), date: getTodayString(), name: x.n, amount: b, isAutoDaily: false });
+                        autoReconcileDailyDebts(x.n);
+                    } 
+                });
             updateAndRender(); Swal.fire('สำเร็จ','ชำระทั้งหมดเรียบร้อย','success');
         }
     });
@@ -1843,8 +1866,72 @@ function submitPayment() {
     if(!name || isNaN(amt) || amt<=0) return;
     state.allPayments.push({ id: Date.now(), date: getTodayString(), name: name, amount: amt, isAutoDaily: false });
     document.getElementById('payment-modal').classList.add('hidden');
+    autoReconcileDailyDebts(name);
     updateAndRender();
     Swal.fire({icon:'success', title:'บันทึกชำระเงินแล้ว', toast:true, position:'top-end', timer:1500, showConfirmButton:false});
+}
+
+function autoReconcileDailyDebts(playerName) {
+    let manualPaymentsTotal = state.allPayments.filter(p => p.name === playerName && !p.isAutoDaily).reduce((sum, p) => sum + p.amount, 0);
+    let manualDebtsTotal = state.allTransactions.filter(t => t.name === playerName && !t.isAutoDaily).reduce((sum, t) => sum + t.totalCost, 0);
+    
+    let availableCredit = manualPaymentsTotal - manualDebtsTotal;
+    if (availableCredit <= TOLERANCE) return;
+
+    let unpaidDaily = [];
+    Object.keys(state.dailyData).forEach(date => {
+        if (!date || date === 'undefined' || date === 'null') return;
+        const dd = state.dailyData[date];
+        if (!dd.players || !dd.games) return;
+        
+        let pData = dd.players.find(x => x.name === playerName);
+        if (pData && !pData.paid) {
+            let cost = pData.extraCost || 0;
+            dd.games.forEach(g => {
+                if (g.players.includes(playerName)) {
+                    cost += (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
+                }
+            });
+            if (cost > TOLERANCE) {
+                unpaidDaily.push({ date: date, cost: cost });
+            }
+        }
+    });
+
+    unpaidDaily.sort((a, b) => a.date.localeCompare(b.date));
+
+    let madeChanges = false;
+    for (let record of unpaidDaily) {
+        if (availableCredit >= record.cost - TOLERANCE) {
+            let dd = state.dailyData[record.date];
+            let pData = dd.players.find(x => x.name === playerName);
+            pData.paid = true;
+            availableCredit -= record.cost;
+            madeChanges = true;
+
+            let amountToRemove = record.cost;
+            for (let i = 0; i < state.allPayments.length; i++) {
+                let p = state.allPayments[i];
+                if (p.name === playerName && !p.isAutoDaily) {
+                    if (p.amount >= amountToRemove) {
+                        p.amount -= amountToRemove;
+                        amountToRemove = 0;
+                        break;
+                    } else {
+                        amountToRemove -= p.amount;
+                        p.amount = 0;
+                    }
+                }
+            }
+        } else {
+            break;
+        }
+    }
+
+    if (madeChanges) {
+        state.allPayments = state.allPayments.filter(p => p.isAutoDaily || p.amount > TOLERANCE);
+        syncAllDailyToAccount();
+    }
 }
 
 // --- THEME MGMT ---
