@@ -382,4 +382,33 @@ describe('04 - Accounting & History', () => {
     cy.get('button[data-tab="account"]').click();
     cy.get('#paid-in-full-list-overall').should('contain.text', 'สายเปย์');
   });
+
+  it('ทดสอบปุ่มเติมเงินล่วงหน้า (Top-up Deposit) ทั้งแบบปุ่มหลักและปุ่มประจำตัว', () => {
+    cy.seedPlayers(['ผู้เล่นใหม่']);
+    cy.visit('/index.html');
+    cy.get('button[data-tab="account"]').click();
+
+    // 1. ตรวจสอบปุ่มหลัก "รับเงิน/เติมเงิน"
+    cy.get('#btnReceivePayment').should('be.visible').click();
+    cy.get('.swal2-popup').should('contain.text', 'รับเงิน / เติมเงินล่วงหน้า');
+    
+    // เลือกผู้เล่นใหม่ และกรอก 250 บาท
+    cy.get('#global-payment-name').select('ผู้เล่นใหม่');
+    cy.get('#global-payment-amount').type('250');
+    cy.get('.swal2-confirm').click();
+
+    // ตรวจสอบว่าผู้เล่นใหม่มีเครดิต 250 บาท
+    cy.contains('#credit-list-overall div.border', 'ผู้เล่นใหม่').should('contain.text', 'เครดิต 250.00');
+
+    // 2. ตรวจสอบปุ่ม "เติมเงิน" ประจำตัวผู้เล่นที่มีเครดิตอยู่
+    cy.contains('#credit-list-overall div.border', 'ผู้เล่นใหม่').find('button').contains('เติมเงิน').click();
+    cy.get('#payment-modal').should('not.have.class', 'hidden');
+    cy.get('#payment-name').should('contain.text', 'ผู้เล่นใหม่');
+    cy.get('#payment-amount').should('have.value', ''); // ต้องว่างเปล่าเพราะไม่มีหนี้ค้าง
+    cy.get('#payment-amount').type('50');
+    cy.get('#btnSubmitPayment').click();
+
+    // เครดิตต้องเพิ่มเป็น 300 บาท
+    cy.contains('#credit-list-overall div.border', 'ผู้เล่นใหม่').should('contain.text', 'เครดิต 300.00');
+  });
 });

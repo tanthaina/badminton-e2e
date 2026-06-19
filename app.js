@@ -1063,17 +1063,30 @@ function renderDaily() {
         }); 
     });
     let un='', pd='', grand=0;
+    const sum = calculateOverallBalances();
     Object.values(details).filter(x=>x.cost>0).sort((a,b)=>a.n.localeCompare(b.n,'th')).forEach(d=>{
-        grand+=d.cost; let statusBadge = d.p ? '<span class="text-green-600 font-bold">จ่ายแล้ว</span>' : '<span class="text-red-600 font-bold">ค้างชำระ</span>'; 
+        grand+=d.cost;
+        let b = sum[d.n] ? sum[d.n].d - sum[d.n].p : 0;
+        let isPaidToday = d.p || (b <= TOLERANCE);
+        
+        let statusBadge = '';
+        if (d.p) {
+            statusBadge = '<span class="text-green-600 font-bold">จ่ายแล้ว</span>';
+        } else if (isPaidToday) {
+            statusBadge = '<span class="text-blue-600 font-bold" title="หักลบจากเครดิตคงเหลือในบัญชีอัตโนมัติ">จ่ายแล้ว (เครดิต)</span>';
+        } else {
+            statusBadge = '<span class="text-red-600 font-bold">ค้างชำระ</span>';
+        }
+        
         let spds = [...new Set(d.speeds)].join(', ') || '-';
-        let qrBtn = (!d.p && state.settings.promptpayId && d.cost > TOLERANCE) ? `<button onclick="showDailyQR('${escapeHtml(d.n)}', ${d.cost})" class="btn btn-sm btn-indigo" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
+        let qrBtn = (!isPaidToday && state.settings.promptpayId && d.cost > TOLERANCE) ? `<button onclick="showDailyQR('${escapeHtml(d.n)}', ${d.cost})" class="btn btn-sm btn-indigo" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
         let costDisplay = `<div class="flex items-center justify-center gap-1 cursor-pointer group" onclick="addExtraCost('${escapeHtml(d.n)}')" title="คลิกเพื่อบวกค่าจิปาถะ">
             ${d.extraCost > 0 ? `<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1 rounded border border-indigo-100">+${d.extraCost.toFixed(0)}</span>` : ''}
             <span>${d.cost.toFixed(2)}</span>
             <i class="fas fa-plus-circle ${d.extraCost > 0 ? 'text-indigo-500' : 'text-gray-300 group-hover:text-indigo-500'} transition-colors"></i>
         </div>`;
         let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${costDisplay}</td><td class="text-center">${statusBadge}</td><td class="text-center"><div class="flex justify-center items-center gap-1"><button onclick="togglePlayerPaidStatus('${escapeHtml(d.n)}')" class="btn btn-sm ${d.p?'btn-secondary':'btn-warning'}">${d.p?'ยกเลิก':'จ่าย'}</button>${qrBtn}</div></td></tr>`;
-        if(d.p) pd+=row; else un+=row;
+        if(isPaidToday) pd+=row; else un+=row;
     });
     document.getElementById('summaryTableUnpaid').innerHTML = un; document.getElementById('summaryTablePaid').innerHTML = pd; document.getElementById('grandTotal').innerText = grand.toFixed(2);
 
@@ -1233,7 +1246,10 @@ function renderAccount() {
                     <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
                     <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight">${nameHtml}</div>
                 </div>
-                <span class="text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full text-xs whitespace-nowrap">เครดิต ${(-b).toFixed(2)}</span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full text-xs whitespace-nowrap">เครดิต ${(-b).toFixed(2)}</span>
+                    <button class="btn btn-sm btn-success px-2.5 py-1 shadow-sm shrink-0" onclick="openPaymentModal('${nameHtml}')" title="เติมเงินล่วงหน้า"><i class="fas fa-plus"></i> เติมเงิน</button>
+                </div>
             </div>`; 
         }
         else { 
@@ -1242,7 +1258,10 @@ function renderAccount() {
                     <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
                     <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight">${nameHtml}</div>
                 </div>
-                <span class="text-green-600 font-bold text-xs whitespace-nowrap"><i class="fas fa-check-circle mr-1"></i>ไม่มีค้างชำระ</span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-green-600 font-bold text-xs whitespace-nowrap"><i class="fas fa-check-circle mr-1"></i>ไม่มีค้างชำระ</span>
+                    <button class="btn btn-sm btn-success px-2.5 py-1 shadow-sm shrink-0" onclick="openPaymentModal('${nameHtml}')" title="เติมเงินล่วงหน้า"><i class="fas fa-plus"></i> เติมเงิน</button>
+                </div>
             </div>`; 
         }
     });
@@ -1871,6 +1890,40 @@ function submitPayment() {
     Swal.fire({icon:'success', title:'บันทึกชำระเงินแล้ว', toast:true, position:'top-end', timer:1500, showConfirmButton:false});
 }
 
+function openGlobalPaymentModal() {
+    const opts = state.masterPlayerList.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    Swal.fire({
+        title: 'รับเงิน / เติมเงินล่วงหน้า',
+        html: `
+            <div style="text-align: left; margin-bottom: 6px;"><label class="swal2-label" style="font-weight: 600; font-size: 14px; color: #64748b;">ชื่อผู้เล่น</label></div>
+            <select id="global-payment-name" class="swal2-select" style="margin: 0 0 15px 0; width: 100%; display: block; box-sizing: border-box; font-family: 'Sarabun', sans-serif;">
+                ${opts}
+            </select>
+            <div style="text-align: left; margin-bottom: 6px;"><label class="swal2-label" style="font-weight: 600; font-size: 14px; color: #64748b;">จำนวนเงิน (บาท)</label></div>
+            <input type="number" id="global-payment-amount" class="swal2-input" style="margin: 0; width: 100%; display: block; box-sizing: border-box; font-family: 'Sarabun', sans-serif;" placeholder="0.00" min="0" step="any">
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึกการชำระเงิน',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#64748b',
+        preConfirm: () => {
+            const name = document.getElementById('global-payment-name').value;
+            const amount = parseFloat(document.getElementById('global-payment-amount').value);
+            if (!name) { Swal.showValidationMessage('กรุณาเลือกผู้เล่น'); return false; }
+            if (isNaN(amount) || amount <= 0) { Swal.showValidationMessage('กรุณากรอกจำนวนเงินที่ถูกต้อง'); return false; }
+            return { name, amount };
+        }
+    }).then(res => {
+        if (res.isConfirmed) {
+            state.allPayments.push({ id: Date.now(), date: getTodayString(), name: res.value.name, amount: res.value.amount, isAutoDaily: false });
+            autoReconcileDailyDebts(res.value.name);
+            updateAndRender();
+            Swal.fire({icon: 'success', title: 'บันทึกชำระเงินเรียบร้อย', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+        }
+    });
+}
+
 function autoReconcileDailyDebts(playerName) {
     let manualPaymentsTotal = state.allPayments.filter(p => p.name === playerName && !p.isAutoDaily).reduce((sum, p) => sum + p.amount, 0);
     let manualDebtsTotal = state.allTransactions.filter(t => t.name === playerName && !t.isAutoDaily).reduce((sum, t) => sum + t.totalCost, 0);
@@ -2012,6 +2065,7 @@ function bindEvents() {
         $('debt-player-list').innerHTML = state.masterPlayerList.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
         $('debt-modal').classList.remove('hidden');
     });
+    $('btnReceivePayment').addEventListener('click', openGlobalPaymentModal);
     ['btnCloseDebt', 'btnCancelDebt'].forEach(id => $(id).addEventListener('click', () => $('debt-modal').classList.add('hidden')));
     $('btnSubmitDebt').addEventListener('click', () => {
         const name = $('debt-name').value.trim(); const amt = parseFloat($('debt-amount').value);
