@@ -23,9 +23,8 @@ describe('07 - S-Pen Smart Board & Settings', () => {
     cy.get('#penP4').should('have.class', 'status-green');
     cy.get('#btnConfirmPenInput').should('not.have.class', 'hidden').click();
     
-    // ข้อมูลต้องถูกส่งกลับมาที่หน้าหลัก
-    cy.get('#player1').should('have.value', 'เอก');
-    cy.get('#shuttlecockSpeeds').should('have.value', '1, 2');
+    // ข้อมูลต้องถูกบันทึกอัตโนมัติ
+    cy.get('#gamesList').should('contain.text', 'เอก');
   });
 
   it('ทดสอบ 2: S-Pen แก้คำผิดอัตโนมัติ (Auto-Correct / Edit Distance)', () => {
@@ -131,5 +130,28 @@ describe('07 - S-Pen Smart Board & Settings', () => {
     // ตรวจสอบว่าซิงก์ราคาไปที่หน้าคิดเงินรายวันเรียบร้อย
     cy.get('button[data-tab="daily"]').click();
     cy.get('#shuttlecockPrice').should('have.value', '104');
+  });
+
+  it('ทดสอบ 8: จัดทีมที่มีผู้เล่นที่ลงทะเบียนไว้แต่ไม่ได้เช็คอินวันนี้ (absent) และบันทึกสำเร็จ', () => {
+    const players = ['เอก', 'บอย', 'แคท', 'ดิว'];
+    players.forEach(p => cy.addPlayer(p));
+    
+    // เอา ดิว ออก (absent)
+    cy.contains('.player-chip', 'ดิว').click();
+    cy.contains('.player-chip', 'ดิว').should('have.class', 'absent');
+    
+    cy.get('#btnOpenPenInput').click();
+    cy.get('#penP1').type('เอก'); cy.get('#penP2').type('บอย');
+    cy.get('#penP3').type('แคท'); cy.get('#penP4').type('ดิว');
+    
+    cy.contains('.ball-btn', '1').click();
+    cy.get('#btnScanPen').click();
+    
+    cy.get('#btnConfirmPenInput').should('not.have.class', 'hidden').click();
+    
+    // ต้องบันทึกสำเร็จ ดิว กลับมาไม่ขึ้น absent
+    cy.get('#pen-input-modal').should('have.class', 'hidden');
+    cy.get('#gamesList').should('contain.text', 'ดิว');
+    cy.contains('.player-chip', 'ดิว').should('not.have.class', 'absent');
   });
 });

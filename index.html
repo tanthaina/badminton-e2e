@@ -144,7 +144,6 @@
                 <div class="relative mb-2"><input type="text" id="searchDailyPlayer" class="form-control" placeholder="🔍 ค้นหาชื่อผู้เล่น..."></div>
                 <div class="flex flex-col sm:flex-row gap-2">
                     <select id="newPlayerPrefix" class="form-control form-select" style="width:auto; flex-shrink:0;">
-                        <option value="ทั่วไป">ทั่วไป</option><option value="ตากฟ้า">ตากฟ้า</option><option value="ตาคลี">ตาคลี</option><option value="นครสวรรค์">นครสวรรค์</option>
                     </select>
                     <input type="text" id="newPlayerName" class="form-control flex-1" placeholder="พิมพ์ชื่อผู้เล่นใหม่...">
                     <button id="btnAddPlayer" class="btn btn-primary"><i class="fas fa-user-plus"></i>เพิ่มผู้เล่น</button>
@@ -272,9 +271,12 @@
             <button class="btn-ghost btn-icon btn text-white" id="btnClosePenInput"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body space-y-4 bg-slate-50">
-            <div class="flex justify-between items-center bg-indigo-50 p-2 rounded-lg border border-indigo-100">
-                <span class="text-sm font-bold text-indigo-800"><i class="fas fa-microphone-alt mr-1"></i> จัดทีมด้วยเสียง:</span>
-                <button id="btnVoiceCommand" class="btn btn-sm btn-indigo shadow-sm"><i class="fas fa-bullhorn"></i> แตะเพื่อพูด</button>
+            <div class="flex flex-wrap justify-between items-center bg-indigo-50 p-2 rounded-lg border border-indigo-100 gap-2">
+                <span class="text-sm font-bold text-indigo-800"><i class="fas fa-microphone-alt mr-1"></i> จัดทีมด้วยเสียง / จัดการ:</span>
+                <div class="flex gap-2">
+                    <button id="btnVoiceCommand" class="btn btn-sm btn-indigo shadow-sm"><i class="fas fa-bullhorn"></i> แตะเพื่อพูด</button>
+                    <button id="btnPenQuickAddPlayer" class="btn btn-sm btn-success shadow-sm" onclick="quickAddPlayer()"><i class="fas fa-user-plus"></i> เพิ่มผู้เล่นด่วน</button>
+                </div>
             </div>
             
             <div class="court-container">

@@ -27,7 +27,7 @@ let state = createDefaultState(); let selectedDate = getTodayString(); let curre
 let currentPenMatchedBalls = []; let focusedFieldId = 'penP1'; let _editGameId = null;
 let currentGameShuttlecockSpeeds = [];
 
-function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncRoomId: 'badminton_default' }, timestamp: 0 }; }
+function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncRoomId: 'badminton_default', prefixes: ['ทั่วไป', 'ตากฟ้า', 'ตาคลี', 'นครสวรรค์'] }, timestamp: 0 }; }
 function getTodayString() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 function escapeHtml(str) { return String(str||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 function getPlayerColor(name) { if(!name) return PLAYER_COLORS[0]; const sum = [...String(name)].reduce((a,c)=>a+c.charCodeAt(0),0); return PLAYER_COLORS[sum%PLAYER_COLORS.length]; }
@@ -52,6 +52,7 @@ function saveToStorage() {
 function loadFromStorage() { try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) state = JSON.parse(raw)||createDefaultState(); }catch(e){ state = createDefaultState(); } }
 function ensureIntegrity() {
     state.settings = state.settings || { shuttlecockPrice:0 };
+    if (!state.settings.prefixes) state.settings.prefixes = ['ทั่วไป', 'ตากฟ้า', 'ตาคลี', 'นครสวรรค์'];
     if (!state.settings.syncRoomId) state.settings.syncRoomId = 'badminton_default';
     state.masterPlayerList = (state.masterPlayerList||[]).filter(Boolean);
     state.allTransactions = state.allTransactions||[]; state.allPayments = state.allPayments||[]; state.dailyData = state.dailyData||{};
@@ -132,6 +133,7 @@ function loadFromFile(event) {
                 state.settings.syncRoomId = currentSettings.syncRoomId || state.settings.syncRoomId;
                 state.settings.promptpayId = currentSettings.promptpayId || state.settings.promptpayId;
                 state.settings.promptpayName = currentSettings.promptpayName || state.settings.promptpayName;
+                state.settings.prefixes = state.settings.prefixes || currentSettings.prefixes || ['ทั่วไป', 'ตากฟ้า', 'ตาคลี', 'นครสวรรค์'];
 
                 document.getElementById('shuttlecockPrice').value = state.settings.shuttlecockPrice||0;
                 document.getElementById('settingDefaultPrice').value = state.settings.shuttlecockPrice||0;
@@ -218,6 +220,57 @@ function updateNetworkStatus() {
 }
 
 // --- PLAYER MGMT ---
+function getPrefixOptionsHtml() {
+    let opts = state.settings.prefixes.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    opts += `<option value="ADD_NEW_PREFIX" style="font-weight: bold; color: #4f46e5;">+ เพิ่มคำนำหน้าใหม่...</option>`;
+    return opts;
+}
+
+function renderPrefixDropdowns() {
+    const opts = getPrefixOptionsHtml();
+    const mainEl = $('newPlayerPrefix');
+    if (mainEl) {
+        const currentVal = mainEl.value;
+        mainEl.innerHTML = opts;
+        if (state.settings.prefixes.includes(currentVal)) {
+            mainEl.value = currentVal;
+        } else {
+            mainEl.value = 'ทั่วไป';
+        }
+    }
+}
+
+function handlePrefixChange(e) {
+    if (e.target && e.target.value === 'ADD_NEW_PREFIX') {
+        const selectEl = e.target;
+        setTimeout(() => {
+            const val = prompt('พิมพ์คำนำหน้าใหม่ (เช่น ตาคลี, นครสวรรค์):');
+            if (val && val.trim()) {
+                const cleaned = val.trim();
+                if (state.settings.prefixes.includes(cleaned)) {
+                    Swal.fire({icon: 'warning', title: 'มีคำนำหน้านี้อยู่แล้ว', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000});
+                    selectEl.value = cleaned;
+                } else {
+                    state.settings.prefixes.push(cleaned);
+                    _isDailyDirty = true;
+                    saveToStorage();
+                    renderPrefixDropdowns();
+                    const swalEl = $('swalQuickPrefix');
+                    if (swalEl) {
+                        swalEl.innerHTML = getPrefixOptionsHtml();
+                        swalEl.value = cleaned;
+                    } else {
+                        selectEl.value = cleaned;
+                    }
+                    Swal.fire({icon: 'success', title: 'เพิ่มคำนำหน้าสำเร็จ', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+                }
+            } else {
+                selectEl.value = state.settings.prefixes[0] || 'ทั่วไป';
+            }
+        }, 10);
+    }
+}
+
 function addPlayer() {
     const pfx = $('newPlayerPrefix').value; 
     const raw = $('newPlayerName').value.trim(); 
@@ -240,7 +293,7 @@ function addPlayer() {
 function quickAddPlayer() {
     Swal.fire({
         title: 'เพิ่มผู้เล่นด่วน',
-        html: `<select id="swalQuickPrefix" class="swal2-select" style="margin: 10px auto; width: 85%; font-size: 16px;"><option value="ทั่วไป">ทั่วไป</option><option value="ตากฟ้า">ตากฟ้า</option><option value="ตาคลี">ตาคลี</option><option value="นครสวรรค์">นครสวรรค์</option></select>
+        html: `<select id="swalQuickPrefix" class="swal2-select" style="margin: 10px auto; width: 85%; font-size: 16px;">${getPrefixOptionsHtml()}</select>
                <input id="swalQuickName" class="swal2-input" placeholder="พิมพ์ชื่อผู้เล่น..." style="margin: 10px auto; width: 85%;">`,
         showCancelButton: true, confirmButtonText: 'เพิ่มผู้เล่น', cancelButtonText: 'ยกเลิก',
         preConfirm: () => {
@@ -254,7 +307,25 @@ function quickAddPlayer() {
             if(state.masterPlayerList.includes(name)) return Swal.fire({icon:'warning', title:'มีชื่อนี้ในระบบแล้ว', toast:true, position:'top-end', timer: 2000, showConfirmButton:false});
             state.masterPlayerList.push(name); state.masterPlayerList.sort((a, b) => a.localeCompare(b, 'th'));
             const dd = getCurrentDailyData(); if(!dd.players.find(p => p.name === name)) dd.players.push({ name, paid: false, present: true });
-            updateAndRender(); Swal.fire({icon:'success', title:'เพิ่มสำเร็จ!', toast:true, position:'top-end', timer: 1500, showConfirmButton:false});
+            updateAndRender();
+            
+            // UX Polish: If Smart Board modal is open, auto-fill current active field
+            if (!$('pen-input-modal').classList.contains('hidden') && focusedFieldId) {
+                $(focusedFieldId).value = name;
+                $(focusedFieldId).dataset.confirmed = '1';
+                scanPenInput();
+                // Focus next field
+                let nIdx = (PEN_FIELDS.indexOf(focusedFieldId) + 1) % 4;
+                let c = 0;
+                while ($(PEN_FIELDS[nIdx]).value !== '' && c < 4) {
+                    nIdx = (nIdx + 1) % 4;
+                    c++;
+                }
+                focusedFieldId = PEN_FIELDS[nIdx];
+                $(focusedFieldId).focus();
+            }
+            
+            Swal.fire({icon:'success', title:'เพิ่มสำเร็จ!', toast:true, position:'top-end', timer: 1500, showConfirmButton:false});
         }
     });
 }
@@ -423,84 +494,271 @@ function getEditDistance(a, b) {
 }
 function confirmPenData() {
     const n = PEN_FIELDS.map(id=>$(id).value);
-    const dd = getCurrentDailyData(); n.forEach(x=>{ let p=dd.players.find(y=>y.name===x); if(!p) dd.players.push({name:x,paid:false,present:true}); else p.present=true; });
+    const dd = getCurrentDailyData(); 
+    n.forEach(x=>{ 
+        let p=dd.players.find(y=>y.name===x); 
+        if(!p) dd.players.push({name:x,paid:false,present:true}); 
+        else p.present=true; 
+    });
+    
+    // Re-render the daily page to populate select dropdown options with the newly added/present players
+    renderDaily();
+    
     PLAYER_FIELDS.forEach((id,i)=>{ currentGameSelection[id]=n[i]; $(id).value=n[i]; });
     $('shuttlecockSpeeds').value = currentPenMatchedBalls.join(', ');
-    closePenInputModal(); updateAndRender(); Swal.fire({icon:'success',title:'ลงสนามสำเร็จ!',toast:true,position:'top-end',showConfirmButton:false,timer:1500});
+    currentGameShuttlecockSpeeds = [...currentPenMatchedBalls];
+    
+    closePenInputModal(); 
+    
+    // Automatically record the game
+    recordGame();
 }
 
-// --- VOICE COMMAND (Smart) ---
+/**
+ * ===== VOICE COMMAND SYSTEM (Smart Board AI Input) =====
+ * 
+ * ฟีเจอร์นี้ใช้ Web Speech API เพื่อรับคำพูดเป็นภาษาไทย
+ * ฟังก์ชันหลัก:
+ *   - startVoiceCommand(): เปิดไมค์และรับเสียงพูด
+ *   - processVoiceCommand(text): วิเคราะห์ข้อความและ map ไป UI
+ *   - Helper functions: extractBallNumbers, extractPlayerNames
+ */
+
+// --- VOICE COMMAND: Text-to-Speech ---
+function speakText(text) {
+    if (!window.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'th-TH';
+    window.speechSynthesis.speak(utterance);
+}
+
+// --- VOICE COMMAND: Initialize & Listen ---
 function startVoiceCommand() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SR) { Swal.fire('ไม่รองรับ','เบราว์เซอร์นี้ไม่รองรับระบบเสียง โปรดใช้ Chrome หรือ Safari เวอร์ชั่นล่าสุด','error'); return; }
-    const rec = new SR(); rec.lang = 'th-TH'; rec.interimResults = false; rec.maxAlternatives = 1;
+    // ตรวจสอบว่าเบราว์เซอร์รองรับ Speech Recognition API
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
+    if(!SR) { 
+        Swal.fire('ไม่รองรับ','เบราว์เซอร์นี้ไม่รองรับระบบเสียง โปรดใช้ Chrome หรือ Safari เวอร์ชั่นล่าสุด','error'); 
+        return; 
+    }
     
+    const rec = new SR(); 
+    rec.lang = 'th-TH';           // ตั้งเป็นภาษาไทย
+    rec.interimResults = false;   // ไม่ต้องแสดงผลระหว่างพูด
+    rec.maxAlternatives = 1;      // รับคำตรวจหลักเดียว
+    
+    // Handler ปัญหาด้านไมค์
     rec.onerror = e => { 
         Swal.close(); 
-        if(e.error === 'not-allowed') Swal.fire('ไม่อนุญาตให้ใช้ไมค์','โปรดตรวจสอบสิทธิ์การเข้าถึงไมโครโฟนในการตั้งค่าเบราว์เซอร์ของคุณ','error');
-        else if(e.error!=='aborted' && e.error!=='no-speech') Swal.fire('ผิดพลาด','ระบบฟังเสียงขัดข้องหรือฟังไม่ถนัด ลองใหม่อีกครั้งครับ','warning'); 
+        if(e.error === 'not-allowed') {
+            Swal.fire('ไม่อนุญาตให้ใช้ไมค์','โปรดตรวจสอบสิทธิ์การเข้าถึงไมโครโฟนในการตั้งค่าเบราว์เซอร์ของคุณ','error');
+        } else if(e.error!=='aborted' && e.error!=='no-speech') {
+            Swal.fire('ผิดพลาด','ระบบฟังเสียงขัดข้องหรือฟังไม่ถนัด ลองใหม่อีกครั้งครับ','warning'); 
+        }
     };
-    rec.onend = () => { if(Swal.isVisible() && Swal.getTitle()?.textContent==='🎙️ ฟังอยู่...') Swal.close(); };
-    rec.onresult = e => { Swal.close(); processVoiceCommand(e.results[0][0].transcript); };
+    
+    // ปิด popup เมื่อจบการฟัง
+    rec.onend = () => { 
+        if(Swal.isVisible() && Swal.getTitle()?.textContent==='🎙️ ฟังอยู่...') Swal.close(); 
+    };
+    
+    // ประมวลผลผลลัพธ์หลังจบการฟัง
+    rec.onresult = e => { 
+        Swal.close(); 
+        const transcript = e.results[0][0].transcript;
+        processVoiceCommand(transcript); 
+    };
 
     try {
-        rec.start(); // ย้ายมา Start แบบ Sync เพื่อแก้บั๊ก iOS Safari บล็อกไมค์
-        Swal.fire({ title:'🎙️ ฟังอยู่...', html:'พูดชื่อคนที่ลงสนาม หรือเบอร์ลูก<br><span class="text-xs text-gray-500 font-bold mt-1 block">ตัวอย่าง: "ก้อง แทน หมู แมน ลูก 1"</span><span class="text-xs text-indigo-500 block mt-1"><i class="fas fa-magic"></i> พูด "ล้างกระดาน" หรือ "ยืนยัน" เพื่อสั่งงานได้</span>', showConfirmButton:true, confirmButtonText:'<i class="fas fa-stop-circle"></i> พูดจบแล้ว', showCancelButton:true, allowOutsideClick:false }).then(r=>{ if(r.isConfirmed) rec.stop(); else if(r.isDismissed) rec.abort(); });
-    } catch(err) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเปิดไมค์ได้: ' + err.message, 'error'); }
-}
-function processVoiceCommand(transcript) {
-    let text = transcript;
-    let cleanText = text.replace(/\s/g, '');
-
-    // 0. คำสั่งเสียงด่วน (Voice Shortcuts)
-    if (/^(ล้างกระดาน|เริ่มใหม่|เคลียร์|ลบใหม่|เอาใหม่|ล้างข้อมูล|ล้าง)$/.test(cleanText)) {
-        PEN_FIELDS.forEach(id=>{ const el=$(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; });
-        document.querySelectorAll('.ball-btn').forEach(b=>b.classList.remove('active')); currentPenMatchedBalls=[];
-        scanPenInput();
-        return Swal.fire({icon:'info', title:'🧹 ล้างกระดานแล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:2000});
+        rec.start(); // Start แบบ Sync เพื่อแก้บั๊ก iOS Safari
+        
+        // แสดง UI แจ้งเตือนว่ากำลังฟัง
+        Swal.fire({ 
+            title:'🎙️ ฟังอยู่...', 
+            html:'พูดชื่อคนที่ลงสนาม หรือเบอร์ลูก<br><span class="text-xs text-gray-500 font-bold mt-1 block">ตัวอย่าง: "ก้อง แทน หมู แมน ลูก 1"</span><span class="text-xs text-indigo-500 block mt-1"><i class="fas fa-magic"></i> พูด "ล้างกระดาน" หรือ "ยืนยัน" เพื่อสั่งงานได้</span>', 
+            showConfirmButton:true, 
+            confirmButtonText:'<i class="fas fa-stop-circle"></i> พูดจบแล้ว', 
+            showCancelButton:true, 
+            allowOutsideClick:false 
+        }).then(r=>{ 
+            if(r.isConfirmed) rec.stop(); 
+            else if(r.isDismissed) rec.abort(); 
+        });
+    } catch(err) { 
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเปิดไมค์ได้: ' + err.message, 'error'); 
     }
+}
+// --- VOICE COMMAND: Helper Functions ---
+
+/**
+ * ดึงเบอร์ลูกจากข้อความเสียง
+ * ตัวอย่าง: "ลูก 7 5" → [7, 5]
+ */
+function extractBallNumbers(text) {
+    let balls = [];
+    const thMap = {'หนึ่ง':'1','สอง':'2','สาม':'3','สี่':'4','ห้า':'5','หก':'6','เจ็ด':'7','แปด':'8','เก้า':'9','สิบ':'10','สิบเอ็ด':'11','สิบสอง':'12'};
+    
+    // ค้นหาแบบ "ลูก X", "เบอร์ X", "ใช้ลูก X"
+    let numRegex = /(?:ลูก|เบอร์|ใช้ลูก|ลูกที่)\s*(\d+|หนึ่ง|สอง|สาม|สี่|ห้า|หก|เจ็ด|แปด|เก้า|สิบเอ็ด|สิบสอง|สิบ)/g;
+    let match;
+    while((match = numRegex.exec(text)) !== null) { 
+        let val = match[1];
+        if (thMap[val]) val = thMap[val];
+        if(!balls.includes(val)) balls.push(val); 
+    }
+    text = text.replace(numRegex, ' ');
+    
+    // ค้นหาตัวเลขโดดๆ ที่เหลือ
+    let pureNumbers = text.split(/\s+/).filter(w => /^\d+$/.test(w));
+    pureNumbers.forEach(n => { 
+        if(!balls.includes(n)) balls.push(n); 
+    });
+    
+    return balls;
+}
+
+/**
+ * ดึงชื่อผู้เล่นจากข้อความ พร้อม auto-correct ตามชื่อที่มีอยู่
+ */
+function extractPlayerNames(text) {
+    // สร้าง alias list สำหรับจับคู่ชื่อ
+    let aliases = []; 
+    state.masterPlayerList.forEach(n => {
+        aliases.push(n); // ชื่อเต็ม (e.g., "ตากฟ้า: สมชาย")
+        if(n.includes(': ')) {
+            aliases.push(n.split(': ')[1]); // ชื่อย่อ (e.g., "สมชาย")
+            aliases.push(n.replace(': ', ' ')); // ชื่อเต็มเว้นวรรค
+            aliases.push(n.replace(': ', '')); // ชื่อเต็มติดกัน (e.g., "ตากฟ้าสมชาย")
+        }
+    });
+    
+    // เพิ่ม auto-correct mapping (แกน→แทน, หนู→หมู, เป็นต้น)
+    const autoMap = {'แกน':'แทน','หนู':'หมู','เบน':'แมน','สากล':'สากดา','พี่ปุ้ย':'พี่ปุ๋ย'}; 
+    Object.keys(autoMap).forEach(k => aliases.push(k)); 
+    Object.values(autoMap).forEach(v => aliases.push(v));
+    
+    // เรียงลำดับตามความยาวเพื่อให้ match ชื่อยาวก่อน
+    aliases = [...new Set(aliases)].sort((a,b) => b.length - a.length);
+    let found = []; 
+    let t = text;
+    
+    // ค้นหาชื่อที่ตรงเป๊ะจากซ้ายไปขวา
+    aliases.forEach(a => { 
+        let i = t.indexOf(a); 
+        while(i !== -1) { 
+            found.push({name: a, i}); 
+            t = t.substring(0, i) + ' '.repeat(a.length) + t.substring(i + a.length); 
+            i = t.indexOf(a); 
+        } 
+    });
+    
+    // ค้นหาคำคงเหลือ
+    let stopWords = /ทีม\s*[12]|ทีม\s*[ab]|ทีมหนึ่ง|ทีมสอง|ทีมเอ|ทีมบี|คู่กับ|และ|กับ|คู่|เจอ|ปะทะ|ฝั่ง|ทาง|ครับ|ค่ะ|จ้ะ|จ้า|เอ่อ|อ่า|อืม|คือ|แบบว่า|เอา|ลง|เล่น|ตี|จัด|ขอ|หน่อย|คน|ชื่อ/ig;
+    let left = t.replace(stopWords, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+    
+    let searchBase = text;
+    left.forEach(w => { 
+        if(w.length >= 2) { 
+            let idx = searchBase.indexOf(w); 
+            if(idx !== -1) { 
+                found.push({name: w, i: idx}); 
+                searchBase = searchBase.substring(0, idx) + ' '.repeat(w.length) + searchBase.substring(idx + w.length); 
+            } else { 
+                found.push({name: w, i: 999}); 
+            } 
+        } 
+    });
+    
+    // เรียง found ตามตำแหน่งเดิมในข้อความ
+    found.sort((a, b) => a.i - b.i); 
+    
+    // Map กลับเป็นชื่อเต็มใน masterPlayerList หรือชื่อเดิมถ้าไม่มี
+    return found.map(x => {
+        let name = x.name;
+        let actual = Object.keys(autoMap).find(k => autoMap[k] === name) ? autoMap[name] || name : name;
+        let master = state.masterPlayerList.find(m => m === actual || m.replace(': ',' ') === actual || m.replace(': ','') === actual || m.endsWith(': ' + actual));
+        return master || actual;
+    });
+}
+
+/**
+ * ประมวลผลคำสั่งแบบด่วน (shortcuts)
+ * คืน true ถ้าประมวลผลแล้ว, false ถ้าต้องประมวลผลต่อ
+ */
+function handleVoiceShortcuts(cleanText) {
+    // ล้างกระดาน
+    if (/^(ล้างกระดาน|เริ่มใหม่|เคลียร์|ลบใหม่|เอาใหม่|ล้างข้อมูล|ล้าง)$/.test(cleanText)) {
+        PEN_FIELDS.forEach(id => { 
+            const el = $(id); 
+            el.value = ''; 
+            el.dataset.confirmed = ''; 
+            el.className = 'court-input'; 
+        });
+        document.querySelectorAll('.ball-btn').forEach(b => b.classList.remove('active')); 
+        currentPenMatchedBalls = [];
+        scanPenInput();
+        speakText('ล้างกระดานเรียบร้อยแล้ว');
+        Swal.fire({icon:'info', title:'🧹 ล้างกระดานแล้ว', toast:true, position:'top-end', showConfirmButton:false, timer:2000});
+        return true;
+    }
+    
+    // ยืนยันการเลือก
     if (/^(ยืนยัน|ตกลง|บันทึก|บันทึกทีม|ลงสนาม|เรียบร้อย|โอเค)$/.test(cleanText)) {
         let allG = PEN_FIELDS.every(id => $(id).className.includes('status-green'));
         let hasBalls = currentPenMatchedBalls.length > 0;
-        if (allG && hasBalls) return confirmPenData();
-        else return Swal.fire({icon:'error', title:'ยังยืนยันไม่ได้', text:'โปรดจัดชื่อให้ครบ 4 คน (สีเขียว) และเลือกเบอร์ลูกก่อน', toast:true, position:'top-end', showConfirmButton:false, timer:3000});
+        if (allG && hasBalls) {
+            speakText('ลงสนามสำเร็จ');
+            confirmPenData();
+        } else {
+            speakText('ข้อมูลยังไม่สมบูรณ์ โปรดตรวจสอบชื่อและเบอร์ลูก');
+            Swal.fire({
+                icon:'error', 
+                title:'ยังยืนยันไม่ได้', 
+                text:'โปรดจัดชื่อให้ครบ 4 คน (สีเขียว) และเลือกเบอร์ลูกก่อน', 
+                toast:true, 
+                position:'top-end', 
+                showConfirmButton:false, 
+                timer:3000
+            });
+        }
+        return true;
     }
+    
+    return false;
+}
 
-    // 1. ดึงเบอร์ลูกออกจากคำพูด เช่น "ลูก 75", "เบอร์ 1", "ใช้ลูก 2" หรือตัวเลขโดดๆ
+// --- VOICE COMMAND: Main Processing ---
+
+function processVoiceCommand(transcript) {
+    let cleanText = transcript.replace(/\s/g, '').replace(/(ครับ|ค่ะ|นะคะ|นะ|จ้ะ|จ้า)$/g, '');
+    let text = transcript.replace(/(ครับ|ค่ะ|นะคะ|นะ|จ้ะ|จ้า)$/g, '').trim();
+
+    // [0] ตรวจสอบคำสั่งแบบด่วนก่อน
+    if (handleVoiceShortcuts(cleanText)) return;
+
+    // [1] ดึงเบอร์ลูก
+    currentPenMatchedBalls = extractBallNumbers(text);
+    
+    // ล้าง text หลังจากดึงตัวเลขออกมา
     let numRegex = /(?:ลูก|เบอร์|ใช้ลูก|ลูกที่)\s*(\d+)/g;
-    let match;
-    while((match = numRegex.exec(text)) !== null) { if(!currentPenMatchedBalls.includes(match[1])) currentPenMatchedBalls.push(match[1]); }
-    text = text.replace(numRegex, ' '); 
-
-    let pureNumbers = text.split(/\s+/).filter(w => /^\d+$/.test(w));
-    pureNumbers.forEach(n => { if(!currentPenMatchedBalls.includes(n)) currentPenMatchedBalls.push(n); });
+    text = text.replace(numRegex, ' ');
     text = text.replace(/\b\d+\b/g, ' ');
 
-    // 2. กรองคำเชื่อมและคำสร้อย (Advanced Stop words)
-    let stopWords = /ทีม\s*[12]|ทีม\s*[ab]|ทีมหนึ่ง|ทีมสอง|ทีมเอ|ทีมบี|คู่กับ|และ|กับ|คู่|เจอ|ปะทะ|ฝั่ง|ทาง|ครับ|ค่ะ|จ้ะ|จ้า|เอ่อ|อ่า|อืม|คือ|แบบว่า|เอา|ลง|เล่น|ตี|จัด|ขอ|หน่อย|คน|ชื่อ/ig;
+    // [2] ดึงชื่อผู้เล่น
+    let playerNames = extractPlayerNames(text);
 
-    let aliases = []; state.masterPlayerList.forEach(n=>aliases.push(n.includes(': ')?n.split(': ')[1]:n));
-    const autoMap = {'แกน':'แทน','หนู':'หมู','เบน':'แมน','สากล':'สากดา','พี่ปุ้ย':'พี่ปุ๋ย'}; Object.keys(autoMap).forEach(k=>aliases.push(k)); Object.values(autoMap).forEach(v=>aliases.push(v));
-    aliases = [...new Set(aliases)].sort((a,b)=>b.length-a.length);
-    let found = []; let t = text;
-    
-    // 3. ค้นหาชื่อที่ตรงเป๊ะ
-    aliases.forEach(a=>{ let i=t.indexOf(a); while(i!==-1){ found.push({name:a, i}); t=t.substring(0,i)+' '.repeat(a.length)+t.substring(i+a.length); i=t.indexOf(a); } });
-    let left = t.replace(stopWords,' ').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
-    
-    // 4. ชื่อแปลกๆ ที่เหลือ
-    let searchBase = text;
-    left.forEach(w=>{ if(w.length>=2){ let idx=searchBase.indexOf(w); if(idx!==-1){ found.push({name:w, i:idx}); searchBase=searchBase.substring(0,idx)+' '.repeat(w.length)+searchBase.substring(idx+w.length); } else { found.push({name:w, i:999}); } } });
-    
-    found.sort((a,b)=>a.i-b.i); let f = found.map(x=>x.name);
-    
-    // 5. อัปเดต UI ของเบอร์ลูกแบด
-    currentPenMatchedBalls.sort((a,b)=>a-b);
-    document.querySelectorAll('.ball-btn').forEach(btn => { if(currentPenMatchedBalls.includes(btn.innerText)) btn.classList.add('active'); });
+    // [3] อัปเดต UI ของเบอร์ลูกแบด
+    currentPenMatchedBalls.sort((a, b) => a - b);
+    document.querySelectorAll('.ball-btn').forEach(btn => { 
+        if(currentPenMatchedBalls.includes(btn.innerText)) btn.classList.add('active'); 
+    });
 
-    // 6. เติมชื่อลงในช่องที่ยังว่างอยู่ (ไม่ล้างของเดิมที่พิมพ์ไว้)
+    // [4] เติมชื่อลงในช่องที่ยังว่างอยู่ (ไม่ล้างของเดิม)
     let availableFields = PEN_FIELDS.filter(id => !$(id).value.trim());
-    f.forEach((name, idx) => { if(availableFields[idx]) $(availableFields[idx]).value = name; });
+    playerNames.forEach((name, idx) => { 
+        if(availableFields[idx]) $(availableFields[idx]).value = name; 
+    });
     
+    // ตรวจสอบความถูกต้องและแสดง UI ผล
     scanPenInput(); 
     
     let isWarning = PEN_FIELDS.some(id => {
@@ -508,10 +766,27 @@ function processVoiceCommand(transcript) {
         return cls.includes('status-yellow') || cls.includes('status-red');
     });
 
-    if(isWarning || (f.length > 0 && currentPenMatchedBalls.length === 0)) {
-        Swal.fire({icon:'warning',title:'ประมวลผลเสียง',text:`ได้ยินว่า: "${transcript}"\nโปรดตรวจสอบหรือจิ้มแก้ชื่อให้เป็นสีเขียว`,toast:true,position:'top-end',showConfirmButton:false,timer:4000});
-    } else if (f.length > 0 || currentPenMatchedBalls.length > 0) {
-        Swal.fire({icon:'success',title:'รับคำสั่งเสียง!',text:`"${transcript}"`,toast:true,position:'top-end',showConfirmButton:false,timer:2500});
+    // [5] แสดงผลลัพธ์
+    if(isWarning || (playerNames.length > 0 && currentPenMatchedBalls.length === 0)) {
+        Swal.fire({
+            icon:'warning',
+            title:'ประมวลผลเสียง',
+            text:`ได้ยินว่า: "${transcript}"\nโปรดตรวจสอบหรือจิ้มแก้ชื่อให้เป็นสีเขียว`,
+            toast:true,
+            position:'top-end',
+            showConfirmButton:false,
+            timer:4000
+        });
+    } else if (playerNames.length > 0 || currentPenMatchedBalls.length > 0) {
+        Swal.fire({
+            icon:'success',
+            title:'รับคำสั่งเสียง!',
+            text:`"${transcript}"`,
+            toast:true,
+            position:'top-end',
+            showConfirmButton:false,
+            timer:2500
+        });
     }
 }
 
@@ -681,10 +956,11 @@ function updateDraftWarning() {
     }
 }
 
-function updateAndRender(skipSave = false) { syncAllDailyToAccount(); if (skipSave !== true) saveToStorage(); renderDaily(); renderAccount(); renderHistory(); updateDraftWarning(); }
+function updateAndRender(skipSave = false) { syncAllDailyToAccount(); if (skipSave !== true) saveToStorage(); renderDaily(); renderAccount(); renderHistory(); updateDraftWarning(); updateShuttlecockDisplay(); }
 function switchTab(name) { document.querySelectorAll('.tab-content').forEach(el=>el.classList.add('hidden')); document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active')); document.getElementById(`tab-${name}`).classList.remove('hidden'); document.querySelector(`[data-tab="${name}"]`).classList.add('active'); }
 
 function renderDaily() {
+    renderPrefixDropdowns();
     const dd = getCurrentDailyData();
     const searchQuery = (document.getElementById('searchDailyPlayer').value || '').toLowerCase();
 
@@ -1398,11 +1674,32 @@ function exportAccountText() {
         sortedDates.forEach(date => {
             let cost = txsByDate[date];
             if (totalPaid >= cost - TOLERANCE) { totalPaid -= cost; } // หักยอดที่จ่ายแล้วออกไป
-            else { let remain = cost - totalPaid; if(remain > TOLERANCE) unpaidDetails.push(`${date}: ${remain.toFixed(2)} บ.`); totalPaid = 0; }
+            else { 
+                let remain = cost - totalPaid; 
+                if(remain > TOLERANCE) {
+                    let gamesCount = 0;
+                    let ballsCount = 0;
+                    const dd = state.dailyData[date];
+                    if (dd && dd.games) {
+                        dd.games.forEach(g => {
+                            if (g.players.includes(name)) {
+                                gamesCount++;
+                                ballsCount += (g.shuttlecocksUsed || 0);
+                            }
+                        });
+                    }
+                    let countInfo = '';
+                    if (gamesCount > 0) {
+                        countInfo = ` (${gamesCount} เกม, ${ballsCount} ลูก)`;
+                    }
+                    unpaidDetails.push(`${date}: ${remain.toFixed(2)} บ.${countInfo}`); 
+                }
+                totalPaid = 0; 
+            }
         });
 
         let detailsText = unpaidDetails.length > 0 ? `\nรายละเอียดที่ค้าง:\n- ${unpaidDetails.join('\n- ')}\n` : '';
-        let ppText = state.settings.promptpayId ? `\nสแกนจ่ายหรือโอนผ่านพร้อมเพย์: ${state.settings.promptpayId}` : '';
+        let ppText = state.settings.promptpayId ? `\nโอนผ่านพร้อมเพย์: ${state.settings.promptpayId}` : '';
         if (state.settings.promptpayName) ppText += `\n(ชื่อบัญชี: ${state.settings.promptpayName})`;
         const txt = `รบกวนชำระค่าแบดมินตันครับ/ค่ะ 🏸\n\nชื่อ: ${name}\nยอดค้างชำระ: ${amount.toFixed(2)} บาท\n${detailsText}${ppText}\n\nขอบคุณครับ 🙏`;
         navigator.clipboard.writeText(txt).then(() => {
@@ -1481,7 +1778,7 @@ function showGroupBillResult(members, isDaily = false) {
                 btn.addEventListener('click', () => {
                     let txt = `รบกวนชำระค่าแบดมินตัน (รวมบิลกลุ่ม) ครับ/ค่ะ 🏸\n\nสำหรับ: ${namesList}\nยอดรวมทั้งหมด: ${totalAmount.toFixed(2)} บาท\n\nรายละเอียดที่ค้าง:\n`;
                     members.forEach(m => { txt += `- ${m.name}: ${m.debt.toFixed(2)} บ.\n`; });
-                    txt += `\nสแกนจ่ายหรือโอนผ่านพร้อมเพย์: ${ppId}`;
+                    txt += `\nโอนผ่านพร้อมเพย์: ${ppId}`;
                     if (state.settings.promptpayName) txt += `\n(ชื่อบัญชี: ${state.settings.promptpayName})`;
                     txt += `\n\nขอบคุณครับ 🙏`;
                     
@@ -1578,6 +1875,7 @@ function calcSellerPrice() {
 }
 
 function bindEvents() {
+    document.addEventListener('change', handlePrefixChange);
     document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
     $('btnAddPlayer').addEventListener('click',addPlayer);
     $('btnQuickAddPlayer').addEventListener('click',quickAddPlayer);
@@ -1690,6 +1988,16 @@ function bindEvents() {
 
     window.addEventListener('online', updateNetworkStatus);
     window.addEventListener('offline', updateNetworkStatus);
+
+    // --- FIREBASE CLEANUP ON UNLOAD ---
+    // ปิด Firebase listener อย่างเหมาะสมเมื่อปิดหน้าเพื่อป้องกัน memory leak
+    window.addEventListener('beforeunload', () => {
+        if (firebaseListenerRef) {
+            firebaseListenerRef.off(); // ยกเลิกการดักฟังการเปลี่ยนแปลงข้อมูล
+            firebaseListenerRef = null;
+        }
+        saveToStorage(); // บันทึกข้อมูลล่าสุดก่อนปิด
+    });
 
     $('btnForceUpdateApp').addEventListener('click', () => {
         if ('caches' in window) {

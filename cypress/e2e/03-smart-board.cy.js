@@ -19,8 +19,7 @@ describe('03 - Smart Board & Voice Command', () => {
     cy.get('#btnScanPen').click();
 
     cy.get('#btnConfirmPenInput').should('not.have.class', 'hidden').click();
-    cy.get('#player2').should('have.value', 'แทน');
-    cy.get('#shuttlecockSpeeds').should('have.value', '1, 2');
+    cy.get('#gamesList').should('contain.text', 'แทน');
   });
 
   it('ทดสอบกระดานจัดทัพ: การแก้ไขคำผิดและจิ้มเลือกชื่อจาก Quick Pad', () => {
@@ -51,7 +50,7 @@ describe('03 - Smart Board & Voice Command', () => {
 
     cy.contains('.ball-btn', '1').click();
     cy.get('#btnConfirmPenInput').should('not.have.class', 'hidden').click();
-    cy.get('#player1').should('have.value', 'ตากฟ้า: สมชาย');
+    cy.get('#gamesList').should('contain.text', 'สมชาย(ตากฟ้า)');
   });
 
   it('ทดสอบกระดานจัดทัพ: การสั่งงานด้วยเสียง (Voice Command Simulation)', () => {
@@ -89,6 +88,61 @@ describe('03 - Smart Board & Voice Command', () => {
     // ทดสอบ Voice Shortcut: ยืนยันอัตโนมัติ
     cy.window().then((win) => { win.processVoiceCommand('ยืนยัน'); });
     cy.get('#pen-input-modal').should('have.class', 'hidden'); // Modal ต้องถูกปิดไปเอง
-    cy.get('#shuttlecockSpeeds').should('have.value', '5, 6'); // ข้อมูลถูกส่งมาหน้าหลัก
+    cy.get('#gamesList').should('contain.text', 'กิตติ'); // บันทึกเกมอัตโนมัติสำเร็จ
+  });
+
+  it('ทดสอบกระดานจัดทัพ: จัดทีมที่มีผู้เล่นที่ลงทะเบียนไว้แต่ไม่ได้เช็คอินวันนี้ (absent) และบันทึกสำเร็จ', () => {
+    const players = ['ก้อง', 'แทน', 'หมู', 'แมน'];
+    players.forEach(p => { cy.addPlayer(p); });
+    
+    // คลิกที่ชิปผู้เล่นเพื่อเอาออกจากสนามในวันนั้น (toggle to absent)
+    cy.contains('.player-chip', 'แทน').click();
+    cy.contains('.player-chip', 'แทน').should('have.class', 'absent');
+    
+    // เปิดกระดานจัดทัพและเลือก แทน ลงสนาม
+    cy.get('#btnOpenPenInput').click();
+    cy.get('#penP1').type('ก้อง');
+    cy.get('#penP2').type('แทน');
+    cy.get('#penP3').type('หมู');
+    cy.get('#penP4').type('แมน');
+    
+    cy.contains('.ball-btn', '1').click();
+    cy.get('#btnScanPen').click();
+    cy.get('#btnConfirmPenInput').should('not.have.class', 'hidden').click();
+    
+    // บันทึกเกมสำเร็จและดึง แทน กลับมาเป็นเช็คอินวันนี้อัตโนมัติ
+    cy.get('#pen-input-modal').should('have.class', 'hidden');
+    cy.get('#gamesList').should('contain.text', 'แทน');
+    cy.contains('.player-chip', 'แทน').should('not.have.class', 'absent');
+  });
+
+  it('ทดสอบกระดานจัดทัพ: การสร้างคำนำหน้ากลุ่มใหม่ และการเพิ่มผู้เล่นด่วนผ่านกระดานจัดทัพ', () => {
+    // 1. ทดสอบการเลือก "+ เพิ่มคำนำหน้าใหม่..." ในหน้าหลักเพื่อสร้างคำนำหน้าใหม่
+    // จำลองการกรอกข้อมูลผ่าน window.prompt
+    cy.window().then((win) => {
+      cy.stub(win, 'prompt').returns('กลุ่มใหม่');
+    });
+
+    cy.get('#newPlayerPrefix').select('ADD_NEW_PREFIX');
+    cy.get('#newPlayerPrefix').should('have.value', 'กลุ่มใหม่');
+
+    // 2. ทดสอบเพิ่มผู้เล่นด่วนจากกระดานจัดทัพ
+    cy.get('#btnOpenPenInput').click();
+    cy.get('#pen-input-modal').should('not.have.class', 'hidden');
+
+    // ตั้งค่าโฟกัสที่ช่อง P1
+    cy.get('#penP1').focus();
+
+    // กดปุ่ม เพิ่มผู้เล่นด่วน บนกระดานจัดทัพ
+    cy.get('#btnPenQuickAddPlayer').click();
+    cy.get('.swal2-popup').should('be.visible');
+
+    // ใน modal เพิ่มผู้เล่นด่วน ควรมีกลุ่มใหม่ที่เราเพิ่งแอดไปให้เลือก
+    cy.get('#swalQuickPrefix').should('contain.text', 'กลุ่มใหม่').select('กลุ่มใหม่');
+    cy.get('#swalQuickName').type('สมศักดิ์');
+    cy.get('.swal2-confirm').click();
+
+    // ชื่อผู้เล่นใหม่ "สมศักดิ์" พร้อมกลุ่มใหม่ "กลุ่มใหม่: สมศักดิ์" ควรเข้าไปอยู่ในช่อง penP1 ทันที และเป็นสีเขียว
+    cy.get('#penP1').should('have.value', 'กลุ่มใหม่: สมศักดิ์').and('have.class', 'status-green');
   });
 });

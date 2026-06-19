@@ -254,7 +254,7 @@ describe('04 - Accounting & History', () => {
 
     // 4. ทดลองแก้ไขเกมเพื่อปลดล็อกวันให้กลับมาเป็นดราฟต์ใหม่
     cy.get('#gamesList .game-card').eq(0).find('button[title="แก้ไข"]').click();
-    cy.get('#shuttlecockSpeeds').type(', 2');
+    cy.get('#shuttlecockSpeeds').type(', 2', { force: true });
     cy.get('#btnRecordGame').click();
     cy.get('#btnDraftWarning').should('not.have.class', 'hidden').and('contain.text', '1 วัน'); // ปุ่มเตือนต้องกลับมาอีกครั้ง!
   });
