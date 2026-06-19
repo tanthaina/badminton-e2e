@@ -2083,7 +2083,9 @@ function bindEvents() {
             firebaseListenerRef.off(); // ยกเลิกการดักฟังการเปลี่ยนแปลงข้อมูล
             firebaseListenerRef = null;
         }
-        saveToStorage(); // บันทึกข้อมูลล่าสุดก่อนปิด
+        if (!window.Cypress) {
+            saveToStorage(); // บันทึกข้อมูลล่าสุดก่อนปิด
+        }
     });
 
     $('btnForceUpdateApp').addEventListener('click', () => {
