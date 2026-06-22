@@ -45,14 +45,21 @@ describe('04 - Accounting & History', () => {
     cy.get('#overall-summary-content').should('contain.text', 'ไม่มีข้อมูลประวัติในช่วงเวลานี้');
   });
 
-  it('ทดสอบปุ่มยกเลิกการจ่ายเงินรายวัน (Toggle Daily Payment)', () => {
+  it('ทดสอบปุ่มจ่าย/ยกเลิกในหน้ารายวัน (Daily Pay Modal & Cancel)', () => {
     cy.seedPlayers(['A', 'B', 'C', 'D']);
     cy.visit('/index.html');
 
     cy.recordGame('A', 'B', 'C', 'D', '1', '20');
-    
+
+    // Phase 1: ปุ่ม "จ่าย" ตอนนี้เปิด payment modal แทนการ toggle โดยตรง
     cy.contains('#summaryTableUnpaid tr', 'A').find('button').contains('จ่าย').click();
+    cy.get('#payment-modal').should('not.have.class', 'hidden');
+    cy.get('#btnSubmitPayment').click();
+
+    // A ต้องย้ายไปตาราง paid หลังจาก confirm modal
     cy.get('#summaryTablePaid').should('contain.text', 'A');
+
+    // กดปุ่ม "ยกเลิก" เพื่อ toggle กลับ (ยังทำงานเหมือนเดิม)
     cy.contains('#summaryTablePaid tr', 'A').find('button').contains('ยกเลิก').click();
     cy.get('#summaryTableUnpaid').should('contain.text', 'A');
     cy.get('#summaryTablePaid').should('not.contain.text', 'A');
@@ -410,5 +417,103 @@ describe('04 - Accounting & History', () => {
 
     // เครดิตต้องเพิ่มเป็น 300 บาท
     cy.contains('#credit-list-overall div.border', 'ผู้เล่นใหม่').should('contain.text', 'เครดิต 300.00');
+  });
+  it('ทดสอบ Phase 1: ปุ่มจ่ายในหน้ารายวัน pre-fill ยอดสะสมรวมและ mark วันเก่าว่าจ่ายแล้ว', () => {
+    const today = '2024-01-02';
+    const yesterday = '2024-01-01';
+    const players = ['สมชาย', 'A', 'B', 'C'];
+    const oneGame = (id) => ({
+      id, players, shuttlecocksUsed: 1, shuttlecockPrice: 160, shuttlecockSpeeds: ['1']
+    });
+
+    // สมชายมีหนี้ค้าง 2 วัน (เมื่อวาน 40 + วันนี้ 40 = รวม 80 บาท)
+    cy.seedSessionState('phase1AccumulatedDebt', {
+      masterPlayerList: players,
+      dailyData: {
+        [yesterday]: {
+          players: players.map(name => ({ name, paid: false, present: true })),
+          games: [oneGame(1)],
+          isClosed: true
+        },
+        [today]: {
+          players: players.map(name => ({ name, paid: false, present: true })),
+          games: [oneGame(2)],
+          isClosed: false
+        }
+      }
+    });
+
+    cy.mockTime(today + 'T12:00:00Z');
+    cy.visit('/index.html');
+
+    // 1. หน้ารายวันต้องแสดงยอดสะสม 80 บาท
+    cy.contains('#summaryTableUnpaid tr', 'สมชาย').should('contain.text', 'ค้างชำระ (สะสม: ฿80)');
+
+    // 2. กดปุ่ม "จ่าย" ต้องเปิด payment modal (Phase 1)
+    cy.contains('#summaryTableUnpaid tr', 'สมชาย').find('button').contains('จ่าย').click();
+    cy.get('#payment-modal').should('not.have.class', 'hidden');
+
+    // 3. ยอด pre-fill ต้องเป็น 80.00 (สะสมรวม ไม่ใช่แค่ 40 วันนี้)
+    cy.get('#payment-amount').should('have.value', '80.00');
+
+    // 4. ยืนยันการจ่าย
+    cy.get('#btnSubmitPayment').click();
+
+    // 5. สมชายต้องย้ายไปตาราง "จ่ายแล้ว" ในหน้ารายวัน
+    cy.get('#summaryTablePaid').should('contain.text', 'สมชาย');
+    cy.get('#summaryTableUnpaid').should('not.contain.text', 'สมชาย');
+
+    // 6. หน้าบัญชีรวมต้องแสดง balance = 0 (ทั้ง 2 วันถูก cleared)
+    cy.get('button[data-tab="account"]').click();
+    cy.get('#paid-in-full-list-overall').should('contain.text', 'สมชาย');
+    cy.get('#unpaid-list-overall').should('not.contain.text', 'สมชาย');
+  });
+
+  it('ทดสอบ Phase 2: Undo Toast หลังจ่ายต้องคืนยอดค้างครบทุกวัน', () => {
+    const today = '2024-01-02';
+    const yesterday = '2024-01-01';
+    const players = ['สมชาย', 'A', 'B', 'C'];
+    const oneGame = (id) => ({
+      id, players, shuttlecocksUsed: 1, shuttlecockPrice: 160, shuttlecockSpeeds: ['1']
+    });
+
+    cy.seedSessionState('phase2UndoToast', {
+      masterPlayerList: players,
+      dailyData: {
+        [yesterday]: {
+          players: players.map(name => ({ name, paid: false, present: true })),
+          games: [oneGame(1)],
+          isClosed: true
+        },
+        [today]: {
+          players: players.map(name => ({ name, paid: false, present: true })),
+          games: [oneGame(2)],
+          isClosed: false
+        }
+      }
+    });
+
+    cy.mockTime(today + 'T12:00:00Z');
+    cy.visit('/index.html');
+
+    // 1. กดจ่าย → ยืนยันใน modal
+    cy.contains('#summaryTableUnpaid tr', 'สมชาย').find('button').contains('จ่าย').click();
+    cy.get('#payment-modal').should('not.have.class', 'hidden');
+    cy.get('#btnSubmitPayment').click();
+
+    // 2. Undo Toast ต้องปรากฏพร้อมข้อมูลจำนวนวันที่ cleared
+    cy.get('.swal2-toast').should('contain.text', 'บันทึกชำระเงินแล้ว').and('contain.text', 'เคลียร์ยอด 2 วัน');
+    cy.get('#undoPayBtn').should('be.visible');
+
+    // 3. กดปุ่ม "↩ ยกเลิก"
+    cy.get('#undoPayBtn').click();
+
+    // 4. สมชายต้องกลับมาอยู่ใน summaryTableUnpaid (ยอดค้างคืนมาครบ)
+    cy.get('#summaryTableUnpaid').should('contain.text', 'สมชาย');
+    cy.get('#summaryTablePaid').should('not.contain.text', 'สมชาย');
+
+    // 5. หน้าบัญชีรวมต้องแสดงยอดค้าง 80 บาทกลับมา
+    cy.get('button[data-tab="account"]').click();
+    cy.contains('#unpaid-list-overall div.border', 'สมชาย').should('contain.text', 'ค้าง 80.00');
   });
 });

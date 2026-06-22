@@ -1094,7 +1094,12 @@ function renderDaily() {
             <span>${d.cost.toFixed(2)}</span>
             <i class="fas fa-plus-circle ${d.extraCost > 0 ? 'text-indigo-500' : 'text-gray-300 group-hover:text-indigo-500'} transition-colors"></i>
         </div>`;
-        let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${costDisplay}</td><td class="text-center">${statusBadge}</td><td class="text-center"><div class="flex justify-center items-center gap-1"><button onclick="togglePlayerPaidStatus('${escapeHtml(d.n)}')" class="btn btn-sm ${d.p?'btn-secondary':'btn-warning'}">${d.p?'ยกเลิก':'จ่าย'}</button>${qrBtn}</div></td></tr>`;
+        // Phase 1: "จ่าย" เรียก openPaymentModal (ยอดสุทธิรวมหนี้สะสม + autoReconcile)
+        //          "ยกเลิก" เรียก togglePlayerPaidStatus เหมือนเดิม (undo flag เฉพาะวัน)
+        let payBtn = d.p
+            ? `<button onclick="togglePlayerPaidStatus('${escapeHtml(d.n)}')" class="btn btn-sm btn-secondary">ยกเลิก</button>`
+            : `<button onclick="openPaymentModal('${escapeHtml(d.n)}')" class="btn btn-sm btn-warning">จ่าย</button>`;
+        let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${costDisplay}</td><td class="text-center">${statusBadge}</td><td class="text-center"><div class="flex justify-center items-center gap-1">${payBtn}${qrBtn}</div></td></tr>`;
         if(isPaidToday) pd+=row; else un+=row;
     });
     document.getElementById('summaryTableUnpaid').innerHTML = un; document.getElementById('summaryTablePaid').innerHTML = pd; document.getElementById('grandTotal').innerText = grand.toFixed(2);
@@ -1919,9 +1924,46 @@ function submitPayment() {
     if(!name || isNaN(amt) || amt<=0) return;
     state.allPayments.push({ id: Date.now(), date: getTodayString(), name: name, amount: amt, isAutoDaily: false });
     document.getElementById('payment-modal').classList.add('hidden');
-    autoReconcileDailyDebts(name);
+    const affectedDates = autoReconcileDailyDebts(name);
     updateAndRender();
-    Swal.fire({icon:'success', title:'บันทึกชำระเงินแล้ว', toast:true, position:'top-end', timer:1500, showConfirmButton:false});
+    // แสดง Undo Toast ถ้ามีการ reconcile วันเก่า
+    if (affectedDates && affectedDates.length > 0) {
+        showPaymentUndoToast(name, affectedDates);
+    } else {
+        Swal.fire({icon:'success', title:'บันทึกชำระเงินแล้ว', toast:true, position:'top-end', timer:1500, showConfirmButton:false});
+    }
+}
+
+// Phase 2: แสดง Toast พร้อมปุ่ม "ยกเลิก" 5 วินาทีหลังจ่าย
+function showPaymentUndoToast(playerName, affectedDates) {
+    Swal.fire({
+        icon: 'success',
+        title: 'บันทึกชำระเงินแล้ว',
+        html: `เคลียร์ยอด ${affectedDates.length} วัน &nbsp;<button id="undoPayBtn" style="font-size:11px;padding:2px 10px;border-radius:6px;background:#f1f5f9;border:1px solid #cbd5e1;cursor:pointer;font-family:'Sarabun',sans-serif;">↩ ยกเลิก</button>`,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            const btn = document.getElementById('undoPayBtn');
+            if (btn) btn.addEventListener('click', () => { Swal.close(); undoDailyPayment(playerName, affectedDates); });
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+}
+
+// Phase 2: ยกเลิกการชำระเงิน — toggle วันที่ถูก reconcile ทั้งหมดกลับเป็น unpaid
+function undoDailyPayment(playerName, affectedDates) {
+    affectedDates.forEach(date => {
+        const dd = state.dailyData[date];
+        if (!dd || !dd.players) return;
+        const player = dd.players.find(p => p.name === playerName);
+        if (player) player.paid = false;
+    });
+    updateAndRender();
+    Swal.fire({icon:'info', title:'ยกเลิกการชำระเงินแล้ว', text:`คืนยอดค้าง ${affectedDates.length} วัน`, toast:true, position:'top-end', showConfirmButton:false, timer:2000});
 }
 
 function openGlobalPaymentModal() {
@@ -1963,7 +2005,7 @@ function autoReconcileDailyDebts(playerName) {
     let manualDebtsTotal = state.allTransactions.filter(t => t.name === playerName && !t.isAutoDaily).reduce((sum, t) => sum + t.totalCost, 0);
     
     let availableCredit = manualPaymentsTotal - manualDebtsTotal;
-    if (availableCredit <= TOLERANCE) return;
+    if (availableCredit <= TOLERANCE) return [];
 
     let unpaidDaily = [];
     Object.keys(state.dailyData).forEach(date => {
@@ -1988,6 +2030,7 @@ function autoReconcileDailyDebts(playerName) {
     unpaidDaily.sort((a, b) => a.date.localeCompare(b.date));
 
     let madeChanges = false;
+    let affectedDates = []; // เก็บวันที่ที่ถูก reconcile เพื่อรองรับ Undo
     for (let record of unpaidDaily) {
         if (availableCredit >= record.cost - TOLERANCE) {
             let dd = state.dailyData[record.date];
@@ -1995,6 +2038,7 @@ function autoReconcileDailyDebts(playerName) {
             pData.paid = true;
             availableCredit -= record.cost;
             madeChanges = true;
+            affectedDates.push(record.date); // บันทึกวันที่เพื่อ Undo
 
             let amountToRemove = record.cost;
             for (let i = 0; i < state.allPayments.length; i++) {
@@ -2019,6 +2063,7 @@ function autoReconcileDailyDebts(playerName) {
         state.allPayments = state.allPayments.filter(p => p.isAutoDaily || p.amount > TOLERANCE);
         syncAllDailyToAccount();
     }
+    return affectedDates; // คืนรายการวันที่สำหรับ Undo Toast
 }
 
 // --- THEME MGMT ---
