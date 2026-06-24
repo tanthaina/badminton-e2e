@@ -60,6 +60,29 @@
   - **Phase 3:** อัพเดต E2E test เดิม (toggle → modal flow) + เพิ่ม 2 test ใหม่ใน `04-accounting.cy.js`
 
 
+## 🧪 การทดสอบระบบ (Testing)
+
+### 1. การรัน Unit Test (Financial Logic)
+รันไฟล์ทดสอบหลักคิดเงินภายใน Terminal โดยไม่ผ่านเบราว์เซอร์:
+```powershell
+node test-financial.js
+```
+
+### 2. การรัน E2E Test (Cypress)
+ในระบบ Windows 11 ที่สิทธิ์ความปลอดภัยหรือ Sandbox การ์ดจอจำกัด (ทำให้การเปิดแครชด้วยโค้ด `2147483651` หรือ `ERR_FAILED`) สามารถรันด้วยการปลดล็อค Sandbox ผ่านคำสั่งด้านล่างนี้:
+
+* **รันการทดสอบทั้งหมดแบบเบื้องหลัง (Headless - แนะนำและเสถียรที่สุด):**
+  ```powershell
+  $env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npx start-server-and-test serve http://127.0.0.1:5500 "npx cypress run"
+  ```
+* **รันเฉพาะไฟล์ E2E เจาะจงเบื้องหลัง (เช่น ไฟล์ทดสอบคำสั่งเสียง):**
+  ```powershell
+  $env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npx start-server-and-test serve http://127.0.0.1:5500 "npx cypress run --spec cypress/e2e/16-voice-unit-tests.cy.js"
+  ```
+* **เปิดหน้าจอ Cypress คุมการทดสอบ (GUI Mode):**
+  1. หน้าต่าง Terminal ที่ 1: สั่งรันเซิร์ฟเวอร์เว็บไว้ `npm run serve`
+  2. หน้าต่าง Terminal ที่ 2: เปิดโปรแกรม `$env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npm run cy:open`
+
 ---
 **🤖 Note to AI (Gemini Code Assist):**
 If you are reading this, please acknowledge the project structure, stack, and current state. 

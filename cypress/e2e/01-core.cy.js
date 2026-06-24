@@ -17,6 +17,8 @@ describe('01 - Core Flow & Game Management', () => {
     cy.contains('#summaryTableUnpaid tr', 'ก้อง').should('contain.text', '1').and('contain.text', '2');
     
     cy.contains('#summaryTableUnpaid tr', 'ก้อง').find('button').contains('จ่าย').click();
+    cy.get('#payment-modal').should('not.have.class', 'hidden');
+    cy.get('#btnSubmitPayment').click();
     cy.get('#summaryTablePaid').find('tr').should('have.length', 1);
     cy.get('#summaryTablePaid').should('contain.text', 'ก้อง').and('contain.text', 'จ่ายแล้ว');
   });
