@@ -461,8 +461,13 @@ function scanPenInput() {
         });
         matches.sort((a,b)=>a.d-b.d);
 
+        // ตรวจ prefix ambiguity: input ตรง short เป๊ะ (d:0) แต่มีชื่ออื่นที่ short ขึ้นต้นด้วย input ด้วย
+        // เช่น "พี่หนุ่ม" === short ของ "ตากฟ้า: พี่หนุ่ม" แต่ "พี่หนุ่มผมยาว" ก็ startsWith("พี่หนุ่ม") → ambiguous
+        let prefixCandidates = aliasMap.filter(item => item.short === t || item.short.startsWith(t));
+        let hasPrefixAmbiguity = prefixCandidates.length > 1 && prefixCandidates.some(item => item.short === t);
+
         if(matches.length===0) status[i]='red';
-        else if(matches.length>1 && matches[0].d===matches[1].d) { status[i]='yellow'; fNames[i]=t; }
+        else if((matches.length>1 && matches[0].d===matches[1].d) || hasPrefixAmbiguity) { status[i]='yellow'; fNames[i]=t; }
         else { status[i]='green'; fNames[i]=matches[0].name; el.value=matches[0].name; }
     });
 
@@ -688,11 +693,20 @@ function extractPlayerNames(text) {
     found.sort((a, b) => a.i - b.i); 
     
     // Map กลับเป็นชื่อเต็มใน masterPlayerList หรือชื่อเดิมถ้าไม่มี
+    // ใช้ filter แทน find เพื่อตรวจว่า match กี่คน รวม prefix match (เช่น "พี่หนุ่ม" vs "พี่หนุ่มผมยาว")
     return found.map(x => {
         let name = x.name;
         let actual = Object.keys(autoMap).find(k => autoMap[k] === name) ? autoMap[name] || name : name;
-        let master = state.masterPlayerList.find(m => m === actual || m.replace(': ',' ') === actual || m.replace(': ','') === actual || m.endsWith(': ' + actual));
-        return master || actual;
+        let masters = state.masterPlayerList.filter(m =>
+            m === actual ||
+            m.replace(': ',' ') === actual ||
+            m.replace(': ','') === actual ||
+            m.endsWith(': ' + actual) ||
+            (m.includes(': ') && m.split(': ')[1].toLowerCase().startsWith(actual.toLowerCase()))
+        );
+        if (masters.length === 1) return masters[0];   // เจอแค่คนเดียว → resolve ได้เลย
+        if (masters.length > 1) return actual;          // เจอหลายคน (ambiguous) → คืน short name ให้ scanPenInput จัดการ
+        return actual;                                  // ไม่เจอ → คืนเดิม
     });
 }
 
@@ -776,14 +790,37 @@ function processVoiceCommand(transcript) {
     
     // ตรวจสอบความถูกต้องและแสดง UI ผล
     scanPenInput(); 
-    
+
+    // ตรวจว่ามี field ที่ yellow เพราะชื่อ match หลายคน (ambiguous prefix)
+    let ambiguousFields = PEN_FIELDS.filter(id => {
+        let el = $(id);
+        if (!el.className.includes('status-yellow')) return false;
+        let v = el.value.trim().toLowerCase();
+        let prefixCount = state.masterPlayerList.filter(m => {
+            let sh = m.includes(': ') ? m.split(': ')[1].toLowerCase() : m.toLowerCase();
+            return sh === v || sh.startsWith(v);
+        }).length;
+        return prefixCount > 1;
+    });
+
     let isWarning = PEN_FIELDS.some(id => {
         let cls = $(id).className;
         return cls.includes('status-yellow') || cls.includes('status-red') || !$(id).value.trim();
     });
 
     // [5] แสดงผลลัพธ์
-    if(isWarning || (playerNames.length > 0 && currentPenMatchedBalls.length === 0)) {
+    if (ambiguousFields.length > 0) {
+        // กรณีชื่อคลุมเครือ: match หลายคน → แจ้งให้จิ้มเลือกจาก QuickPad
+        Swal.fire({
+            icon: 'warning',
+            title: '🔍 ชื่อตรงกับหลายคน',
+            text: 'จิ้มเลือกชื่อที่ถูกต้องจากกระดานด้านล่าง',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000
+        });
+    } else if(isWarning || (playerNames.length > 0 && currentPenMatchedBalls.length === 0)) {
         Swal.fire({
             icon:'warning',
             title:'ประมวลผลเสียง',

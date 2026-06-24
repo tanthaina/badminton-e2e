@@ -42,10 +42,6 @@
    - **(ใหม่)** อัปเดตข้อมูลบนหน้าจออัตโนมัติทันทีที่มีการเปลี่ยนแปลงจากเครื่องอื่น โดยไม่ต้องกดปุ่มดึงข้อมูล
 
 ## 🚀 สถานะล่าสุดและการพัฒนา (Recent Updates)
-- ย้ายโค้ด JS และ CSS ออกจาก `index.html` เพื่อลด Technical Debt
-- เปลี่ยนระบบการแชร์รูป (Web Share API) มาเป็นการโหลดรูปลงเครื่องโดยตรง (Direct Download) เพื่อแก้ปัญหาเซฟรูปไม่ได้ในบางเบราว์เซอร์
-- เพิ่มฟีเจอร์ปุ่ม "คัดลอกข้อความส่ง LINE" ในหน้าต่าง QR จ่ายกลุ่ม
-- ปรับปรุง Cypress Test Suite ให้รันได้เร็วขึ้นด้วย `cy.seedSessionState` และเพิ่มเข้าสู่ CI/CD ผ่าน GitHub Actions (`.github/workflows/cypress.yml`)
 - **(ล่าสุด)** เปลี่ยนระบบคลาวด์จาก JSONBin.io เป็น Firebase Realtime Database เพื่อการซิงก์ที่รวดเร็วขึ้นและไม่จำกัดขนาดไฟล์ที่ 100KB
 - **(ล่าสุด)** เพิ่มฟีเจอร์จดค่าจิปาถะรายบุคคล (ค่าน้ำ, ค่ากริป) และฟีเจอร์คลิกดูรายละเอียดที่มาของยอดค้างชำระ
 - **(ล่าสุด)** ปรับปรุง UI เพิ่ม Loading Screen (Toast) ขณะที่กำลังซิงก์ข้อมูลจากฐานข้อมูล
@@ -58,7 +54,11 @@
 - **(ล่าสุด)** เพิ่มระบบแสดงยอดหนี้สะสม (Accumulated Debt) บนหน้ารายวัน แสดง "ค้างชำระ (สะสม: ฿ยอด)" และ "ค้างชำระ (สุทธิ: ฿ยอด)" หลังหักเครดิตเก่า
 - **(ล่าสุด)** ปรับปรุง QR Code Popup แสดง Breakdown ชัดเจน: ยอดเล่นวันนี้ / ยอดค้างเก่าสะสม / หักเครดิตเก่า / ยอดสุทธิที่ต้องชำระจริง
 - **(ล่าสุด)** เพิ่ม `test-financial.js` — Node.js Unit Test สำหรับ Financial Logic ทดสอบได้ทันทีด้วย `node test-financial.js` ไม่ต้องใช้ Browser (ผ่าน 26/26 tests ✅)
-- **(ล่าสุด)** อัปเดต `cypress.config.js` เพิ่ม `baseUrl: 'http://127.0.0.1:5500'` และ `package.json` เพิ่ม `http-server`, `start-server-and-test` สำหรับรัน E2E Tests บน local
+- **(ล่าสุด ✅ 2026-06-22) แก้ Bug: ปุ่มจ่ายรายวันไม่รวมหนี้สะสม** — 3 Phases:
+  - **Phase 1:** ปุ่ม "จ่าย" ในหน้ารายวันเปลี่ยนจาก `togglePlayerPaidStatus` เป็น `openPaymentModal` ซึ่ง pre-fill ยอดสุทธิรวมหนี้สะสมทุกวัน และเรียก `autoReconcileDailyDebts` เพื่อ mark วันเก่าว่าจ่ายแล้วอัตโนมัติหลังยืนยัน — ปุ่ม "ยกเลิก" ยังคง `togglePlayerPaidStatus` เพื่อ undo ทีละวัน
+  - **Phase 2:** เพิ่ม Undo Toast 5 วินาทีหลังจ่าย — `autoReconcileDailyDebts` คืน `affectedDates[]`, `submitPayment` แสดง Toast พร้อมปุ่ม "↩ ยกเลิก" (pause เมื่อ hover), `undoDailyPayment` toggle ทุกวันที่ถูก reconcile กลับเป็น unpaid
+  - **Phase 3:** อัพเดต E2E test เดิม (toggle → modal flow) + เพิ่ม 2 test ใหม่ใน `04-accounting.cy.js`
+
 
 ---
 **🤖 Note to AI (Gemini Code Assist):**

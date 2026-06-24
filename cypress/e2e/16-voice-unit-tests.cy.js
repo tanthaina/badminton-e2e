@@ -114,6 +114,27 @@ describe('16 - Voice Command Unit Tests', () => {
         expect(result).to.be.an('array');
       });
     });
+
+    it('ทดสอบ 5 (ใหม่): ชื่อคล้ายกัน — ต้องคืน short name กลับมา ไม่ resolve ผิดคน', () => {
+      cy.window().then(win => {
+        win.localStorage.setItem('badmintonAppState_v2', JSON.stringify({
+          masterPlayerList: ['ตากฟ้า: พี่หนุ่ม', 'ตาคลี: พี่หนุ่มผมยาว', 'ก้อง', 'แทน']
+        })); win.loadFromStorage();
+      });
+
+      cy.window().then(win => {
+        // พูด "พี่หนุ่ม" → match ได้ 2 คน (ตากฟ้า:พี่หนุ่ม และ ตาคลี:พี่หนุ่มผมยาว)
+        const result = win.extractPlayerNames('พี่หนุ่ม ก้อง แทน');
+        // "พี่หนุ่ม" ต้องไม่ถูก resolve เป็นชื่อเต็มสุ่ม (คืน short name กลับ)
+        const firstResult = result[0];
+        expect(firstResult).to.not.equal('ตากฟ้า: พี่หนุ่ม'); // ไม่ควรตัดสินผิดคน
+        expect(firstResult).to.not.equal('ตาคลี: พี่หนุ่มผมยาว');
+        expect(firstResult).to.equal('พี่หนุ่ม'); // คืน short name ambiguous เพื่อให้ผู้ใช้เลือกเอง
+        // ก้อง และ แทน ยังคง resolve ได้ปกติ
+        expect(result).to.include('ก้อง');
+        expect(result).to.include('แทน');
+      });
+    });
   });
 
   describe('handleVoiceShortcuts() - คำสั่งด่วน', () => {
@@ -201,13 +222,56 @@ describe('16 - Voice Command Unit Tests', () => {
 
     it('ทดสอบ 3: ชื่อซ้ำกัน ต้องแจ้ง warning (yellow status)', () => {
       cy.window().then(win => {
-        // ตรวจสอบ logic ของ extractPlayerNames ว่าคืนชื่อซ้ำได้
+        // ตรวจสอบ logic ของ extractPlayerNames ว่าคืนชื่อซ้ำใน result array ได้
         const result = win.extractPlayerNames('ก้อง ก้อง หมู แมน');
         // ต้องมีชื่อซ้ำใน result array
         expect(result.filter(n => n === 'ก้อง').length).to.equal(2);
         expect(result).to.include('หมู');
         expect(result).to.include('แมน');
       });
+    });
+
+    it('ทดสอบ 4 (ใหม่): ชื่อ ambiguous ต้องแสดง toast "ชื่อตรงกับหลายคน"', () => {
+      // เตรียมชื่อคล้ายกัน 2 ชื่อ
+      cy.seedPlayers(['ตากฟ้า: พี่หนุ่ม', 'ตาคลี: พี่หนุ่มผมยาว', 'ก้อง', 'แทน']);
+      cy.visit('/index.html');
+      cy.get('button[data-tab="daily"]').click();
+      cy.get('#btnOpenPenInput').click();
+
+      cy.window().then(win => {
+        // สั่งงานด้วยชื่อคลุมเครือ
+        win.processVoiceCommand('พี่หนุ่ม ก้อง แทน หมู ลูก 1');
+      });
+
+      // ต้องแสดง toast "ชื่อตรงกับหลายคน"
+      cy.get('.swal2-popup').should('contain.text', 'ชื่อตรงกับหลายคน');
+      // field ของพี่หนุ่มต้องเป็น yellow (ไม่ใช่ green)
+      cy.get('#penP1').should('have.class', 'status-yellow');
+    });
+
+    it('ทดสอบ 5 (ใหม่): แตะ QuickPad เลือกชื่อจาก ambiguous → field เป็นสีเขียว', () => {
+      cy.seedPlayers(['ตากฟ้า: พี่หนุ่ม', 'ตาคลี: พี่หนุ่มผมยาว', 'ก้อง', 'แทน']);
+      cy.visit('/index.html');
+      cy.get('button[data-tab="daily"]').click();
+      cy.get('#btnOpenPenInput').click();
+
+      // เติม field ด้วยชื่อ ambiguous
+      cy.get('#penP1').type('พี่หนุ่ม');
+      // เรียก scanPenInput ผ่าน window
+      cy.window().then(win => { win.scanPenInput(); });
+      // field ต้องเป็น yellow
+      cy.get('#penP1').should('have.class', 'status-yellow');
+
+      // QuickPad ต้องแสดงตัวเลือกที่เกี่ยวข้อง
+      cy.get('#penQuickPad').should('not.have.class', 'hidden');
+      cy.get('#penQuickPadList').should('contain.text', 'พี่หนุ่ม');
+
+      // แตะเลือกชื่อจาก QuickPad
+      cy.window().then(win => { win.selectPad('ตากฟ้า: พี่หนุ่ม', 'penP1'); });
+
+      // field ต้องเป็นสีเขียว
+      cy.get('#penP1').should('have.class', 'status-green');
+      cy.get('#penP1').should('have.value', 'ตากฟ้า: พี่หนุ่ม');
     });
 
     it('ทดสอบ 4: ล้างกระดาน (voice shortcut)', () => {
