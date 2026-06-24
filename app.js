@@ -30,6 +30,7 @@ let currentGameShuttlecockSpeeds = [];
 function createDefaultState() { return { masterPlayerList: [], allTransactions: [], allPayments: [], dailyData: {}, settings: { shuttlecockPrice: 0, syncRoomId: 'badminton_default', prefixes: ['ทั่วไป', 'ตากฟ้า', 'ตาคลี', 'นครสวรรค์'] }, timestamp: 0 }; }
 function getTodayString() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 function escapeHtml(str) { return String(str||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function escapeJsString(str) { return String(str||'').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"'); }
 function getPlayerColor(name) { if(!name) return PLAYER_COLORS[0]; const sum = [...String(name)].reduce((a,c)=>a+c.charCodeAt(0),0); return PLAYER_COLORS[sum%PLAYER_COLORS.length]; }
 function getCurrentDailyData() { if(!state.dailyData[selectedDate]) state.dailyData[selectedDate] = { players:[], games:[] }; return state.dailyData[selectedDate]; }
 
@@ -69,7 +70,7 @@ if (typeof window !== 'undefined' && window.Cypress) {
 function ensureIntegrity() {
     state.settings = state.settings || { shuttlecockPrice:0 };
     if (!state.settings.prefixes) state.settings.prefixes = ['ทั่วไป', 'ตากฟ้า', 'ตาคลี', 'นครสวรรค์'];
-    if (!state.settings.syncRoomId) state.settings.syncRoomId = 'badminton_default';
+    state.settings.syncRoomId = String(state.settings.syncRoomId || 'badminton_default').replace(/[^a-zA-Z0-9_-]/g, '') || 'badminton_default';
     state.masterPlayerList = (state.masterPlayerList||[]).filter(Boolean);
     state.allTransactions = state.allTransactions||[]; state.allPayments = state.allPayments||[]; state.dailyData = state.dailyData||{};
 
@@ -498,7 +499,7 @@ function renderQuickPad(status) {
    pad.innerHTML = list.map(n=>{
         let sh = n.includes(': ')?n.split(': ')[1]:n; let px = n.includes(': ')?n.split(': ')[0]:'';
         let display = px ? `<span class="text-sm font-bold text-gray-800">${escapeHtml(sh)}</span> <span class="text-[10px] text-gray-400">(${escapeHtml(px)})</span>` : `<span class="text-sm font-bold text-gray-800">${escapeHtml(sh)}</span>`;
-        return `<div class="quick-pad-chip" onclick="selectPad('${escapeHtml(n)}', '${targetId}')">${display}</div>`;
+        return `<div class="quick-pad-chip" onclick="selectPad('${escapeHtml(escapeJsString(n))}', '${targetId}')">${display}</div>`;
     }).join('');
 }
 function selectPad(name, targetId) {
@@ -1025,9 +1026,10 @@ function renderDaily() {
     document.getElementById('playerList').innerHTML = pList.map(n=>{
         let isP = dd.players.find(x=>x.name===n)?.present; let col = getPlayerColor(n);
         let sh = n.includes(': ')?n.split(': ')[1]:n; let px = n.includes(': ')?n.split(': ')[0]:'';
-        return `<div class="player-chip ${isP?'':'absent'}" style="${isP?`background:${col.bg};border-color:${col.border};color:${col.text}`:''}" onclick="if(!event.target.closest('button')) togglePlayer('${escapeHtml(n)}')">
+        let nEscaped = escapeHtml(escapeJsString(n));
+        return `<div class="player-chip ${isP?'':'absent'}" style="${isP?`background:${col.bg};border-color:${col.border};color:${col.text}`:''}" onclick="if(!event.target.closest('button')) togglePlayer('${nEscaped}')">
             <div class="flex gap-1 overflow-hidden"><i class="fas ${isP?'fa-user-check':'fa-user'} text-xs mt-1"></i><div><div class="text-[10px] opacity-70">${escapeHtml(px)}</div><div class="text-sm font-bold">${escapeHtml(sh)}</div></div></div>
-            <div class="chip-actions"><button onclick="document.getElementById('rename-old-name').value='${escapeHtml(n)}'; document.getElementById('rename-new-name').value='${escapeHtml(n)}'; document.getElementById('rename-modal').classList.remove('hidden');" class="btn btn-ghost p-1"><i class="fas fa-edit"></i></button><button onclick="deletePlayer('${escapeHtml(n)}')" class="btn btn-ghost text-red-500 p-1"><i class="fas fa-trash-alt"></i></button></div>
+            <div class="chip-actions"><button onclick="document.getElementById('rename-old-name').value='${nEscaped}'; document.getElementById('rename-new-name').value='${nEscaped}'; document.getElementById('rename-modal').classList.remove('hidden');" class="btn btn-ghost p-1"><i class="fas fa-edit"></i></button><button onclick="deletePlayer('${nEscaped}')" class="btn btn-ghost text-red-500 p-1"><i class="fas fa-trash-alt"></i></button></div>
         </div>`;
     }).join('');
     
@@ -1125,8 +1127,9 @@ function renderDaily() {
         }
         
         let spds = [...new Set(d.speeds)].join(', ') || '-';
-        let qrBtn = (!isPaidToday && state.settings.promptpayId && b > TOLERANCE) ? `<button onclick="showDailyQR('${escapeHtml(d.n)}', ${b}, ${d.cost})" class="btn btn-sm btn-indigo" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
-        let costDisplay = `<div class="flex items-center justify-center gap-1 cursor-pointer group" onclick="addExtraCost('${escapeHtml(d.n)}')" title="คลิกเพื่อบวกค่าจิปาถะ">
+        let nameJsEscaped = escapeHtml(escapeJsString(d.n));
+        let qrBtn = (!isPaidToday && state.settings.promptpayId && b > TOLERANCE) ? `<button onclick="showDailyQR('${nameJsEscaped}', ${b}, ${d.cost})" class="btn btn-sm btn-indigo" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
+        let costDisplay = `<div class="flex items-center justify-center gap-1 cursor-pointer group" onclick="addExtraCost('${nameJsEscaped}')" title="คลิกเพื่อบวกค่าจิปาถะ">
             ${d.extraCost > 0 ? `<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1 rounded border border-indigo-100">+${d.extraCost.toFixed(0)}</span>` : ''}
             <span>${d.cost.toFixed(2)}</span>
             <i class="fas fa-plus-circle ${d.extraCost > 0 ? 'text-indigo-500' : 'text-gray-300 group-hover:text-indigo-500'} transition-colors"></i>
@@ -1134,8 +1137,8 @@ function renderDaily() {
         // Phase 1: "จ่าย" เรียก openPaymentModal (ยอดสุทธิรวมหนี้สะสม + autoReconcile)
         //          "ยกเลิก" เรียก togglePlayerPaidStatus เหมือนเดิม (undo flag เฉพาะวัน)
         let payBtn = d.p
-            ? `<button onclick="togglePlayerPaidStatus('${escapeHtml(d.n)}')" class="btn btn-sm btn-secondary">ยกเลิก</button>`
-            : `<button onclick="openPaymentModal('${escapeHtml(d.n)}')" class="btn btn-sm btn-warning">จ่าย</button>`;
+            ? `<button onclick="togglePlayerPaidStatus('${nameJsEscaped}')" class="btn btn-sm btn-secondary">ยกเลิก</button>`
+            : `<button onclick="openPaymentModal('${nameJsEscaped}')" class="btn btn-sm btn-warning">จ่าย</button>`;
         let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${costDisplay}</td><td class="text-center">${statusBadge}</td><td class="text-center"><div class="flex justify-center items-center gap-1">${payBtn}${qrBtn}</div></td></tr>`;
         if(isPaidToday) pd+=row; else un+=row;
     });
@@ -1293,25 +1296,26 @@ function renderAccount() {
         
         let b = x.d - x.p; 
         let nameHtml = escapeHtml(x.n);
+        let nameJsEscaped = escapeHtml(escapeJsString(x.n));
         let displayChar = nameHtml.includes(': ') ? nameHtml.split(': ')[1].charAt(0) : nameHtml.charAt(0);
         let avatarChar = displayChar.toUpperCase();
         
         if (b > TOLERANCE) { 
             tu += b; 
-            let qrBtn = state.settings.promptpayId ? `<button onclick="showAccountQR('${nameHtml}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-400 transition-colors shrink-0" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
+            let qrBtn = state.settings.promptpayId ? `<button onclick="showAccountQR('${nameJsEscaped}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-400 transition-colors shrink-0" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
             un += `<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white dark:bg-slate-800 border-l-4 border-red-500 border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-3 transition-all hover:shadow-md">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
-                    <div class="cursor-pointer group" onclick="showDebtDetails('${nameHtml}', ${b})" title="คลิกเพื่อดูรายละเอียด">
+                    <div class="cursor-pointer group" onclick="showDebtDetails('${nameJsEscaped}', ${b})" title="คลิกเพื่อดูรายละเอียด">
                         <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight group-hover:text-indigo-600 transition-colors">${nameHtml} <i class="fas fa-info-circle text-[10px] text-gray-400 group-hover:text-indigo-500 ml-1"></i></div>
                         <div class="text-red-500 font-bold text-xs mt-0.5">ค้าง ${b.toFixed(2)}</div>
                     </div>
                 </div>
                 <div class="flex gap-1.5 w-full sm:w-auto justify-end">
                     ${qrBtn}
-                    <button onclick="generatePersonalSlip('${nameHtml}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-teal-100 text-teal-600 hover:bg-teal-200 dark:bg-teal-900/40 dark:text-teal-400 transition-colors shrink-0" title="แชร์/บันทึกใบเสร็จ"><i class="fas fa-file-invoice-dollar"></i></button>
-                    <button onclick="sendPersonalLineReminder('${nameHtml}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-400 transition-colors shrink-0" title="คัดลอกข้อความ LINE"><i class="fab fa-line"></i></button>
-                    <button class="btn btn-sm btn-success px-3 sm:px-4 shadow-sm shrink-0 ml-1" onclick="openPaymentModal('${nameHtml}')"><i class="fas fa-hand-holding-usd"></i> จ่าย</button>
+                    <button onclick="generatePersonalSlip('${nameJsEscaped}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-teal-100 text-teal-600 hover:bg-teal-200 dark:bg-teal-900/40 dark:text-teal-400 transition-colors shrink-0" title="แชร์/บันทึกใบเสร็จ"><i class="fas fa-file-invoice-dollar"></i></button>
+                    <button onclick="sendPersonalLineReminder('${nameJsEscaped}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-400 transition-colors shrink-0" title="คัดลอกข้อความ LINE"><i class="fab fa-line"></i></button>
+                    <button class="btn btn-sm btn-success px-3 sm:px-4 shadow-sm shrink-0 ml-1" onclick="openPaymentModal('${nameJsEscaped}')"><i class="fas fa-hand-holding-usd"></i> จ่าย</button>
                 </div>
             </div>`; 
         }
@@ -1324,7 +1328,7 @@ function renderAccount() {
                 </div>
                 <div class="flex items-center gap-1.5">
                     <span class="text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full text-xs whitespace-nowrap">เครดิต ${(-b).toFixed(2)}</span>
-                    <button class="btn btn-sm btn-success px-2.5 py-1 shadow-sm shrink-0" onclick="openPaymentModal('${nameHtml}')" title="เติมเงินล่วงหน้า"><i class="fas fa-plus"></i> เติมเงิน</button>
+                    <button class="btn btn-sm btn-success px-2.5 py-1 shadow-sm shrink-0" onclick="openPaymentModal('${nameJsEscaped}')" title="เติมเงินล่วงหน้า"><i class="fas fa-plus"></i> เติมเงิน</button>
                 </div>
             </div>`; 
         }
@@ -1336,7 +1340,7 @@ function renderAccount() {
                 </div>
                 <div class="flex items-center gap-1.5">
                     <span class="text-green-600 font-bold text-xs whitespace-nowrap"><i class="fas fa-check-circle mr-1"></i>ไม่มีค้างชำระ</span>
-                    <button class="btn btn-sm btn-success px-2.5 py-1 shadow-sm shrink-0" onclick="openPaymentModal('${nameHtml}')" title="เติมเงินล่วงหน้า"><i class="fas fa-plus"></i> เติมเงิน</button>
+                    <button class="btn btn-sm btn-success px-2.5 py-1 shadow-sm shrink-0" onclick="openPaymentModal('${nameJsEscaped}')" title="เติมเงินล่วงหน้า"><i class="fas fa-plus"></i> เติมเงิน</button>
                 </div>
             </div>`; 
         }
@@ -2236,7 +2240,9 @@ function bindEvents() {
     const roomInput = $('settingSyncRoomId');
     if (roomInput) {
         roomInput.addEventListener('change', (e) => {
-            state.settings.syncRoomId = e.target.value.trim() || 'badminton_default';
+            const sanitized = e.target.value.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+            state.settings.syncRoomId = sanitized || 'badminton_default';
+            e.target.value = state.settings.syncRoomId;
             saveToStorage(); 
             initFirebaseListener(); // รีเซ็ตตัวดักฟังให้ไปเกาะกลุ่มใหม่
             Swal.fire({icon:'success', title:'เปลี่ยนรหัสกลุ่มเรียบร้อย', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
