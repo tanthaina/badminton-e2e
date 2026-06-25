@@ -281,7 +281,9 @@
             </div>
             
             <div class="court-container">
-                <div class="court-net-line"></div><div class="court-center-line"></div>
+                <button class="court-clear-all-btn" onclick="clearAllPenFields()" title="ล้างสนาม"><i class="fas fa-trash-alt"></i></button>
+                <div class="court-net-line"><button class="court-swap-btn" onclick="swapPenTeams()" title="สลับฝั่ง A-B"><i class="fas fa-exchange-alt"></i></button></div>
+                <div class="court-center-line"></div>
                 <div class="court-grid">
                     <div class="court-cell"><input type="text" id="penP1" class="court-input" placeholder="ทีม A (ซ้าย)"><button class="court-clear-btn" onclick="clearPenField('penP1')"><i class="fas fa-times-circle"></i></button></div>
                     <div class="court-cell"><input type="text" id="penP2" class="court-input" placeholder="ทีม A (ขวา)"><button class="court-clear-btn" onclick="clearPenField('penP2')"><i class="fas fa-times-circle"></i></button></div>

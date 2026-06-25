@@ -427,6 +427,18 @@ function openPenInputModal() {
 }
 function closePenInputModal() { $('pen-input-modal').classList.add('hidden'); }
 function clearPenField(id) { const el=$(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; el.focus(); focusedFieldId=id; scanPenInput(); }
+function clearAllPenFields() { PEN_FIELDS.forEach(id => { const el=$(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; }); $('penP1').focus(); focusedFieldId='penP1'; scanPenInput(); }
+function swapPenTeams() {
+    const swap = (id1, id2) => {
+        const el1 = $(id1), el2 = $(id2);
+        const tempVal = el1.value, tempConf = el1.dataset.confirmed;
+        el1.value = el2.value; el1.dataset.confirmed = el2.dataset.confirmed;
+        el2.value = tempVal; el2.dataset.confirmed = tempConf;
+    };
+    swap('penP1', 'penP3'); // Swap A (Left) with B (Left)
+    swap('penP2', 'penP4'); // Swap A (Right) with B (Right)
+    scanPenInput();
+}
 function toggleBallBtn(btn, num) {
     btn.classList.toggle('active'); if(btn.classList.contains('active')) currentPenMatchedBalls.push(num); else currentPenMatchedBalls = currentPenMatchedBalls.filter(b=>b!==num);
     currentPenMatchedBalls.sort((a,b)=>a-b); scanPenInput();
