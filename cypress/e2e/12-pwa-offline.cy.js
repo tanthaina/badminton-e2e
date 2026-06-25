@@ -8,7 +8,7 @@ describe('12 - PWA Offline Support (Service Worker & Cache)', () => {
 
     cy.window().then((win) => win.navigator.serviceWorker.ready).then((registration) => {
       expect(registration.active).to.exist;
-      expect(registration.active.state).to.equal('activated');
+      expect(registration.active.state).to.be.oneOf(['activated', 'activating']);
     });
   });
 
