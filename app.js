@@ -422,6 +422,8 @@ function openPenInputModal() {
     
     const dd = getCurrentDailyData(); const badge = $('penShuttleCountBadge');
     if(badge) badge.innerHTML = (dd.games.length>0 && dd.games[dd.games.length-1].shuttlecockSpeeds) ? `ลูกล่าสุด: <b>${dd.games[dd.games.length-1].shuttlecockSpeeds.join(', ')}</b>` : 'ยังไม่มีเกม';
+    
+    renderBoardQuickPills();
 }
 function closePenInputModal() { $('pen-input-modal').classList.add('hidden'); }
 function clearPenField(id) { const el=$(id); el.value=''; el.dataset.confirmed=''; el.className='court-input'; el.focus(); focusedFieldId=id; scanPenInput(); }
@@ -485,6 +487,113 @@ function scanPenInput() {
         if(dup) $('penErrorText').innerHTML="⚠️ พบชื่อซ้ำกันในสนาม"; else if(!hasB&&allG) $('penErrorText').innerHTML="⚠️ อย่าลืมเลือกเบอร์ลูก"; else $('penErrorText').innerHTML="⚠️ จิ้มรายชื่อด้านล่างเพื่อแก้กล่องที่ผิด";
         renderQuickPad(status);
     } else if(allG && hasB) { rev.classList.add('hidden'); pad.classList.add('hidden'); btnConf.classList.remove('hidden'); }
+    
+    renderBoardQuickPills();
+}
+
+function renderBoardQuickPills() {
+    const container = $('boardQuickPlayerPills');
+    if(!container) return;
+    
+    const dd = getCurrentDailyData();
+    const prs = dd.players.filter(p => p.present).sort((a,b) => a.name.localeCompare(b.name, 'th'));
+    const containerWrapper = $('boardQuickPlaySelection');
+    
+    if (prs.length === 0) {
+        containerWrapper.classList.add('hidden');
+        return;
+    }
+    
+    containerWrapper.classList.remove('hidden');
+    
+    const currentOnBoard = PEN_FIELDS.map(id => $(id).value.trim()).filter(Boolean);
+    
+    container.innerHTML = prs.map(p => {
+        // Only mark as selected if the name strictly matches or if they are "green" on the board
+        // To be simple, we check if the name is in the values array
+        // We handle exact match
+        const isSelected = currentOnBoard.some(val => {
+            const exact = state.masterPlayerList.find(m => m.toLowerCase() === val.toLowerCase());
+            return exact === p.name || val.toLowerCase() === p.name.toLowerCase() || (val && p.name.toLowerCase().includes(val.toLowerCase()));
+        });
+        
+        const col = getPlayerColor(p.name);
+        const sh = p.name.includes(': ') ? p.name.split(': ')[1] : p.name;
+        const px = p.name.includes(': ') ? p.name.split(': ')[0] : '';
+        const display = px ? `${escapeHtml(sh)} <span class="text-[9px] opacity-60">(${escapeHtml(px)})</span>` : escapeHtml(sh);
+        
+        return `<button type="button" onclick="toggleBoardQuickPlayer('${escapeHtml(escapeJsString(p.name))}')" 
+            class="px-2.5 py-1 text-xs font-semibold rounded-full border transition-all duration-200 flex items-center gap-1 ${isSelected ? 'shadow-sm bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-indigo-50'}"
+            style="${isSelected ? '' : `color: ${col.text}; background: ${col.bg}25; border-color: ${col.border}`}">
+            ${isSelected ? '<i class="fas fa-check-circle text-[10px]"></i>' : ''}
+            <span>${display}</span>
+        </button>`;
+    }).join('');
+}
+
+function toggleBoardQuickPlayer(name) {
+    const vals = PEN_FIELDS.map(id => $(id).value.trim());
+    
+    // Check if player is already on board
+    let foundIndex = -1;
+    for (let i = 0; i < vals.length; i++) {
+        const val = vals[i];
+        if (!val) continue;
+        const exact = state.masterPlayerList.find(m => m.toLowerCase() === val.toLowerCase());
+        if (exact === name || val.toLowerCase() === name.toLowerCase() || name.toLowerCase().includes(val.toLowerCase())) {
+            foundIndex = i;
+            break;
+        }
+    }
+    
+    if (foundIndex !== -1) {
+        // Remove from board
+        $(PEN_FIELDS[foundIndex]).value = '';
+        $(PEN_FIELDS[foundIndex]).dataset.confirmed = '';
+    } else {
+        // Add to board: prefer the focused field if it's empty, otherwise find first empty
+        let targetIndex = -1;
+        
+        // Is focused field empty?
+        if (focusedFieldId && PEN_FIELDS.includes(focusedFieldId) && !$(focusedFieldId).value.trim()) {
+            targetIndex = PEN_FIELDS.indexOf(focusedFieldId);
+        } else {
+            // Find first empty
+            for (let i = 0; i < PEN_FIELDS.length; i++) {
+                if (!$(PEN_FIELDS[i]).value.trim()) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        if (targetIndex !== -1) {
+            $(PEN_FIELDS[targetIndex]).value = name;
+            $(PEN_FIELDS[targetIndex]).dataset.confirmed = '1';
+            
+            // Advance focus to next empty field
+            let nextIndex = (targetIndex + 1) % 4;
+            let checks = 0;
+            while ($(PEN_FIELDS[nextIndex]).value.trim() && checks < 4) {
+                nextIndex = (nextIndex + 1) % 4;
+                checks++;
+            }
+            if (checks < 4) {
+                focusedFieldId = PEN_FIELDS[nextIndex];
+                $(focusedFieldId).focus();
+            }
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'สนามเต็มแล้ว',
+                text: 'กรุณาเอาคนเก่าออกก่อนเพื่อเพิ่มคนใหม่',
+                toast: true, position: 'top-end', showConfirmButton: false, timer: 2000
+            });
+            return;
+        }
+    }
+    
+    scanPenInput();
 }
 
 function renderQuickPad(status) {
@@ -1492,7 +1601,7 @@ function _doGeneratePersonalSlip(name, amount, showPP) {
     setTimeout(() => {
         html2canvas(slip, {scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false}).then(canvas => {
             Swal.close();
-            downloadCanvasAsImage(canvas, `receipt-${name}.png`);
+            shareOrDownloadCanvas(canvas, `receipt-${name}.png`, `ใบเสร็จค่าแบดมินตัน - ${name}`);
         }).catch(err => {
             console.error(err); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างใบเสร็จได้', 'error');
         });
@@ -1602,9 +1711,27 @@ function waitForImages(element) {
     }));
 }
 
-function downloadCanvasAsImage(canvas, fileName) {
-    canvas.toBlob(blob => {
+function shareOrDownloadCanvas(canvas, fileName, defaultTitle = 'สรุปค่าใช้จ่าย') {
+    canvas.toBlob(async blob => {
         try {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            
+            // Check if Web Share API is supported for files
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: defaultTitle,
+                        files: [file]
+                    });
+                    return; // Share successful
+                } catch (shareError) {
+                    // AbortError is when user cancels the share sheet
+                    if (shareError.name === 'AbortError') return;
+                    console.log('Share failed, falling back to download', shareError);
+                }
+            }
+            
+            // Fallback to Download
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = fileName;
@@ -1615,8 +1742,8 @@ function downloadCanvasAsImage(canvas, fileName) {
             setTimeout(() => URL.revokeObjectURL(url), 100);
             Swal.fire({icon: 'success', title: 'โหลดรูปลงเครื่องแล้ว', text: 'สามารถนำไปส่งใน LINE ได้เลยครับ', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
         } catch(e) {
-            console.error('Download failed', e);
-            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกรูปลงเครื่องได้โดยตรง (ลองใช้เบราว์เซอร์อื่น)', 'error');
+            console.error('Export failed', e);
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกหรือแชร์รูปได้ (ลองใช้เบราว์เซอร์อื่น)', 'error');
         }
     }, 'image/png');
 }
@@ -1628,7 +1755,7 @@ function exportGamesImg() {
     waitForImages(el).then(() => {
         html2canvas(el, {scale: 2, useCORS: true, backgroundColor: document.documentElement.classList.contains('dark') ? '#1e293b' : '#f8fafc', scrollX: 0, scrollY: -window.scrollY, windowWidth: document.documentElement.offsetWidth}).then(canvas => {
             Swal.close();
-            downloadCanvasAsImage(canvas, `games-${selectedDate}.png`);
+            shareOrDownloadCanvas(canvas, `games-${selectedDate}.png`, 'สรุปเกมการเล่น');
         }).catch(err => {
             console.error(err); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปได้', 'error');
         });
@@ -1641,7 +1768,7 @@ function exportSummaryImg() {
     waitForImages(el).then(() => {
         html2canvas(el, {scale: 2, useCORS: true, backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff', scrollX: 0, scrollY: -window.scrollY, windowWidth: document.documentElement.offsetWidth}).then(canvas => {
             Swal.close();
-            downloadCanvasAsImage(canvas, `summary-${selectedDate}.png`);
+            shareOrDownloadCanvas(canvas, `summary-${selectedDate}.png`, 'สรุปยอดค่าใช้จ่าย');
         }).catch(err => {
             console.error(err); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปได้', 'error');
         });
@@ -1668,7 +1795,7 @@ function exportAccountImg() {
             if (paidContainer) paidContainer.style.display = 'block';
             if (dateDisplay) dateDisplay.classList.add('hidden');
             
-            downloadCanvasAsImage(canvas, `account-${getTodayString()}.png`);
+            shareOrDownloadCanvas(canvas, `account-${getTodayString()}.png`, 'สรุปยอดบัญชีรวม');
         }).catch(err => {
             if (paidContainer) paidContainer.style.display = 'block';
             if (dateDisplay) dateDisplay.classList.add('hidden');

@@ -79,6 +79,16 @@ node test-financial.js
   ```powershell
   $env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npx start-server-and-test serve http://127.0.0.1:5500 "npx cypress run --spec cypress/e2e/16-voice-unit-tests.cy.js"
   ```
+* **รันการทดสอบใน Extension (หรือเมื่อเปิด Server `npm run serve` ทิ้งไว้แล้ว):**
+  เนื่องจาก Server รันอยู่แล้ว ไม่จำเป็นต้องใช้ `start-server-and-test` อีก สามารถรันคำสั่งเหล่านี้ใน Terminal ได้โดยตรง:
+  - รันการทดสอบทั้งหมดแบบเบื้องหลัง (Headless):
+    ```powershell
+    npx cypress run
+    ```
+  - รันทดสอบเฉพาะไฟล์ที่ระบุ (เช่น ไฟล์ `14-extra-cost.cy.js`):
+    ```powershell
+    npx cypress run --spec "cypress/e2e/14-extra-cost.cy.js"
+    ```
 * **เปิดหน้าจอ Cypress คุมการทดสอบ (GUI Mode):**
   1. หน้าต่าง Terminal ที่ 1: สั่งรันเซิร์ฟเวอร์เว็บไว้ `npm run serve`
   2. หน้าต่าง Terminal ที่ 2: เปิดโปรแกรม `$env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npm run cy:open`

@@ -103,7 +103,7 @@
         <div class="card">
             <div class="card-header">
                 <div class="section-icon bg-orange-100 text-orange-600"><i class="fas fa-list"></i></div><h2 class="text-orange-700">รายการเกมที่บันทึก</h2>
-                <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportGamesImg" class="btn btn-sm" style="background:#f97316;color:white;"><i class="fas fa-download"></i>บันทึกรูปภาพ</button></div>
+                <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportGamesImg" class="btn btn-sm" style="background:#f97316;color:white;"><i class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button></div>
             </div>
             <div class="card-body">
                 <div id="shuttlecockSpeedSummary" class="text-sm font-semibold text-gray-700 mb-3 bg-gray-50 p-2 rounded"></div>
@@ -115,7 +115,7 @@
             <div class="card-header">
                 <div class="section-icon bg-teal-100 text-teal-600"><i class="fas fa-receipt"></i></div><h2 class="text-teal-700">สรุปค่าใช้จ่ายประจำวัน</h2>
                 <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button id="btnExportSummaryImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-download"></i>บันทึกรูปภาพ</button>
+                    <button id="btnExportSummaryImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button>
                     <button id="btnDailyGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i class="fas fa-qrcode"></i> QR จ่ายกลุ่ม</button>
                     <button id="btnConfirmSave" class="btn btn-primary btn-sm"><i class="fas fa-lock"></i>ปิดยอดวันนี้</button>
                     <button id="btnClearToday" class="btn btn-danger btn-sm"><i class="fas fa-eraser"></i>ล้างวันนี้</button>
@@ -162,7 +162,7 @@
             <div class="card-header">
                 <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-wallet"></i></div><h2 class="text-blue-700">สรุปยอดรวมบัญชีทั้งหมด</h2>
                 <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button id="btnExportAccountImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-download"></i>บันทึกรูปภาพ</button>
+                    <button id="btnExportAccountImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button>
                     <button id="btnGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i class="fas fa-users"></i> ทวงบิลกลุ่ม</button>
                     <button id="btnAddDebt" class="btn btn-sm btn-danger"><i class="fas fa-file-invoice-dollar"></i>เพิ่มหนี้</button>
                     <button id="btnReceivePayment" class="btn btn-sm btn-success"><i class="fas fa-hand-holding-usd"></i>รับเงิน/เติมเงิน</button>
@@ -288,6 +288,13 @@
                     <div class="court-cell"><input type="text" id="penP3" class="court-input" placeholder="ทีม B (ซ้าย)"><button class="court-clear-btn" onclick="clearPenField('penP3')"><i class="fas fa-times-circle"></i></button></div>
                     <div class="court-cell"><input type="text" id="penP4" class="court-input" placeholder="ทีม B (ขวา)"><button class="court-clear-btn" onclick="clearPenField('penP4')"><i class="fas fa-times-circle"></i></button></div>
                 </div>
+            </div>
+
+            <div id="boardQuickPlaySelection" class="bg-white p-3 rounded-lg border hidden">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="text-sm font-bold text-gray-700"><i class="fas fa-hand-pointer text-indigo-600 mr-1"></i> จิ้มเลือกคนลงสนามด่วน:</div>
+                </div>
+                <div id="boardQuickPlayerPills" class="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto pr-1"></div>
             </div>
 
             <div class="bg-white p-3 rounded-lg border">
