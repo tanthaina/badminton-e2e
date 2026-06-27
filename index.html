@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏸 โปรแกรมคำนวณค่าลูกแบดมินตัน</title>
-    
+
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1d4ed8">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1041/1041168.png">
@@ -19,339 +20,562 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<div class="container mx-auto p-3 sm:p-4 max-w-6xl">
+    <div class="container mx-auto p-3 sm:p-4 max-w-6xl">
 
-    <header class="mb-5">
-        <div class="card">
-            <div class="card-body">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h1 class="text-2xl font-bold text-blue-700">🏸 โปรแกรมคำนวณค่าลูกแบดมินตัน</h1>
-                        <p class="text-sm text-gray-500 mt-1">ระบบบันทึกเกม คำนวณค่าใช้จ่าย และจัดการบัญชี</p>
-                    </div>
-                    <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-semibold text-gray-600 whitespace-nowrap">📅 วันที่เล่น:</label>
-                            <input type="date" id="workingDate" class="form-control" style="width:auto;">
-                        </div>
-                        <div class="flex gap-2 items-center">
-                            <button id="btnDraftWarning" class="btn btn-sm btn-warning hidden animate-pulse" title="มีวันที่ยังไม่ได้ปิดยอด"><i class="fas fa-exclamation-triangle"></i><span class="hidden sm:inline" id="draftWarningCount"></span></button>
-                            <button id="btnSave" class="btn btn-success btn-sm"><i class="fas fa-save"></i><span class="hidden sm:inline">บันทึกไฟล์</span></button>
-                            <label for="loadFile" class="btn btn-indigo btn-sm cursor-pointer"><i class="fas fa-folder-open"></i><span class="hidden sm:inline">โหลดไฟล์</span></label>
-                            <input type="file" id="loadFile" class="hidden" accept=".json">
-                            <button id="btnToggleTheme" class="btn btn-ghost text-xl px-2" title="สลับโหมดมืด/สว่าง"></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="tab-nav mb-5">
-        <button class="tab-btn active" data-tab="daily"><i class="fas fa-calculator"></i><span>คิดเงินรายวัน</span><span id="badge-daily" class="tab-badge" style="display:none;"></span></button>
-        <button class="tab-btn" data-tab="account"><i class="fas fa-wallet"></i><span>บัญชีรวม</span><span id="badge-account" class="tab-badge" style="display:none;"></span></button>
-        <button class="tab-btn" data-tab="history"><i class="fas fa-history"></i><span>ประวัติ</span></button>
-        <button class="tab-btn" data-tab="settings"><i class="fas fa-cog"></i><span>ตั้งค่าบัญชี</span></button>
-    </div>
-
-    <div id="tab-daily" class="tab-content space-y-4">
-        <div class="card">
-            <div class="card-header">
-                <div class="section-icon bg-green-100 text-green-600"><i class="fas fa-gamepad"></i></div><h2 class="text-green-700">บันทึกเกม</h2>
-            </div>
-            <div class="card-body space-y-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div><label class="form-label">ผู้เล่น 1 (A)</label><select id="player1" class="form-control form-select"></select></div>
-                    <div><label class="form-label">ผู้เล่น 2 (A)</label><select id="player2" class="form-control form-select"></select></div>
-                    <div><label class="form-label">ผู้เล่น 3 (B)</label><select id="player3" class="form-control form-select"></select></div>
-                    <div><label class="form-label">ผู้เล่น 4 (B)</label><select id="player4" class="form-control form-select"></select></div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <label class="form-label !mb-0">เบอร์ลูกที่ใช้</label>
-                            <div id="lastShuttlecockIndicator" class="text-xs font-semibold text-gray-500 dark:text-gray-400"></div>
-                        </div>
-                        <div id="shuttlecockSpeedsDisplay" class="form-control flex items-center gap-2 min-h-[45px] bg-gray-50 dark:bg-slate-800/50 flex-wrap p-2 cursor-pointer" onclick="$('shuttlecockSpeedButtons').scrollIntoView({ behavior: 'smooth', block: 'nearest' });"></div>
-                        <div id="shuttlecockSpeedButtons" class="grid grid-cols-6 gap-2 mt-2"></div>
-                        <input type="hidden" id="shuttlecockSpeeds">
-                    </div>
-                    <div><label class="form-label">ราคาต่อลูก (บาท)</label><input type="number" id="shuttlecockPrice" class="form-control" value="0" min="0" step="1"></div>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <button id="btnRecordGame" class="btn btn-success flex-1 py-3"><i class="fas fa-plus-circle"></i>บันทึกเกมนี้</button>
-                    <button id="btnCancelEditGame" class="btn btn-secondary hidden py-3 px-4" title="ยกเลิกการแก้ไข" onclick="cancelEditGame()"><i class="fas fa-times"></i></button>
-                    <button id="btnOpenPenInput" class="btn btn-indigo py-3 px-5 fab-mobile"><i class="fas fa-pen-nib"></i><span>กระดานจัดทัพ</span></button>
-                    <button id="btnUseLastTeam" class="btn btn-secondary py-3"><i class="fas fa-redo-alt"></i>ทีมเดิม</button>
-                    <button id="btnQuickAddPlayer" class="btn btn-primary py-3 px-4" title="เพิ่มผู้เล่นใหม่ด่วน"><i class="fas fa-user-plus"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="section-icon bg-orange-100 text-orange-600"><i class="fas fa-list"></i></div><h2 class="text-orange-700">รายการเกมที่บันทึก</h2>
-                <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportGamesImg" class="btn btn-sm" style="background:#f97316;color:white;"><i class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button></div>
-            </div>
-            <div class="card-body">
-                <div id="shuttlecockSpeedSummary" class="text-sm font-semibold text-gray-700 mb-3 bg-gray-50 p-2 rounded"></div>
-                <div id="gamesList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="section-icon bg-teal-100 text-teal-600"><i class="fas fa-receipt"></i></div><h2 class="text-teal-700">สรุปค่าใช้จ่ายประจำวัน</h2>
-                <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button id="btnExportSummaryImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button>
-                    <button id="btnDailyGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i class="fas fa-qrcode"></i> QR จ่ายกลุ่ม</button>
-                    <button id="btnConfirmSave" class="btn btn-primary btn-sm"><i class="fas fa-lock"></i>ปิดยอดวันนี้</button>
-                    <button id="btnClearToday" class="btn btn-danger btn-sm"><i class="fas fa-eraser"></i>ล้างวันนี้</button>
-                </div>
-            </div>
-            <div class="card-body p-0 overflow-x-auto" id="summaryTableContainer">
-                <table class="data-table" id="summaryTable">
-                    <thead><tr><th class="sticky-col">ชื่อ</th><th class="text-center">เกม</th><th class="text-center">เบอร์ลูก</th><th class="text-center">ยอด(฿)</th><th class="text-center">สถานะ</th><th class="text-center">จัดการ</th></tr></thead>
-                    <tbody id="summaryTableUnpaid"></tbody>
-                    <tbody id="summaryTablePaid"></tbody>
-                    <tfoot><tr><td class="sticky-col" colspan="3">รวมทั้งหมด</td><td class="text-center text-lg text-teal-700" id="grandTotal">0.00</td><td colspan="2"></td></tr></tfoot>
-                </table>
-                <div id="daily-summary-qr-container" class="hidden p-4 flex flex-col items-center justify-center border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0f172a]">
-                    <div class="text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">สแกนพร้อมเพย์เพื่อชำระเงิน</div>
-                    <img id="daily-summary-qr" src="" crossorigin="anonymous" class="w-32 h-32 border p-1 rounded-lg shadow-sm bg-white">
-                    <div id="daily-summary-pp-text" class="text-xs text-gray-500 mt-1"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-users"></i></div><h2 class="text-blue-700">จัดการรายชื่อผู้เล่น</h2>
-            </div>
-            <div class="card-body space-y-3">
-                <div class="relative mb-2"><input type="text" id="searchDailyPlayer" class="form-control" placeholder="🔍 ค้นหาชื่อผู้เล่น..."></div>
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <select id="newPlayerPrefix" class="form-control form-select" style="width:auto; flex-shrink:0;">
-                    </select>
-                    <input type="text" id="newPlayerName" class="form-control flex-1" placeholder="พิมพ์ชื่อผู้เล่นใหม่...">
-                    <button id="btnAddPlayer" class="btn btn-primary"><i class="fas fa-user-plus"></i>เพิ่มผู้เล่น</button>
-                </div>
-                <div class="flex gap-2">
-                    <button id="btnClearTodayPlayers" class="btn btn-danger btn-sm"><i class="fas fa-user-times"></i>ล้างรายชื่อวันนี้</button>
-                    <button id="btnClearAllPlayers" class="btn btn-secondary btn-sm"><i class="fas fa-users-slash"></i>ล้างรายชื่อทั้งหมด</button>
-                </div>
-                <div id="playerList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="tab-account" class="tab-content hidden space-y-4">
-        <div class="card">
-            <div class="card-header">
-                <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-wallet"></i></div><h2 class="text-blue-700">สรุปยอดรวมบัญชีทั้งหมด</h2>
-                <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button id="btnExportAccountImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button>
-                    <button id="btnGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i class="fas fa-users"></i> ทวงบิลกลุ่ม</button>
-                    <button id="btnAddDebt" class="btn btn-sm btn-danger"><i class="fas fa-file-invoice-dollar"></i>เพิ่มหนี้</button>
-                    <button id="btnReceivePayment" class="btn btn-sm btn-success"><i class="fas fa-hand-holding-usd"></i>รับเงิน/เติมเงิน</button>
-                    <button id="btnExportAccountText" class="btn btn-sm btn-indigo"><i class="fab fa-line"></i>ส่ง LINE</button>
-                    <button id="btnPayAllUnpaid" class="btn btn-sm btn-success"><i class="fas fa-hand-holding-usd"></i>ชำระทั้งหมด</button>
-                </div>
-            </div>
-            <div class="card-body space-y-4">
-                <input type="text" id="searchAccountInput" class="form-control" placeholder="🔍 ค้นหาชื่อ..." style="max-width: 320px;">
-                <div id="accountExportArea" class="space-y-4 bg-white p-2 rounded">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                        <div class="bg-red-50 p-2 rounded-lg"><div class="text-red-700 font-bold text-xl" id="total-unpaid-overall">฿0</div><div class="text-xs text-gray-500">ค้างชำระรวม</div></div>
-                        <div class="bg-blue-50 p-2 rounded-lg"><div class="text-blue-700 font-bold text-xl" id="total-credit-overall">฿0</div><div class="text-xs text-gray-500">เครดิตรวม</div></div>
-                    </div>
-                    <div id="account-export-date" class="hidden text-center text-sm font-bold text-gray-500 mt-2 mb-2 bg-gray-100 p-2 rounded-lg"></div>
-                    <div><div class="font-bold text-red-600 mb-2">⚠️ ผู้ที่ค้างชำระ</div><div id="unpaid-list-overall" class="grid sm:grid-cols-2 gap-2"></div></div>
-                    <div><div class="font-bold text-blue-600 mb-2">💰 มีเครดิต</div><div id="credit-list-overall" class="grid sm:grid-cols-2 gap-2"></div></div>
-                    <div id="paid-section-container"><div><div class="font-bold text-green-600 mb-2 mt-4">✅ ชำระครบแล้ว</div><div id="paid-in-full-list-overall" class="grid sm:grid-cols-2 gap-2"></div></div></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="tab-history" class="tab-content hidden space-y-4">
-        <div class="card">
-            <div class="card-header">
-                <div class="section-icon bg-indigo-100 text-indigo-600"><i class="fas fa-history"></i></div><h2 class="text-indigo-700">ประวัติค่าใช้จ่าย</h2>
-                <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportHistoryCSV" class="btn btn-sm" style="background:#10b981;color:white;"><i class="fas fa-file-csv"></i>ส่งออก CSV</button></div>
-            </div>
-            <div class="card-body">
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <input type="date" id="summaryStartDate" class="form-control" style="width:auto;"><input type="date" id="summaryEndDate" class="form-control" style="width:auto;">
-                    <input type="text" id="summarySearchName" class="form-control" placeholder="🔍 ค้นหาชื่อ..." style="width:auto; flex: 1; min-width: 120px; max-width: 200px;">
-                    <button id="btnFilterHistory" class="btn btn-primary">ค้นหา</button>
-                </div>
-                <div id="history-summary-box" class="grid grid-cols-2 gap-3 mb-4 text-center hidden">
-                    <div class="bg-red-50 p-2 rounded-lg"><div class="text-red-700 font-bold text-lg" id="history-total-cost">฿0.00</div><div class="text-xs text-gray-500">ค่าใช้จ่ายรวม</div></div>
-                    <div class="bg-green-50 p-2 rounded-lg"><div class="text-green-700 font-bold text-lg" id="history-total-paid">฿0.00</div><div class="text-xs text-gray-500">ชำระเงินรวม</div></div>
-                </div>
-                <div id="monthly-summary-container" class="mb-4 hidden space-y-2"></div>
-                <div id="overall-summary-content"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="tab-settings" class="tab-content hidden space-y-4">
-        <div class="card">
-            <div class="card-header"><div class="section-icon bg-gray-100 text-gray-600"><i class="fas fa-cog"></i></div><h2 class="text-gray-700">ตั้งค่าระบบ</h2></div>
-            <div class="card-body space-y-5">
-                <div>
-                    <label class="form-label">ราคาลูกแบดมินตันเริ่มต้น (บาท/ลูก)</label>
-                    <input type="number" id="settingDefaultPrice" class="form-control" style="max-width: 200px;" placeholder="0">
-                    <p class="text-xs text-gray-500 mt-1">ราคานี้จะถูกดึงไปแสดงเป็นค่าเริ่มต้นในหน้าคิดเงินรายวันโดยอัตโนมัติ</p>
-                </div>
-                <div>
-                    <label class="form-label">เบอร์โทรศัพท์/เลขบัตรประชาชน (พร้อมเพย์)</label>
-                    <input type="text" id="settingPromptPay" class="form-control" style="max-width: 200px;" placeholder="เช่น 0812345678">
-                    <p class="text-xs text-gray-500 mt-1">ใช้สำหรับสร้าง QR Code ในหน้าต่างชำระเงิน</p>
-                </div>
-                <div>
-                    <label class="form-label">ชื่อบัญชีพร้อมเพย์ (ตัวเลือก)</label>
-                    <input type="text" id="settingPromptPayName" class="form-control" style="max-width: 250px;" placeholder="เช่น นาย สมชาย ใจดี">
-                    <p class="text-xs text-gray-500 mt-1">แสดงคู่กับเบอร์พร้อมเพย์เพื่อความมั่นใจและป้องกันโอนผิด</p>
-                </div>
-                <hr class="border-gray-200">
-                <div>
-                    <h3 class="font-bold text-green-600 mb-3"><i class="fas fa-chart-line"></i> เครื่องมือคำนวณต้นทุน (สำหรับผู้ขาย)</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
-                        <div><label class="form-label">ต้นทุนลูกแบด (บาท/หลอด)</label><input type="number" id="settingTubeCost" class="form-control" placeholder="เช่น 1101"></div>
-                        <div><label class="form-label">จำนวนลูก (ต่อหลอด)</label><input type="number" id="settingTubeAmount" class="form-control" value="12"></div>
-                        <div><label class="form-label">กำไรเป้าหมาย (บาท/ลูก)</label><input type="number" id="settingTargetProfit" class="form-control" value="12"></div>
-                    </div>
-                    <div class="bg-green-50 border border-green-200 p-3 rounded-lg flex flex-wrap justify-between items-center gap-3">
+        <header class="mb-5">
+            <div class="card">
+                <div class="card-body">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">ต้นทุน: <span id="displayCostPerBall" class="font-bold">0.00</span> บ./ลูก</div>
-                            <div class="font-bold text-gray-800 text-sm mt-1">ราคาขายที่แนะนำ: <span class="text-green-700 text-xl ml-1" id="displayRecommendedPrice">฿0.00</span></div>
+                            <h1 class="text-2xl font-bold text-blue-700">🏸 โปรแกรมคำนวณค่าลูกแบดมินตัน</h1>
+                            <p class="text-sm text-gray-500 mt-1">ระบบบันทึกเกม คำนวณค่าใช้จ่าย และจัดการบัญชี</p>
                         </div>
-                        <button id="btnApplyRecommendedPrice" class="btn btn-sm btn-success"><i class="fas fa-arrow-up"></i> ใช้เป็นราคาเริ่มต้น</button>
+                        <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-semibold text-gray-600 whitespace-nowrap">📅
+                                    วันที่เล่น:</label>
+                                <input type="date" id="workingDate" class="form-control" style="width:auto;">
+                            </div>
+                            <div class="flex gap-2 items-center">
+                                <button id="btnDraftWarning" class="btn btn-sm btn-warning hidden animate-pulse"
+                                    title="มีวันที่ยังไม่ได้ปิดยอด"><i class="fas fa-exclamation-triangle"></i><span
+                                        class="hidden sm:inline" id="draftWarningCount"></span></button>
+                                <button id="btnSave" class="btn btn-success btn-sm"><i class="fas fa-save"></i><span
+                                        class="hidden sm:inline">บันทึกไฟล์</span></button>
+                                <label for="loadFile" class="btn btn-indigo btn-sm cursor-pointer"><i
+                                        class="fas fa-folder-open"></i><span
+                                        class="hidden sm:inline">โหลดไฟล์</span></label>
+                                <input type="file" id="loadFile" class="hidden" accept=".json">
+                                <button id="btnToggleTheme" class="btn btn-ghost text-xl px-2"
+                                    title="สลับโหมดมืด/สว่าง"></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <hr class="border-gray-200">
-                <div>
-                    <h3 class="font-bold text-sky-600 mb-3"><i class="fas fa-bolt"></i> ซิงก์ข้อมูลเรียลไทม์ (Firebase)</h3>
+            </div>
+        </header>
+
+        <div class="tab-nav mb-5">
+            <button class="tab-btn active" data-tab="daily"><i
+                    class="fas fa-calculator"></i><span>คิดเงินรายวัน</span><span id="badge-daily" class="tab-badge"
+                    style="display:none;"></span></button>
+            <button class="tab-btn" data-tab="account"><i class="fas fa-wallet"></i><span>บัญชีรวม</span><span
+                    id="badge-account" class="tab-badge" style="display:none;"></span></button>
+            <button class="tab-btn" data-tab="history"><i class="fas fa-history"></i><span>ประวัติ</span></button>
+            <button class="tab-btn" data-tab="settings"><i class="fas fa-cog"></i><span>ตั้งค่าบัญชี</span></button>
+        </div>
+
+        <div id="tab-daily" class="tab-content space-y-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="section-icon bg-green-100 text-green-600"><i class="fas fa-gamepad"></i></div>
+                    <h2 class="text-green-700">บันทึกเกม</h2>
+                </div>
+                <div class="card-body space-y-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div><label class="form-label">ผู้เล่น 1 (A)</label><select id="player1"
+                                class="form-control form-select"></select></div>
+                        <div><label class="form-label">ผู้เล่น 2 (A)</label><select id="player2"
+                                class="form-control form-select"></select></div>
+                        <div><label class="form-label">ผู้เล่น 3 (B)</label><select id="player3"
+                                class="form-control form-select"></select></div>
+                        <div><label class="form-label">ผู้เล่น 4 (B)</label><select id="player4"
+                                class="form-control form-select"></select></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label class="form-label !mb-0">เบอร์ลูกที่ใช้</label>
+                                <div id="lastShuttlecockIndicator"
+                                    class="text-xs font-semibold text-gray-500 dark:text-gray-400"></div>
+                            </div>
+                            <div id="shuttlecockSpeedsDisplay"
+                                class="form-control flex items-center gap-2 min-h-[45px] bg-gray-50 dark:bg-slate-800/50 flex-wrap p-2 cursor-pointer"
+                                onclick="$('shuttlecockSpeedButtons').scrollIntoView({ behavior: 'smooth', block: 'nearest' });">
+                            </div>
+                            <div id="shuttlecockSpeedButtons" class="grid grid-cols-6 gap-2 mt-2"></div>
+                            <input type="hidden" id="shuttlecockSpeeds">
+                        </div>
+                        <div><label class="form-label">ราคาต่อลูก (บาท)</label><input type="number"
+                                id="shuttlecockPrice" class="form-control" value="0" min="0" step="1"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="btnRecordGame" class="btn btn-success flex-1 py-3"><i
+                                class="fas fa-plus-circle"></i>บันทึกเกมนี้</button>
+                        <button id="btnCancelEditGame" class="btn btn-secondary hidden py-3 px-4" title="ยกเลิกการแก้ไข"
+                            onclick="cancelEditGame()"><i class="fas fa-times"></i></button>
+                        <button id="btnOpenPenInput" class="btn btn-indigo py-3 px-5 fab-mobile"><i
+                                class="fas fa-pen-nib"></i><span>กระดานจัดทัพ</span></button>
+                        <button id="btnUseLastTeam" class="btn btn-secondary py-3"><i
+                                class="fas fa-redo-alt"></i>ทีมเดิม</button>
+                        <button id="btnQuickAddPlayer" class="btn btn-primary py-3 px-4" title="เพิ่มผู้เล่นใหม่ด่วน"><i
+                                class="fas fa-user-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="section-icon bg-orange-100 text-orange-600"><i class="fas fa-list"></i></div>
+                    <h2 class="text-orange-700">รายการเกมที่บันทึก</h2>
+                    <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportGamesImg" class="btn btn-sm"
+                            style="background:#f97316;color:white;"><i
+                                class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button></div>
+                </div>
+                <div class="card-body">
+                    <div id="shuttlecockSpeedSummary"
+                        class="text-sm font-semibold text-gray-700 mb-3 bg-gray-50 p-2 rounded"></div>
+                    <div id="gamesList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="section-icon bg-teal-100 text-teal-600"><i class="fas fa-receipt"></i></div>
+                    <h2 class="text-teal-700">สรุปค่าใช้จ่ายประจำวัน</h2>
+                    <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        <button id="btnExportSummaryImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i
+                                class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button>
+                        <button id="btnDailyGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i
+                                class="fas fa-qrcode"></i> QR จ่ายกลุ่ม</button>
+                        <button id="btnConfirmSave" class="btn btn-primary btn-sm"><i
+                                class="fas fa-lock"></i>ปิดยอดวันนี้</button>
+                        <button id="btnClearToday" class="btn btn-danger btn-sm"><i
+                                class="fas fa-eraser"></i>ล้างวันนี้</button>
+                    </div>
+                </div>
+                <div class="card-body p-0 overflow-x-auto" id="summaryTableContainer">
+                    <table class="data-table" id="summaryTable">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col">ชื่อ</th>
+                                <th class="text-center">เกม</th>
+                                <th class="text-center">เบอร์ลูก</th>
+                                <th class="text-center">ยอด(฿)</th>
+                                <th class="text-center">สถานะ</th>
+                                <th class="text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTableUnpaid"></tbody>
+                        <tbody id="summaryTablePaid"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td class="sticky-col" colspan="3">รวมทั้งหมด</td>
+                                <td class="text-center text-lg text-teal-700" id="grandTotal">0.00</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div id="daily-summary-qr-container"
+                        class="hidden p-4 flex flex-col items-center justify-center border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0f172a]">
+                        <div class="text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">สแกนพร้อมเพย์เพื่อชำระเงิน
+                        </div>
+                        <img id="daily-summary-qr" src="" crossorigin="anonymous"
+                            class="w-32 h-32 border p-1 rounded-lg shadow-sm bg-white">
+                        <div id="daily-summary-pp-text" class="text-xs text-gray-500 mt-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-users"></i></div>
+                    <h2 class="text-blue-700">จัดการรายชื่อผู้เล่น</h2>
+                </div>
+                <div class="card-body space-y-3">
+                    <div class="relative mb-2"><input type="text" id="searchDailyPlayer" class="form-control"
+                            placeholder="🔍 ค้นหาชื่อผู้เล่น..."></div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <select id="newPlayerPrefix" class="form-control form-select"
+                            style="width:auto; flex-shrink:0;">
+                        </select>
+                        <input type="text" id="newPlayerName" class="form-control flex-1"
+                            placeholder="พิมพ์ชื่อผู้เล่นใหม่...">
+                        <button id="btnAddPlayer" class="btn btn-primary"><i
+                                class="fas fa-user-plus"></i>เพิ่มผู้เล่น</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btnClearTodayPlayers" class="btn btn-danger btn-sm"><i
+                                class="fas fa-user-times"></i>ล้างรายชื่อวันนี้</button>
+                        <button id="btnClearAllPlayers" class="btn btn-secondary btn-sm"><i
+                                class="fas fa-users-slash"></i>ล้างรายชื่อทั้งหมด</button>
+                    </div>
+                    <div id="playerList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-account" class="tab-content hidden space-y-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="section-icon bg-blue-100 text-blue-600"><i class="fas fa-wallet"></i></div>
+                    <h2 class="text-blue-700">สรุปยอดรวมบัญชีทั้งหมด</h2>
+                    <div class="ml-auto flex flex-wrap justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        <button id="btnExportAccountImg" class="btn btn-sm" style="background:#0d9488;color:white;"><i
+                                class="fas fa-share-alt"></i>แชร์/บันทึกรูป</button>
+                        <button id="btnGroupBill" class="btn btn-sm" style="background:#8b5cf6;color:white;"><i
+                                class="fas fa-users"></i> ทวงบิลกลุ่ม</button>
+                        <button id="btnAddDebt" class="btn btn-sm btn-danger"><i
+                                class="fas fa-file-invoice-dollar"></i>เพิ่มหนี้</button>
+                        <button id="btnReceivePayment" class="btn btn-sm btn-success"><i
+                                class="fas fa-hand-holding-usd"></i>รับเงิน/เติมเงิน</button>
+                        <button id="btnExportAccountText" class="btn btn-sm btn-indigo"><i class="fab fa-line"></i>ส่ง
+                            LINE</button>
+                        <button id="btnPayAllUnpaid" class="btn btn-sm btn-success"><i
+                                class="fas fa-hand-holding-usd"></i>ชำระทั้งหมด</button>
+                        <!-- ปุ่มดักฟังยอดโอน LINE KTB -->
+                        <div class="flex items-center gap-1.5">
+                            <button id="btnTransferListener" class="btn btn-sm" style="background:#059669;color:white;">
+                                <i class="fas fa-satellite-dish"></i> เปิดรับยอดโอน LINE
+                            </button>
+                            <span id="transferListenerTimer"
+                                class="hidden text-xs font-bold bg-red-100 text-red-700 border border-red-300 rounded-full px-2 py-0.5 tabular-nums min-w-[3rem] text-center"></span>
+                            <button id="btnSimulateTransfer" class="hidden btn btn-sm" style="background:#f59e0b;color:white;" title="จำลองยอดโอนเข้า (ทดสอบ)">
+                                <i class="fas fa-flask"></i> ทดสอบ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body space-y-4">
+                    <input type="text" id="searchAccountInput" class="form-control" placeholder="🔍 ค้นหาชื่อ..."
+                        style="max-width: 320px;">
+                    <div id="accountExportArea" class="space-y-4 bg-white p-2 rounded">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                            <div class="bg-red-50 p-2 rounded-lg">
+                                <div class="text-red-700 font-bold text-xl" id="total-unpaid-overall">฿0</div>
+                                <div class="text-xs text-gray-500">ค้างชำระรวม</div>
+                            </div>
+                            <div class="bg-blue-50 p-2 rounded-lg">
+                                <div class="text-blue-700 font-bold text-xl" id="total-credit-overall">฿0</div>
+                                <div class="text-xs text-gray-500">เครดิตรวม</div>
+                            </div>
+                        </div>
+                        <div id="account-export-date"
+                            class="hidden text-center text-sm font-bold text-gray-500 mt-2 mb-2 bg-gray-100 p-2 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="font-bold text-red-600 mb-2">⚠️ ผู้ที่ค้างชำระ</div>
+                            <div id="unpaid-list-overall" class="grid sm:grid-cols-2 gap-2"></div>
+                        </div>
+                        <div>
+                            <div class="font-bold text-blue-600 mb-2">💰 มีเครดิต</div>
+                            <div id="credit-list-overall" class="grid sm:grid-cols-2 gap-2"></div>
+                        </div>
+                        <div id="paid-section-container">
+                            <div>
+                                <div class="font-bold text-green-600 mb-2 mt-4">✅ ชำระครบแล้ว</div>
+                                <div id="paid-in-full-list-overall" class="grid sm:grid-cols-2 gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-history" class="tab-content hidden space-y-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="section-icon bg-indigo-100 text-indigo-600"><i class="fas fa-history"></i></div>
+                    <h2 class="text-indigo-700">ประวัติค่าใช้จ่าย</h2>
+                    <div class="ml-auto mt-2 sm:mt-0"><button id="btnExportHistoryCSV" class="btn btn-sm"
+                            style="background:#10b981;color:white;"><i class="fas fa-file-csv"></i>ส่งออก CSV</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <input type="date" id="summaryStartDate" class="form-control" style="width:auto;"><input
+                            type="date" id="summaryEndDate" class="form-control" style="width:auto;">
+                        <input type="text" id="summarySearchName" class="form-control" placeholder="🔍 ค้นหาชื่อ..."
+                            style="width:auto; flex: 1; min-width: 120px; max-width: 200px;">
+                        <button id="btnFilterHistory" class="btn btn-primary">ค้นหา</button>
+                    </div>
+                    <div id="history-summary-box" class="grid grid-cols-2 gap-3 mb-4 text-center hidden">
+                        <div class="bg-red-50 p-2 rounded-lg">
+                            <div class="text-red-700 font-bold text-lg" id="history-total-cost">฿0.00</div>
+                            <div class="text-xs text-gray-500">ค่าใช้จ่ายรวม</div>
+                        </div>
+                        <div class="bg-green-50 p-2 rounded-lg">
+                            <div class="text-green-700 font-bold text-lg" id="history-total-paid">฿0.00</div>
+                            <div class="text-xs text-gray-500">ชำระเงินรวม</div>
+                        </div>
+                    </div>
+                    <div id="monthly-summary-container" class="mb-4 hidden space-y-2"></div>
+                    <div id="overall-summary-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-settings" class="tab-content hidden space-y-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="section-icon bg-gray-100 text-gray-600"><i class="fas fa-cog"></i></div>
+                    <h2 class="text-gray-700">ตั้งค่าระบบ</h2>
+                </div>
+                <div class="card-body space-y-5">
                     <div>
-                        <label class="form-label">รหัสกลุ่ม (Room ID)</label>
-                        <input type="text" id="settingSyncRoomId" class="form-control" style="max-width: 250px;" placeholder="เช่น badminton_group_1">
-                        <p class="text-xs text-gray-500 mt-1">หากต้องการใช้งานร่วมกันหลายเครื่อง ให้ตั้งรหัสกลุ่มเป็นชื่อเดียวกัน</p>
+                        <label class="form-label">ราคาลูกแบดมินตันเริ่มต้น (บาท/ลูก)</label>
+                        <input type="number" id="settingDefaultPrice" class="form-control" style="max-width: 200px;"
+                            placeholder="0">
+                        <p class="text-xs text-gray-500 mt-1">
+                            ราคานี้จะถูกดึงไปแสดงเป็นค่าเริ่มต้นในหน้าคิดเงินรายวันโดยอัตโนมัติ</p>
+                    </div>
+                    <div>
+                        <label class="form-label">เบอร์โทรศัพท์/เลขบัตรประชาชน (พร้อมเพย์)</label>
+                        <input type="text" id="settingPromptPay" class="form-control" style="max-width: 200px;"
+                            placeholder="เช่น 0812345678">
+                        <p class="text-xs text-gray-500 mt-1">ใช้สำหรับสร้าง QR Code ในหน้าต่างชำระเงิน</p>
+                    </div>
+                    <div>
+                        <label class="form-label">ชื่อบัญชีพร้อมเพย์ (ตัวเลือก)</label>
+                        <input type="text" id="settingPromptPayName" class="form-control" style="max-width: 250px;"
+                            placeholder="เช่น นาย สมชาย ใจดี">
+                        <p class="text-xs text-gray-500 mt-1">แสดงคู่กับเบอร์พร้อมเพย์เพื่อความมั่นใจและป้องกันโอนผิด
+                        </p>
+                    </div>
+                    <hr class="border-gray-200">
+                    <div>
+                        <h3 class="font-bold text-green-600 mb-3"><i class="fas fa-chart-line"></i>
+                            เครื่องมือคำนวณต้นทุน (สำหรับผู้ขาย)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
+                            <div><label class="form-label">ต้นทุนลูกแบด (บาท/หลอด)</label><input type="number"
+                                    id="settingTubeCost" class="form-control" placeholder="เช่น 1101"></div>
+                            <div><label class="form-label">จำนวนลูก (ต่อหลอด)</label><input type="number"
+                                    id="settingTubeAmount" class="form-control" value="12"></div>
+                            <div><label class="form-label">กำไรเป้าหมาย (บาท/ลูก)</label><input type="number"
+                                    id="settingTargetProfit" class="form-control" value="12"></div>
+                        </div>
+                        <div
+                            class="bg-green-50 border border-green-200 p-3 rounded-lg flex flex-wrap justify-between items-center gap-3">
+                            <div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">ต้นทุน: <span
+                                        id="displayCostPerBall" class="font-bold">0.00</span> บ./ลูก</div>
+                                <div class="font-bold text-gray-800 text-sm mt-1">ราคาขายที่แนะนำ: <span
+                                        class="text-green-700 text-xl ml-1" id="displayRecommendedPrice">฿0.00</span>
+                                </div>
+                            </div>
+                            <button id="btnApplyRecommendedPrice" class="btn btn-sm btn-success"><i
+                                    class="fas fa-arrow-up"></i> ใช้เป็นราคาเริ่มต้น</button>
+                        </div>
+                    </div>
+                    <hr class="border-gray-200">
+                    <div>
+                        <h3 class="font-bold text-sky-600 mb-3"><i class="fas fa-bolt"></i> ซิงก์ข้อมูลเรียลไทม์
+                            (Firebase)</h3>
+                        <div>
+                            <label class="form-label">รหัสกลุ่ม (Room ID)</label>
+                            <input type="text" id="settingSyncRoomId" class="form-control" style="max-width: 250px;"
+                                placeholder="เช่น badminton_group_1">
+                            <p class="text-xs text-gray-500 mt-1">หากต้องการใช้งานร่วมกันหลายเครื่อง
+                                ให้ตั้งรหัสกลุ่มเป็นชื่อเดียวกัน</p>
+                        </div>
+                    </div>
+                    <hr class="border-gray-200">
+                    <div>
+                        <h3 class="font-bold text-red-600 mb-2"><i class="fas fa-exclamation-triangle"></i> จัดการข้อมูล
+                            (Danger Zone)</h3>
+                        <p class="text-sm text-gray-600 mb-3">การล้างข้อมูลนี้จะลบรายชื่อผู้เล่น ประวัติเกม
+                            และบัญชีทั้งหมดอย่างถาวร (แนะนำให้ส่งออกรูปหรือเซฟไฟล์สำรองไว้ก่อน)</p>
+                        <button id="btnForceUpdateApp" class="btn btn-warning btn-sm mb-2"><i
+                                class="fas fa-sync-alt"></i> อัปเดตแอปเป็นเวอร์ชันล่าสุด (แก้บั๊ก)</button><br>
+                        <button id="btnFactoryReset" class="btn btn-danger btn-sm"><i
+                                class="fas fa-skull-crossbones"></i> ล้างข้อมูลทั้งหมด (Factory Reset)</button>
                     </div>
                 </div>
-                <hr class="border-gray-200">
-                <div>
-                    <h3 class="font-bold text-red-600 mb-2"><i class="fas fa-exclamation-triangle"></i> จัดการข้อมูล (Danger Zone)</h3>
-                    <p class="text-sm text-gray-600 mb-3">การล้างข้อมูลนี้จะลบรายชื่อผู้เล่น ประวัติเกม และบัญชีทั้งหมดอย่างถาวร (แนะนำให้ส่งออกรูปหรือเซฟไฟล์สำรองไว้ก่อน)</p>
-                    <button id="btnForceUpdateApp" class="btn btn-warning btn-sm mb-2"><i class="fas fa-sync-alt"></i> อัปเดตแอปเป็นเวอร์ชันล่าสุด (แก้บั๊ก)</button><br>
-                    <button id="btnFactoryReset" class="btn btn-danger btn-sm"><i class="fas fa-skull-crossbones"></i> ล้างข้อมูลทั้งหมด (Factory Reset)</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="pen-input-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width: 650px; width: 95%;">
+            <div class="modal-header" style="background: #15803d; border-bottom: 2px solid #ffffff;">
+                <h3 class="text-lg font-bold text-white"><i class="fas fa-chalkboard mr-2"></i>กระดานวางแผนทีม</h3>
+                <button class="btn-ghost btn-icon btn text-white" id="btnClosePenInput"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-4 bg-slate-50">
+                <div
+                    class="flex flex-wrap justify-between items-center bg-indigo-50 p-2 rounded-lg border border-indigo-100 gap-2">
+                    <span class="text-sm font-bold text-indigo-800"><i class="fas fa-microphone-alt mr-1"></i>
+                        จัดทีมด้วยเสียง / จัดการ:</span>
+                    <div class="flex gap-2">
+                        <button id="btnVoiceCommand" class="btn btn-sm btn-indigo shadow-sm"><i
+                                class="fas fa-bullhorn"></i> แตะเพื่อพูด</button>
+                        <button id="btnPenQuickAddPlayer" class="btn btn-sm btn-success shadow-sm"
+                            onclick="quickAddPlayer()"><i class="fas fa-user-plus"></i> เพิ่มผู้เล่นด่วน</button>
+                    </div>
+                </div>
+
+                <div class="court-container">
+                    <button class="court-clear-all-btn" onclick="clearAllPenFields()" title="ล้างสนาม"><i
+                            class="fas fa-trash-alt"></i></button>
+                    <div class="court-net-line"><button class="court-swap-btn" onclick="swapPenTeams()"
+                            title="สลับฝั่ง A-B"><i class="fas fa-exchange-alt"></i></button></div>
+                    <div class="court-center-line"></div>
+                    <div class="court-grid">
+                        <div class="court-cell"><input type="text" id="penP1" class="court-input"
+                                placeholder="ทีม A (ซ้าย)"><button class="court-clear-btn"
+                                onclick="clearPenField('penP1')"><i class="fas fa-times-circle"></i></button></div>
+                        <div class="court-cell"><input type="text" id="penP2" class="court-input"
+                                placeholder="ทีม A (ขวา)"><button class="court-clear-btn"
+                                onclick="clearPenField('penP2')"><i class="fas fa-times-circle"></i></button></div>
+                        <div class="court-cell"><input type="text" id="penP3" class="court-input"
+                                placeholder="ทีม B (ซ้าย)"><button class="court-clear-btn"
+                                onclick="clearPenField('penP3')"><i class="fas fa-times-circle"></i></button></div>
+                        <div class="court-cell"><input type="text" id="penP4" class="court-input"
+                                placeholder="ทีม B (ขวา)"><button class="court-clear-btn"
+                                onclick="clearPenField('penP4')"><i class="fas fa-times-circle"></i></button></div>
+                    </div>
+                </div>
+
+                <div id="boardQuickPlaySelection" class="bg-white p-3 rounded-lg border hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="text-sm font-bold text-gray-700"><i
+                                class="fas fa-hand-pointer text-indigo-600 mr-1"></i> จิ้มเลือกคนลงสนามด่วน:</div>
+                    </div>
+                    <div id="boardQuickPlayerPills" class="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 rounded-lg border">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="text-sm font-bold text-gray-700"><i
+                                class="fas fa-circle-dot text-indigo-600 mr-1"></i> เลือกเบอร์ลูก:</div>
+                        <div id="penShuttleCountBadge"
+                            class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md font-medium border border-indigo-200">
+                            ลูกล่าสุด: -</div>
+                    </div>
+                    <div class="ball-btn-grid">
+                        <button class="ball-btn" onclick="toggleBallBtn(this, '1')">1</button><button class="ball-btn"
+                            onclick="toggleBallBtn(this, '2')">2</button>
+                        <button class="ball-btn" onclick="toggleBallBtn(this, '3')">3</button><button class="ball-btn"
+                            onclick="toggleBallBtn(this, '4')">4</button>
+                        <button class="ball-btn" onclick="toggleBallBtn(this, '5')">5</button><button class="ball-btn"
+                            onclick="toggleBallBtn(this, '6')">6</button>
+                        <button class="ball-btn" onclick="toggleBallBtn(this, '7')">7</button><button class="ball-btn"
+                            onclick="toggleBallBtn(this, '8')">8</button>
+                        <button class="ball-btn" onclick="toggleBallBtn(this, '9')">9</button><button class="ball-btn"
+                            onclick="toggleBallBtn(this, '10')">10</button>
+                        <button class="ball-btn" onclick="toggleBallBtn(this, '11')">11</button><button class="ball-btn"
+                            onclick="toggleBallBtn(this, '12')">12</button>
+                    </div>
+                </div>
+
+                <button id="btnScanPen" class="btn btn-success w-full py-3 text-lg"><i class="fas fa-search-plus"></i>
+                    สแกนตรวจสอบความถูกต้อง</button>
+                <div id="penReviewSection" class="hidden bg-white p-3 rounded-lg border shadow-sm">
+                    <div class="text-xs font-bold text-red-600 bg-red-50 p-2 rounded" id="penErrorText"></div>
+                </div>
+                <div id="penQuickPad" class="hidden">
+                    <div class="text-xs font-bold text-gray-500 mb-2" id="penQuickPadLabel">
+                        จิ้มรายชื่อเพื่อแก้กล่องที่ผิด:</div>
+                    <div class="flex flex-wrap bg-white p-2 rounded-lg border" id="penQuickPadList"
+                        style="max-height: 140px; overflow-y: auto;"></div>
                 </div>
             </div>
+            <div class="modal-footer" style="background: #f8fafc;"><button class="btn btn-secondary"
+                    id="btnCancelPenInput">ยกเลิก</button><button class="btn btn-primary hidden shadow-lg"
+                    id="btnConfirmPenInput"><i class="fas fa-check-circle"></i> ยืนยันจัดลงสนาม</button></div>
         </div>
     </div>
 
-</div>
-
-<div id="pen-input-modal" class="modal-overlay hidden">
-    <div class="modal-box" style="max-width: 650px; width: 95%;">
-        <div class="modal-header" style="background: #15803d; border-bottom: 2px solid #ffffff;">
-            <h3 class="text-lg font-bold text-white"><i class="fas fa-chalkboard mr-2"></i>กระดานวางแผนทีม</h3>
-            <button class="btn-ghost btn-icon btn text-white" id="btnClosePenInput"><i class="fas fa-times"></i></button>
+    <!-- Hidden Slip Template -->
+    <div id="slip-template"
+        style="position: fixed; top: 0; left: -2000px; width: 380px; background: white; z-index: -50; padding: 24px; font-family: 'Sarabun', sans-serif;">
+        <div style="text-align: center; margin-bottom: 16px;">
+            <div style="font-size: 30px; text-align: center; margin-bottom: 8px;">🏸</div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #1d4ed8; text-align: center; margin: 0;">
+                ใบแจ้งยอดค่าแบดมินตัน</h2>
+            <p style="font-size: 14px; color: #64748b; text-align: center; margin: 4px 0;" id="slip-date"></p>
         </div>
-        <div class="modal-body space-y-4 bg-slate-50">
-            <div class="flex flex-wrap justify-between items-center bg-indigo-50 p-2 rounded-lg border border-indigo-100 gap-2">
-                <span class="text-sm font-bold text-indigo-800"><i class="fas fa-microphone-alt mr-1"></i> จัดทีมด้วยเสียง / จัดการ:</span>
-                <div class="flex gap-2">
-                    <button id="btnVoiceCommand" class="btn btn-sm btn-indigo shadow-sm"><i class="fas fa-bullhorn"></i> แตะเพื่อพูด</button>
-                    <button id="btnPenQuickAddPlayer" class="btn btn-sm btn-success shadow-sm" onclick="quickAddPlayer()"><i class="fas fa-user-plus"></i> เพิ่มผู้เล่นด่วน</button>
-                </div>
-            </div>
-            
-            <div class="court-container">
-                <button class="court-clear-all-btn" onclick="clearAllPenFields()" title="ล้างสนาม"><i class="fas fa-trash-alt"></i></button>
-                <div class="court-net-line"><button class="court-swap-btn" onclick="swapPenTeams()" title="สลับฝั่ง A-B"><i class="fas fa-exchange-alt"></i></button></div>
-                <div class="court-center-line"></div>
-                <div class="court-grid">
-                    <div class="court-cell"><input type="text" id="penP1" class="court-input" placeholder="ทีม A (ซ้าย)"><button class="court-clear-btn" onclick="clearPenField('penP1')"><i class="fas fa-times-circle"></i></button></div>
-                    <div class="court-cell"><input type="text" id="penP2" class="court-input" placeholder="ทีม A (ขวา)"><button class="court-clear-btn" onclick="clearPenField('penP2')"><i class="fas fa-times-circle"></i></button></div>
-                    <div class="court-cell"><input type="text" id="penP3" class="court-input" placeholder="ทีม B (ซ้าย)"><button class="court-clear-btn" onclick="clearPenField('penP3')"><i class="fas fa-times-circle"></i></button></div>
-                    <div class="court-cell"><input type="text" id="penP4" class="court-input" placeholder="ทีม B (ขวา)"><button class="court-clear-btn" onclick="clearPenField('penP4')"><i class="fas fa-times-circle"></i></button></div>
-                </div>
-            </div>
-
-            <div id="boardQuickPlaySelection" class="bg-white p-3 rounded-lg border hidden">
-                <div class="flex justify-between items-center mb-2">
-                    <div class="text-sm font-bold text-gray-700"><i class="fas fa-hand-pointer text-indigo-600 mr-1"></i> จิ้มเลือกคนลงสนามด่วน:</div>
-                </div>
-                <div id="boardQuickPlayerPills" class="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto pr-1"></div>
-            </div>
-
-            <div class="bg-white p-3 rounded-lg border">
-                <div class="flex justify-between items-center mb-2">
-                    <div class="text-sm font-bold text-gray-700"><i class="fas fa-circle-dot text-indigo-600 mr-1"></i> เลือกเบอร์ลูก:</div>
-                    <div id="penShuttleCountBadge" class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md font-medium border border-indigo-200">ลูกล่าสุด: -</div>
-                </div>
-                <div class="ball-btn-grid">
-                    <button class="ball-btn" onclick="toggleBallBtn(this, '1')">1</button><button class="ball-btn" onclick="toggleBallBtn(this, '2')">2</button>
-                    <button class="ball-btn" onclick="toggleBallBtn(this, '3')">3</button><button class="ball-btn" onclick="toggleBallBtn(this, '4')">4</button>
-                    <button class="ball-btn" onclick="toggleBallBtn(this, '5')">5</button><button class="ball-btn" onclick="toggleBallBtn(this, '6')">6</button>
-                    <button class="ball-btn" onclick="toggleBallBtn(this, '7')">7</button><button class="ball-btn" onclick="toggleBallBtn(this, '8')">8</button>
-                    <button class="ball-btn" onclick="toggleBallBtn(this, '9')">9</button><button class="ball-btn" onclick="toggleBallBtn(this, '10')">10</button>
-                    <button class="ball-btn" onclick="toggleBallBtn(this, '11')">11</button><button class="ball-btn" onclick="toggleBallBtn(this, '12')">12</button>
-                </div>
-            </div>
-
-            <button id="btnScanPen" class="btn btn-success w-full py-3 text-lg"><i class="fas fa-search-plus"></i> สแกนตรวจสอบความถูกต้อง</button>
-            <div id="penReviewSection" class="hidden bg-white p-3 rounded-lg border shadow-sm"><div class="text-xs font-bold text-red-600 bg-red-50 p-2 rounded" id="penErrorText"></div></div>
-            <div id="penQuickPad" class="hidden">
-                <div class="text-xs font-bold text-gray-500 mb-2" id="penQuickPadLabel">จิ้มรายชื่อเพื่อแก้กล่องที่ผิด:</div>
-                <div class="flex flex-wrap bg-white p-2 rounded-lg border" id="penQuickPadList" style="max-height: 140px; overflow-y: auto;"></div>
+        <div style="margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px dashed #e2e8f0;">
+            <div style="font-weight: 700; font-size: 18px;" id="slip-name"></div>
+        </div>
+        <div style="margin-bottom: 16px; min-height: 40px;" id="slip-details"></div>
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-weight: 700; font-size: 18px;">
+            <span>ยอดชำระสุทธิ:</span><span style="color: #dc2626;" id="slip-total"></span>
+        </div>
+        <div id="slip-promptpay"
+            style="text-align: center; margin-top: 16px; display: none; padding-top: 16px; border-top: 2px dashed #e2e8f0;">
+            <div style="font-size: 14px; color: #475569;">สแกน QR หรือโอนพร้อมเพย์</div>
+            <div style="font-size: 16px; font-weight: 700; color: #1e293b;" id="slip-promptpay-number"></div>
+            <div id="slip-promptpay-name" style="font-size: 14px; font-weight: 600; color: #1d4ed8; margin-top: 2px;">
             </div>
         </div>
-        <div class="modal-footer" style="background: #f8fafc;"><button class="btn btn-secondary" id="btnCancelPenInput">ยกเลิก</button><button class="btn btn-primary hidden shadow-lg" id="btnConfirmPenInput"><i class="fas fa-check-circle"></i> ยืนยันจัดลงสนาม</button></div>
+        <div style="text-align: center; margin-top: 24px; font-size: 12px; color: #cbd5e1;">
+            สร้างโดยโปรแกรมคำนวณค่าลูกแบดมินตัน</div>
     </div>
-</div>
 
-<!-- Hidden Slip Template -->
-<div id="slip-template" style="position: fixed; top: 0; left: -2000px; width: 380px; background: white; z-index: -50; padding: 24px; font-family: 'Sarabun', sans-serif;">
-    <div style="text-align: center; margin-bottom: 16px;">
-        <div style="font-size: 30px; text-align: center; margin-bottom: 8px;">🏸</div>
-        <h2 style="font-size: 20px; font-weight: 700; color: #1d4ed8; text-align: center; margin: 0;">ใบแจ้งยอดค่าแบดมินตัน</h2>
-        <p style="font-size: 14px; color: #64748b; text-align: center; margin: 4px 0;" id="slip-date"></p>
+    <div id="payment-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="font-bold text-green-700">ชำระเงิน</h3><button class="btn-ghost" id="btnClosePayment"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <p id="payment-name" class="font-bold mb-2"></p><input type="hidden" id="payment-hidden-name"><input
+                    type="number" id="payment-amount" class="form-control text-lg" placeholder="0.00">
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" id="btnCancelPayment">ยกเลิก</button><button
+                    class="btn btn-success" id="btnSubmitPayment">ยืนยัน</button></div>
+        </div>
     </div>
-    <div style="margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px dashed #e2e8f0;">
-        <div style="font-weight: 700; font-size: 18px;" id="slip-name"></div>
+    <div id="debt-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="font-bold text-red-700">เพิ่มยอดค้างชำระ (ตั้งหนี้)</h3><button class="btn-ghost"
+                    id="btnCloseDebt"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">ชื่อผู้เล่น</label><input type="text" id="debt-name" class="form-control"
+                        placeholder="พิมพ์ชื่อผู้เล่น..." list="debt-player-list"><datalist
+                        id="debt-player-list"></datalist></div>
+                <div><label class="form-label">จำนวนเงิน (บาท)</label><input type="number" id="debt-amount"
+                        class="form-control text-lg" placeholder="0.00"></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" id="btnCancelDebt">ยกเลิก</button><button
+                    class="btn btn-danger" id="btnSubmitDebt">บันทึกหนี้</button></div>
+        </div>
     </div>
-    <div style="margin-bottom: 16px; min-height: 40px;" id="slip-details"></div>
-    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-weight: 700; font-size: 18px;">
-        <span>ยอดชำระสุทธิ:</span><span style="color: #dc2626;" id="slip-total"></span>
+    <div id="rename-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="font-bold">เปลี่ยนชื่อ</h3><button class="btn-ghost" id="btnCloseRename"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body"><input type="hidden" id="rename-old-name"><input type="text" id="rename-new-name"
+                    class="form-control"></div>
+            <div class="modal-footer"><button class="btn btn-secondary" id="btnCancelRename">ยกเลิก</button><button
+                    class="btn btn-primary" id="btnSubmitRename">ยืนยัน</button></div>
+        </div>
     </div>
-    <div id="slip-promptpay" style="text-align: center; margin-top: 16px; display: none; padding-top: 16px; border-top: 2px dashed #e2e8f0;">
-        <div style="font-size: 14px; color: #475569;">สแกน QR หรือโอนพร้อมเพย์</div>
-        <div style="font-size: 16px; font-weight: 700; color: #1e293b;" id="slip-promptpay-number"></div>
-        <div id="slip-promptpay-name" style="font-size: 14px; font-weight: 600; color: #1d4ed8; margin-top: 2px;"></div>
+    <div id="draft-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="font-bold text-yellow-700"><i class="fas fa-exclamation-triangle"></i> วันที่ค้างปิดยอด</h3>
+                <button class="btn-ghost" id="btnCloseDraft"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-2" id="draft-list-container"></div>
+            <div class="modal-footer"><button class="btn btn-secondary" id="btnCancelDraft">ปิด</button></div>
+        </div>
     </div>
-    <div style="text-align: center; margin-top: 24px; font-size: 12px; color: #cbd5e1;">สร้างโดยโปรแกรมคำนวณค่าลูกแบดมินตัน</div>
-</div>
 
-<div id="payment-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-green-700">ชำระเงิน</h3><button class="btn-ghost" id="btnClosePayment"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-3"><p id="payment-name" class="font-bold mb-2"></p><input type="hidden" id="payment-hidden-name"><input type="number" id="payment-amount" class="form-control text-lg" placeholder="0.00"></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelPayment">ยกเลิก</button><button class="btn btn-success" id="btnSubmitPayment">ยืนยัน</button></div></div></div>
-<div id="debt-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-red-700">เพิ่มยอดค้างชำระ (ตั้งหนี้)</h3><button class="btn-ghost" id="btnCloseDebt"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-3"><div><label class="form-label">ชื่อผู้เล่น</label><input type="text" id="debt-name" class="form-control" placeholder="พิมพ์ชื่อผู้เล่น..." list="debt-player-list"><datalist id="debt-player-list"></datalist></div><div><label class="form-label">จำนวนเงิน (บาท)</label><input type="number" id="debt-amount" class="form-control text-lg" placeholder="0.00"></div></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelDebt">ยกเลิก</button><button class="btn btn-danger" id="btnSubmitDebt">บันทึกหนี้</button></div></div></div>
-<div id="rename-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold">เปลี่ยนชื่อ</h3><button class="btn-ghost" id="btnCloseRename"><i class="fas fa-times"></i></button></div><div class="modal-body"><input type="hidden" id="rename-old-name"><input type="text" id="rename-new-name" class="form-control"></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelRename">ยกเลิก</button><button class="btn btn-primary" id="btnSubmitRename">ยืนยัน</button></div></div></div>
-<div id="draft-modal" class="modal-overlay hidden"><div class="modal-box"><div class="modal-header"><h3 class="font-bold text-yellow-700"><i class="fas fa-exclamation-triangle"></i> วันที่ค้างปิดยอด</h3><button class="btn-ghost" id="btnCloseDraft"><i class="fas fa-times"></i></button></div><div class="modal-body space-y-2" id="draft-list-container"></div><div class="modal-footer"><button class="btn btn-secondary" id="btnCancelDraft">ปิด</button></div></div></div>
-
-<script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
+
 </html>

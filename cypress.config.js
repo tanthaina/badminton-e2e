@@ -4,7 +4,7 @@ module.exports = defineConfig({
   allowCypressEnv: false,
 
   e2e: {
-    baseUrl: 'http://127.0.0.1:5500',
+    baseUrl: 'http://localhost:3000',
     experimentalRunAllSpecs: true,
     setupNodeEvents(on, config) {
       on('before:browser:launch', (browser, launchOptions) => {
