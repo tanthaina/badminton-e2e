@@ -72,7 +72,7 @@ describe('Auto Transfer Listener', () => {
         cy.get('#unpaid-list-overall').should('contain', 'UserB');
     });
 
-    it('should show warning if no user matches the amount', () => {
+    it('should show warning if no user matches the amount and log it to history', () => {
         cy.get('#btnTransferListener').click();
         cy.get('#btnSimulateTransfer').click();
         
@@ -82,6 +82,29 @@ describe('Auto Transfer Listener', () => {
 
         // Should show warning toast
         cy.get('.swal2-toast').contains('มียอดโอนเข้า ฿500.00');
-        cy.get('.swal2-toast').contains('ไม่พบผู้ค้างชำระตรงกับยอดนี้');
+        cy.get('.swal2-toast').contains('ตรวจสอบที่ปุ่มประวัติ');
+
+        // Badge should appear with '1'
+        cy.get('#transferBadge').should('be.visible').and('contain', '1');
+
+        // Click history button
+        cy.get('#btnTransferHistory').click();
+        cy.get('.swal2-popup').contains('ประวัติโอนวันนี้');
+        cy.get('.swal2-popup').contains('฿500.00');
+        cy.get('.swal2-popup').contains('ยังไม่จัดการ');
+
+        // Click match
+        cy.contains('button', 'จัดการ').click();
+        cy.get('.swal2-popup').contains('เติมเงินให้ใคร');
+        cy.get('#swal-resolve-player').select('UserC');
+        cy.get('.swal2-confirm').click();
+
+        // UserC should have received 500.00 payment (clearing 80 debt, 420 credit)
+        cy.get('.swal2-toast').contains('รับยอดโอนสำเร็จ');
+        cy.get('#unpaid-list-overall').should('not.contain', 'UserC');
+        cy.get('#credit-list-overall').should('contain', 'UserC');
+        
+        // Badge should disappear because it was resolved
+        cy.get('#transferBadge').should('not.be.visible');
     });
 });
