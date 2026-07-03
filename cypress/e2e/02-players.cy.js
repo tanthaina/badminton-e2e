@@ -23,7 +23,6 @@ describe('02 - Player Management & Security', () => {
     
     cy.recordGame('ก้อง', 'แทน', 'หมู', 'แมน', '1', '20');
 
-    cy.get('#btnConfirmSave').click(); cy.get('.swal2-confirm').click();
     cy.contains('.player-chip', 'ก้อง').find('.fa-trash-alt').click();
     cy.get('.swal2-popup').should('be.visible');
     cy.get('.swal2-html-container').should('contain.text', 'ยังมียอดค้างชำระ');

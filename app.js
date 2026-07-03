@@ -425,8 +425,11 @@ function openPenInputModal() {
     document.querySelectorAll('.ball-btn').forEach(b => b.classList.remove('active')); currentPenMatchedBalls = []; focusedFieldId = 'penP1';
     $('penReviewSection').classList.add('hidden'); $('penQuickPad').classList.add('hidden'); $('btnConfirmPenInput').classList.add('hidden');
 
-    const dd = getCurrentDailyData(); const badge = $('penShuttleCountBadge');
-    if (badge) badge.innerHTML = (dd.games.length > 0 && dd.games[dd.games.length - 1].shuttlecockSpeeds) ? `ลูกล่าสุด: <b>${dd.games[dd.games.length - 1].shuttlecockSpeeds.join(', ')}</b>` : 'ยังไม่มีเกม';
+    const badge = $('penShuttleCountBadge');
+    if (badge) {
+        const lastSpeeds = getGlobalLastShuttlecockSpeeds();
+        badge.innerHTML = lastSpeeds ? `ลูกล่าสุด: <b>${lastSpeeds.join(', ')}</b>` : 'ยังไม่มีเกม';
+    }
 
     renderBoardQuickPills();
 }
@@ -997,6 +1000,24 @@ function updateShuttlecockDisplay() {
     }
 }
 
+function getGlobalLastShuttlecockSpeeds() {
+    const dd = getCurrentDailyData();
+    if (dd.games && dd.games.length > 0) {
+        const lg = dd.games[dd.games.length - 1];
+        if (lg.shuttlecockSpeeds && lg.shuttlecockSpeeds.length > 0) return lg.shuttlecockSpeeds;
+    }
+    const dates = Object.keys(state.dailyData).sort().reverse();
+    for (const d of dates) {
+        if (d === currentDailyDate) continue;
+        const pGames = state.dailyData[d].games;
+        if (pGames && pGames.length > 0) {
+            const plg = pGames[pGames.length - 1];
+            if (plg.shuttlecockSpeeds && plg.shuttlecockSpeeds.length > 0) return plg.shuttlecockSpeeds;
+        }
+    }
+    return null;
+}
+
 function renderShuttlecockSelector() {
     const container = $('shuttlecockSpeedButtons');
     if (!container) return;
@@ -1010,15 +1031,12 @@ function renderShuttlecockSelector() {
 
     const indicator = $('lastShuttlecockIndicator');
     if (!indicator) return;
-    const dd = getCurrentDailyData();
     indicator.innerHTML = '';
-    if (dd.games.length > 0) {
-        const lastGame = dd.games[dd.games.length - 1];
-        if (lastGame.shuttlecockSpeeds && lastGame.shuttlecockSpeeds.length > 0) {
-            const lastUsed = Math.max(...lastGame.shuttlecockSpeeds.map(s => parseInt(s, 10)).filter(n => !isNaN(n)));
-            if (isFinite(lastUsed)) {
-                indicator.innerHTML = `ลูกล่าสุด: <b class="text-indigo-600 dark:text-indigo-400">${lastUsed}</b>`;
-            }
+    const lastSpeeds = getGlobalLastShuttlecockSpeeds();
+    if (lastSpeeds) {
+        const lastUsed = Math.max(...lastSpeeds.map(s => parseInt(s, 10)).filter(n => !isNaN(n)));
+        if (isFinite(lastUsed)) {
+            indicator.innerHTML = `ลูกล่าสุด: <b class="text-indigo-600 dark:text-indigo-400">${lastUsed}</b>`;
         }
     }
 }

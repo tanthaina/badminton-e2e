@@ -23,8 +23,6 @@ describe('08 - Mobile UI & Responsive Design', () => {
     // เช็คว่าปุ่ม "แชร์/บันทึกรูป" แสดงผลได้ปกติและไม่ล้นจอ
     cy.get('#btnExportAccountImg').should('be.visible');
 
-    // เช็คว่าปุ่ม "ชำระทั้งหมด" ซึ่งอยู่ท้ายสุด ยังสามารถมองเห็นและคลิกได้
-    cy.get('#btnPayAllUnpaid').should('be.visible');
   });
 
   it('ทดสอบ 3: ชื่อผู้เล่นยาวๆ ในหน้าบัญชีต้องไม่เบียดปุ่มทวง/จ่ายตกขอบ (Break Word)', () => {

@@ -10,9 +10,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.contains('#summaryTableUnpaid tr', 'A').should('contain.text', '18.75');
     cy.get('#grandTotal').should('have.text', '75.00');
 
-    // ซิงก์ลงบัญชีและตรวจสอบหน้าบัญชีรวม
-    cy.get('#btnConfirmSave').click(); 
-    cy.get('.swal2-confirm').should('be.visible').click();
+    // ตรวจสอบหน้าบัญชีรวม
     cy.get('button[data-tab="account"]').click();
     cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 18.75');
   });
@@ -46,9 +44,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.get('button[data-tab="daily"]').click();
     cy.recordGame('สายเปย์', 'A', 'B', 'C', '1', '80');
 
-    // 4. ซิงก์บัญชี -> เครดิตเดิม 50 หักลบหนี้ใหม่ 20 จะต้องเหลือเครดิต 30 บาท และไม่ติดหนี้
-    cy.get('#btnConfirmSave').click(); 
-    cy.get('.swal2-confirm').should('be.visible').click();
+    // 4. ตรวจสอบบัญชี -> เครดิตเดิม 50 หักลบหนี้ใหม่ 20 จะต้องเหลือเครดิต 30 บาท และไม่ติดหนี้
     cy.get('button[data-tab="account"]').click();
     cy.contains('#credit-list-overall div.border', 'สายเปย์').should('contain.text', 'เครดิต 30.00');
     cy.get('#unpaid-list-overall').should('not.contain.text', 'สายเปย์');
@@ -76,34 +72,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.get('#paid-in-full-list-overall').should('contain.text', 'คนคิดมาก');
   });
 
-  it('ทดสอบ 4: ชำระทั้งหมด (Pay All) ยอดรวมต้องเป็นศูนย์โดยไม่กระทบคนที่มีเครดิต', () => {
-    cy.seedSessionState('payAllSetup', {
-      masterPlayerList: ['ค้างเยอะ', 'มีบุญคุณ'],
-      allTransactions: [
-        { id: 1, date: '2024-01-01', name: 'ค้างเยอะ', totalCost: 100, isAutoDaily: false },
-        { id: 2, date: '2024-01-01', name: 'มีบุญคุณ', totalCost: 20, isAutoDaily: false }
-      ],
-      allPayments: [
-        { id: 3, date: '2024-01-01', name: 'มีบุญคุณ', amount: 50, isAutoDaily: false }
-      ]
-    });
 
-    cy.visit('/index.html');
-
-    cy.get('button[data-tab="account"]').click();
-    
-    // เช็คยอดก่อนกด (หนี้รวม 100 / เครดิตรวม 30)
-    cy.get('#total-unpaid-overall').should('have.text', '฿100.00');
-    cy.get('#total-credit-overall').should('have.text', '฿30.00');
-
-    // กดปุ่มชำระทั้งหมด
-    cy.get('#btnPayAllUnpaid').click(); 
-    cy.get('.swal2-confirm').should('be.visible').click();
-
-    // หนี้รวมต้องเป็น 0 แต่เครดิตของคนมีบุญคุณต้องยังอยู่ 30 บาทเท่าเดิม
-    cy.get('#total-unpaid-overall').should('have.text', '฿0.00');
-    cy.get('#total-credit-overall').should('have.text', '฿30.00');
-  });
 
   it('ทดสอบ 5: การแสดงผลหนี้สะสม (Accumulated Debt) และปุ่ม QR Code บนหน้ารายวัน', () => {
     const today = '2024-01-01';

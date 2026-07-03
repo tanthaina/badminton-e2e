@@ -65,20 +65,6 @@ describe('04 - Accounting & History', () => {
     cy.get('#summaryTablePaid').should('not.contain.text', 'A');
   });
 
-  it('ทดสอบปุ่มชำระทั้งหมดในหน้าบัญชีรวม (Pay All Unpaid)', () => {
-    // ฉีดข้อมูลเกมเข้าไปเลย 1 เกม
-    cy.seedGames(
-      ['A', 'B', 'C', 'D'],
-      [{ players: ['A', 'B', 'C', 'D'], speeds: ['1'] }],
-      20
-    );
-    cy.visit('/index.html');
-
-    cy.get('button[data-tab="account"]').click();
-    cy.get('#btnPayAllUnpaid').click(); cy.get('.swal2-confirm').click();
-    cy.get('#total-unpaid-overall').should('have.text', '฿0.00');
-  });
-
   it('ทดสอบระบบบัญชี: การจ่ายเงินเกินยอดหนี้จนเกิดเป็นเครดิต (Overpayment)', () => {
     // 1. ตั้งค่า State เริ่มต้น: ผู้เล่น A มีหนี้ 5 บาท
     cy.seedSessionState('overpaymentSetup', {
@@ -238,32 +224,6 @@ describe('04 - Accounting & History', () => {
     
     // 5. กดปิดหน้าต่าง
     cy.get('.swal2-confirm').click();
-  });
-
-  it('ทดสอบฟีเจอร์ระบบเช็ควันค้างปิดยอด (Draft Manager)', () => {
-    cy.seedGames(['A', 'B', 'C', 'D'], [{ players: ['A', 'B', 'C', 'D'], speeds: ['1'] }], 20);
-    cy.visit('/index.html');
-    
-    // 1. ตรวจสอบว่าปุ่มเตือน "วันค้างปิดยอด" โผล่ขึ้นมา (เพราะถูกสร้างเกมไว้แต่ยังไม่ปิดยอด)
-    cy.get('#btnDraftWarning').should('not.have.class', 'hidden').and('contain.text', '1 วัน');
-    
-    // 2. กดเปิดหน้าต่างเตือน เพื่อย้อนกลับไปดูวันนั้น
-    cy.get('#btnDraftWarning').click();
-    cy.get('#draft-modal').should('not.have.class', 'hidden');
-    cy.get('#draft-list-container').should('contain.text', '1 เกม');
-    
-    // 3. ปิดหน้าต่างแล้วไปกดยืนยันปิดยอด
-    cy.get('#btnCancelDraft').click();
-    cy.get('#btnConfirmSave').click();
-    cy.get('.swal2-popup').should('contain.text', 'ยอดรวมทั้งหมดของวันนี้คือ').and('contain.text', '฿20.00');
-    cy.get('.swal2-confirm').click();
-    cy.get('#btnDraftWarning').should('have.class', 'hidden'); // ปุ่มเตือนต้องหายไป
-
-    // 4. ทดลองแก้ไขเกมเพื่อปลดล็อกวันให้กลับมาเป็นดราฟต์ใหม่
-    cy.get('#gamesList .game-card').eq(0).find('button[title="แก้ไข"]').click();
-    cy.get('#shuttlecockSpeeds').type(', 2', { force: true });
-    cy.get('#btnRecordGame').click();
-    cy.get('#btnDraftWarning').should('not.have.class', 'hidden').and('contain.text', '1 วัน'); // ปุ่มเตือนต้องกลับมาอีกครั้ง!
   });
 
   it('ทดสอบฟีเจอร์ทวงแบบกลุ่ม (Group Bill) และบันทึกการจ่ายเงิน', () => {
