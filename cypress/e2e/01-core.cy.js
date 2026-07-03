@@ -72,7 +72,8 @@ describe('01 - Core Flow & Game Management', () => {
     cy.recordGame('A', 'B', 'C', 'D', '1', '20');
     
     cy.get('#grandTotal').should('have.text', '20.00'); 
-    cy.get('.game-card').find('.fa-trash-alt').click();
+    cy.get('.swal2-container').should('not.exist');
+    cy.get('.game-card button[title="ลบ"]').click();
     cy.get('#grandTotal').should('have.text', '0.00');
     cy.get('#gamesList .game-card').should('have.length', 0);
   });

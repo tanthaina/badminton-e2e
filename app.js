@@ -1008,7 +1008,7 @@ function getGlobalLastShuttlecockSpeeds() {
     }
     const dates = Object.keys(state.dailyData).sort().reverse();
     for (const d of dates) {
-        if (d === currentDailyDate) continue;
+        if (d === selectedDate) continue;
         const pGames = state.dailyData[d].games;
         if (pGames && pGames.length > 0) {
             const plg = pGames[pGames.length - 1];
