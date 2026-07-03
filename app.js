@@ -1044,7 +1044,6 @@ function recordGame() {
         currentGameShuttlecockSpeeds = [];
         currentGameSelection = { player1: '', player2: '', player3: '', player4: '' };
     }
-    dd.isClosed = false;
     updateAndRender();
 }
 
@@ -1093,14 +1092,12 @@ function moveGame(idx, dir) {
     const dd = getCurrentDailyData();
     if (dir === -1 && idx > 0) { let t = dd.games[idx]; dd.games[idx] = dd.games[idx - 1]; dd.games[idx - 1] = t; }
     else if (dir === 1 && idx < dd.games.length - 1) { let t = dd.games[idx]; dd.games[idx] = dd.games[idx + 1]; dd.games[idx + 1] = t; }
-    dd.isClosed = false;
     updateAndRender();
 }
 
 function deleteGame(idx) {
     const dd = getCurrentDailyData(); if (_editGameId === dd.games[idx].id) cancelEditGame();
     dd.games.splice(idx, 1);
-    dd.isClosed = false;
     updateAndRender();
 }
 
@@ -1109,35 +1106,56 @@ function syncAllDailyToAccount() {
     // 1. ล้างรายการที่มาจากระบบรายวันทั้งหมดทิ้ง (เก็บไว้เฉพาะหนี้ที่ตั้งมือ)
     state.allTransactions = state.allTransactions.filter(t => t.isAutoDaily !== true);
     state.allPayments = state.allPayments.filter(p => p.isAutoDaily !== true);
-    // 2. คำนวณใหม่จากทุกวันใน dailyData เพื่อกวาดล้างบั๊กข้อมูลซ้ำซ้อนจากไฟล์เก่า
-    Object.keys(state.dailyData).forEach(date => {
-        if (!date || date === 'undefined' || date === 'null') return; // ดักจับไม่ให้คำนวณบิลผี
-        const dd = state.dailyData[date]; if (!dd.players || !dd.games) return;
-        let det = {}; dd.players.forEach(p => det[p.name] = { cost: (p.extraCost || 0) });
-        dd.games.forEach(g => { let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; g.players.forEach(p => { if (!det[p]) { let px = dd.players.find(x => x.name === p); det[p] = { cost: (px ? px.extraCost || 0 : 0) }; } det[p].cost += c; }); });
-        Object.keys(det).forEach(name => { if (det[name].cost > TOLERANCE) state.allTransactions.push({ id: Date.now() + Math.random(), date: date, name: name, totalCost: det[name].cost, isAutoDaily: true }); });
-        dd.players.filter(p => p.paid).forEach(p => { if (det[p.name] && det[p.name].cost > TOLERANCE) state.allPayments.push({ id: Date.now() + Math.random(), date: date, name: p.name, amount: det[p.name].cost, isAutoDaily: true }); });
-    });
-}
-
-function updateDraftWarning() {
-    let drafts = [];
+    
+    // 2. คำนวณใหม่จากทุกวันใน dailyData
     Object.keys(state.dailyData).forEach(date => {
         if (!date || date === 'undefined' || date === 'null') return;
-        const dd = state.dailyData[date];
-        if (dd.games && dd.games.length > 0 && !dd.isClosed) drafts.push(date);
+        const dd = state.dailyData[date]; 
+        if (!dd.players || !dd.games) return;
+        
+        let det = {}; 
+        
+        // กวาดผู้เล่นจากทั้ง dd.players และ g.players เพื่อป้องกันการตกหล่น
+        dd.players.forEach(p => det[p.name] = { cost: (p.extraCost || 0), isPaid: p.paid });
+        dd.games.forEach(g => { 
+            let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; 
+            g.players.forEach(p => { 
+                if (!det[p]) { 
+                    let px = dd.players.find(x => x.name === p); 
+                    det[p] = { cost: (px ? px.extraCost || 0 : 0), isPaid: (px ? px.paid : false) }; 
+                } 
+                det[p].cost += c; 
+            }); 
+        });
+        
+        Object.keys(det).forEach(name => { 
+            if (det[name].cost > TOLERANCE) {
+                // สร้าง Transaction สำหรับทุกคนที่มี cost > 0
+                state.allTransactions.push({ 
+                    id: Date.now() + Math.random(), 
+                    date: date, 
+                    name: name, 
+                    totalCost: det[name].cost, 
+                    isAutoDaily: true 
+                });
+                
+                // ถ้าระบุว่าจ่ายแล้ว ให้สร้าง Payment หักล้างทันที (ป้องกัน Bug บัญชีรวมค้าง แต่รายวันจ่ายแล้ว)
+                if (det[name].isPaid) {
+                    state.allPayments.push({ 
+                        id: Date.now() + Math.random(), 
+                        date: date, 
+                        name: name, 
+                        amount: det[name].cost, 
+                        isAutoDaily: true 
+                    });
+                }
+            }
+        });
     });
-    const btn = $('btnDraftWarning');
-    if (!btn) return;
-    if (drafts.length > 0) {
-        btn.classList.remove('hidden');
-        $('draftWarningCount').innerText = ` ${drafts.length} วัน`;
-    } else {
-        btn.classList.add('hidden');
-    }
 }
 
-function updateAndRender(skipSave = false) { syncAllDailyToAccount(); if (skipSave !== true) saveToStorage(); renderDaily(); renderAccount(); renderHistory(); updateDraftWarning(); updateShuttlecockDisplay(); }
+
+function updateAndRender(skipSave = false) { syncAllDailyToAccount(); if (skipSave !== true) saveToStorage(); renderDaily(); renderAccount(); renderHistory(); updateShuttlecockDisplay(); }
 function switchTab(name) { document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden')); document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`tab-${name}`).classList.remove('hidden'); document.querySelector(`[data-tab="${name}"]`).classList.add('active'); }
 
 function renderDaily() {
@@ -1781,12 +1799,25 @@ function exportGamesImg() {
 function exportSummaryImg() {
     const el = document.getElementById('summaryTableContainer');
     if (!document.getElementById('summaryTableUnpaid').innerHTML.trim() && !document.getElementById('summaryTablePaid').innerHTML.trim()) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลให้ส่งออก', 'info');
+    
+    // Add watermark
+    const originalPos = el.style.position;
+    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+    const watermark = document.createElement('div');
+    watermark.innerText = selectedDate;
+    watermark.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) rotate(-15deg); opacity:0.06; font-size:120px; font-weight:900; color:#475569; white-space:nowrap; pointer-events:none; z-index:0; text-align:center; user-select:none;';
+    el.appendChild(watermark);
+
     Swal.fire({ title: 'กำลังสร้างรูป...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
     waitForImages(el).then(() => {
         html2canvas(el, { scale: 2, useCORS: true, backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff', scrollX: 0, scrollY: -window.scrollY, windowWidth: document.documentElement.offsetWidth }).then(canvas => {
+            el.removeChild(watermark);
+            el.style.position = originalPos;
             Swal.close();
             shareOrDownloadCanvas(canvas, `summary-${selectedDate}.png`, 'สรุปยอดค่าใช้จ่าย');
         }).catch(err => {
+            if (el.contains(watermark)) el.removeChild(watermark);
+            el.style.position = originalPos;
             console.error(err); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปได้', 'error');
         });
     });
@@ -1896,7 +1927,9 @@ function jumpToDraft(date) {
 
 function exportAccountText() {
     const sum = calculateOverallBalances();
-    let txt = 'สรุปยอดบัญชีแบดมินตัน\n\n';
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    let txt = `สรุปยอดบัญชีแบดมินตัน\n(ข้อมูล ณ วันที่ ${getTodayString()} เวลา ${timeStr} น.)\n\n`;
     let unpaid = '';
     let credit = '';
 
@@ -2077,21 +2110,6 @@ function showGroupBillResult(members, isDaily = false) {
     });
 }
 
-function payAllUnpaid() {
-    Swal.fire({ title: 'ชำระทั้งหมด?', text: 'บันทึกว่าทุกคนชำระเงินค้างจ่ายครบแล้ว', icon: 'question', showCancelButton: true }).then(r => {
-        if (r.isConfirmed) {
-            const sum = calculateOverallBalances();
-            Object.values(sum).forEach(x => {
-                let b = x.d - x.p;
-                if (b > TOLERANCE) {
-                    state.allPayments.push({ id: Date.now() + Math.random(), date: getTodayString(), name: x.n, amount: b, isAutoDaily: false });
-                    autoReconcileDailyDebts(x.n);
-                }
-            });
-            updateAndRender(); Swal.fire('สำเร็จ', 'ชำระทั้งหมดเรียบร้อย', 'success');
-        }
-    });
-}
 
 // --- MODAL PAYMENT ---
 function openPaymentModal(name) {
@@ -2394,13 +2412,13 @@ function updateTransferBadge() {
     const badge = $('transferBadge');
     if (!badge) return;
     const todayStr = getTodayString();
-    
+
     // ล้างประวัติที่ข้ามวัน และจำกัดแค่ 50 รายการล่าสุด
     state.transferLogs = state.transferLogs.filter(log => log.date === todayStr);
     if (state.transferLogs.length > 50) {
         state.transferLogs = state.transferLogs.slice(-50);
     }
-    
+
     const unmatchedCount = state.transferLogs.filter(log => log.status === 'unmatched').length;
     if (unmatchedCount > 0) {
         badge.textContent = unmatchedCount;
@@ -2586,8 +2604,6 @@ function bindEvents() {
     if ($('btnTransferListener')) $('btnTransferListener').addEventListener('click', startTransferListener);
     if ($('btnSimulateTransfer')) $('btnSimulateTransfer').addEventListener('click', simulateTransfer);
 
-    $('btnDraftWarning').addEventListener('click', openDraftModal);
-    ['btnCloseDraft', 'btnCancelDraft'].forEach(id => $(id).addEventListener('click', () => $('draft-modal').classList.add('hidden')));
 
     $('workingDate').addEventListener('change', (e) => {
         if (!e.target.value) { e.target.value = getTodayString(); }
@@ -2608,8 +2624,8 @@ function bindEvents() {
         Swal.fire({ title: 'ล้างรายชื่อวันนี้?', icon: 'warning', showCancelButton: true }).then(r => { if (r.isConfirmed) { getCurrentDailyData().players = []; updateAndRender(); } })
     });
     $('btnClearAllPlayers').addEventListener('click', () => { Swal.fire({ title: 'ล้างรายชื่อทั้งหมด?', text: 'ล้างผู้เล่นในระบบทั้งหมด', icon: 'warning', showCancelButton: true }).then(r => { if (r.isConfirmed) { state.masterPlayerList = []; Object.values(state.dailyData).forEach(d => d.players = []); updateAndRender(); } }) });
-    $('btnClearToday').addEventListener('click', () => { Swal.fire({ title: 'ล้างข้อมูลวันนี้?', text: 'เกมและรายชื่อวันนี้จะหายไป', icon: 'warning', showCancelButton: true }).then(r => { if (r.isConfirmed) { state.dailyData[selectedDate] = { players: [], games: [], isClosed: false }; updateAndRender(); } }) });
-    $('btnConfirmSave').addEventListener('click', confirmSaveToAccount);
+    $('btnClearToday').addEventListener('click', () => { Swal.fire({ title: 'ล้างข้อมูลวันนี้?', text: 'เกมและรายชื่อวันนี้จะหายไป', icon: 'warning', showCancelButton: true }).then(r => { if (r.isConfirmed) { state.dailyData[selectedDate] = { players: [], games: [] }; updateAndRender(); } }) });
+
     $('btnExportGamesImg').addEventListener('click', exportGamesImg);
     $('btnExportSummaryImg').addEventListener('click', exportSummaryImg);
     $('btnDailyGroupBill').addEventListener('click', openDailyGroupBillModal);
@@ -2632,7 +2648,7 @@ function bindEvents() {
 
     $('btnExportAccountText').addEventListener('click', exportAccountText);
     $('btnGroupBill').addEventListener('click', openGroupBillModal);
-    $('btnPayAllUnpaid').addEventListener('click', payAllUnpaid);
+
     $('btnFilterHistory').addEventListener('click', renderHistory);
     $('btnExportHistoryCSV').addEventListener('click', exportHistoryCSV);
     $('summarySearchName').addEventListener('input', debounce(renderHistory, 300));
@@ -2764,13 +2780,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').then(reg => { reg.update(); }).catch(err => console.log(err));
     }
-    
+
     // ผูก Event ให้ปุ่มประวัติโอน
     const btnHist = $('btnTransferHistory');
     if (btnHist) {
         btnHist.addEventListener('click', showTransferHistory);
     }
-    
+
     updateTransferBadge();
 });
 
@@ -2779,7 +2795,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 function showTransferHistory() {
     const sortedLogs = [...state.transferLogs].reverse(); // ใหม่ล่าสุดขึ้นก่อน
-    
+
     if (sortedLogs.length === 0) {
         Swal.fire({ title: 'ประวัติโอน', text: 'ยังไม่มีประวัติโอนเข้าของวันนี้', icon: 'info' });
         return;
@@ -2791,9 +2807,9 @@ function showTransferHistory() {
         let bg = isUnmatched ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200';
         let icon = isUnmatched ? '<i class="fas fa-exclamation-circle text-amber-500"></i>' : '<i class="fas fa-check-circle text-green-500"></i>';
         let statusText = isUnmatched ? '<span class="text-amber-600 font-bold text-xs">ยังไม่จัดการ</span>' : `<span class="text-green-600 font-bold text-xs">ตัดบิล: ${escapeHtml(log.matchedTo)}</span>`;
-        
+
         let dateObj = new Date(log.timestamp);
-        let timeStr = dateObj.getHours().toString().padStart(2,'0') + ':' + dateObj.getMinutes().toString().padStart(2,'0');
+        let timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
 
         html += `
         <div class="flex flex-col p-3 rounded-xl border ${bg}">
@@ -2822,7 +2838,7 @@ function showTransferHistory() {
     });
 }
 
-window.resolveUnmatchedTransfer = function(logId) {
+window.resolveUnmatchedTransfer = function (logId) {
     let log = state.transferLogs.find(l => l.id === logId);
     if (!log) return;
 
@@ -2832,7 +2848,7 @@ window.resolveUnmatchedTransfer = function(logId) {
         Swal.fire('ไม่มีข้อมูล', 'โปรดเพิ่มชื่อผู้เล่นเข้าระบบก่อน', 'error');
         return;
     }
-    
+
     let optionsHtml = allPlayers.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
 
     Swal.fire({
@@ -2862,14 +2878,14 @@ window.resolveUnmatchedTransfer = function(logId) {
             executeAutoPay(r.value, log.amount);
             updateTransferBadge();
             saveToStorage();
-            
+
             // เปิดหน้าประวัติโอนอีกครั้งเพื่อให้เห็นการอัปเดต
             setTimeout(showTransferHistory, 400);
         }
     });
 }
 
-window.deleteTransferLog = function(logId) {
+window.deleteTransferLog = function (logId) {
     Swal.fire({
         title: 'ลบประวัตินี้?',
         text: 'ประวัติยอดนี้จะหายไป (แต่ไม่มีผลกับยอดเงินที่เคยเติมไปแล้ว)',
