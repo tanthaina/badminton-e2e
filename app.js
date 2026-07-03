@@ -1272,7 +1272,12 @@ function renderDaily() {
 
         let statusBadge = '';
         if (d.p) {
-            statusBadge = '<span class="text-green-600 font-bold">จ่ายแล้ว</span>';
+            let debtText = b % 1 === 0 ? b.toFixed(0) : b.toFixed(2);
+            if (b > TOLERANCE) {
+                statusBadge = `<span class="text-orange-600 font-bold" title="จ่ายของวันนี้แล้ว แต่มียอดค้างชำระจากวันอื่น">จ่ายวันนี้แล้ว (ค้างเก่า: ฿${debtText})</span>`;
+            } else {
+                statusBadge = '<span class="text-green-600 font-bold">จ่ายแล้ว</span>';
+            }
         } else if (isPaidToday) {
             let remainingCredit = -b;
             let creditText = remainingCredit % 1 === 0 ? remainingCredit.toFixed(0) : remainingCredit.toFixed(2);
@@ -1822,8 +1827,10 @@ function exportSummaryImg() {
     const originalPos = el.style.position;
     if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
     const watermark = document.createElement('div');
-    watermark.innerText = selectedDate;
-    watermark.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) rotate(-15deg); opacity:0.06; font-size:120px; font-weight:900; color:#475569; white-space:nowrap; pointer-events:none; z-index:0; text-align:center; user-select:none;';
+    const [y, m, d] = selectedDate.split('-');
+    watermark.innerText = `${d}/${m}/${y}`;
+    const wmColor = document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+    watermark.style.cssText = `position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) rotate(-15deg); font-size:120px; font-weight:900; color:${wmColor}; white-space:nowrap; pointer-events:none; z-index:0; text-align:center; user-select:none;`;
     el.appendChild(watermark);
 
     Swal.fire({ title: 'กำลังสร้างรูป...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
