@@ -48,16 +48,21 @@ function getCurrentDailyData() { if (!state.dailyData[selectedDate]) state.daily
 
 function saveToStorage() {
     try {
-        if (!isFirebaseUpdating) state.timestamp = Date.now();
+        if (!isFirebaseUpdating) {
+            // สำคัญ: ป้องกันปัญหาเวลาของอุปกรณ์ 2 เครื่องไม่ตรงกัน (เครื่อง A เร็วกว่าเครื่อง B)
+            // บังคับให้ timestamp ใหม่ ต้องมากกว่าอันเก่าเสมอ อย่างน้อย 1 มิลลิวินาที
+            state.timestamp = Math.max(Date.now(), (state.timestamp || 0) + 1);
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
         // ผลักข้อมูลขึ้น Firebase หากไม่ได้เกิดจากการรับข้อมูลของคนอื่น
         if (!isFirebaseUpdating && !window.Cypress) {
             const roomId = state.settings.syncRoomId || 'badminton_default';
+            console.log(`[Firebase] Pushing data to room '${roomId}' (Timestamp: ${state.timestamp})`);
             db.ref('rooms/' + roomId).set({
                 state: state,
                 timestamp: state.timestamp
-            }).catch(err => console.warn("Firebase sync error:", err));
+            }).catch(err => console.error("Firebase sync error:", err));
         }
     } catch (e) { console.warn("Storage full"); }
 }
