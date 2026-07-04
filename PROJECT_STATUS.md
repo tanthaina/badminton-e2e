@@ -84,6 +84,13 @@
   - **แก้ Bug ทดสอบ:** ปรับให้ Cypress ทำการรอ `.swal2-container` (ป๊อปอัปแจ้งเตือนบันทึกเกมสำเร็จ) ให้หายไปก่อนทำการกดปุ่มลบเกม เพื่อแก้ไขปัญหาการกดปุ่มแล้วหน้าจอไม่ตอบสนอง
   - **UI/UX (หน้ารายวัน):** ปรับปรุงสถานะ "จ่ายแล้ว" ในหน้ารายวัน หากผู้เล่นถูกมาร์คว่าเคลียร์บิลของวันนี้แล้ว แต่ยังมี *หนี้สะสมจากวันอื่นค้างอยู่* จะแสดงป้ายเตือนสีส้มว่า `"จ่ายวันนี้แล้ว (ค้างเก่า: ฿...)"` เพื่อป้องกันคนเก็บเงินสับสน
   - **UI/UX (รูปลำยน้ำ):** ปรับรูปแบบวันที่ในลายน้ำตอนบันทึกรูปเป็น `dd/mm/yyyy` และปรับแต่งสีลายน้ำให้มองเห็นได้ชัดเจนทั้งในโหมดสว่าง (สีดำโปร่งแสง) และโหมดกลางคืน (สีขาวโปร่งแสง)
+- **(ล่าสุด ✅ 2026-07-04) แก้ปัญหายอดหนี้เบิ้ล (Double Counting) และเปลี่ยนเป็นระบบ Unified Payment Ledger**
+  - **สถาปัตยกรรมใหม่:** เปลี่ยนไปคำนวณ `calculateOverallBalances` สดๆ ผ่าน `allPayments` (เงินเข้า) และ `dailyData` (หนี้รายวัน) ทิ้งระบบซิงก์หนี้รายวันลง `allTransactions` เดิม (`syncAllDailyToAccount`) ที่เคยก่อปัญหาทับซ้อน
+  - **Migration Safe:** เพิ่มการดักจับข้อมูลขยะ (Ghost Data) จากเวอร์ชันเก่า โดยกรอง `isAutoDaily` ออกจากการคำนวณทุกส่วน (Popup หนี้, สร้างใบเสร็จ, ข้อความไลน์) ทำให้รับประกันว่าไม่มีปัญหายอดเบิ้ลสำหรับผู้ใช้อัปเดต
+  - สร้างไฟล์ `walkthrough.md` สรุปสาเหตุและวิธีการป้องกัน Double Counting ไว้อย่างเป็นทางการ
+- **(ล่าสุด ✅ 2026-07-04) สร้างระบบ Customization Skills และกฎของ Agent**
+  - ดึงข้อมูลจากโฟลเดอร์ `docs/ai-prompts/` มาสร้างเป็น Skills สำหรับ AI (เช่น Tech Lead, Senior Dev, QA) ในโฟลเดอร์ `.agents/skills/`
+  - สร้าง `AGENTS.md` บังคับให้ AI ทุกตัวรันเทสต์ผ่าน `node run_tests.js` เสมอ
 ## 🧪 การทดสอบระบบ (Testing)
 
 ### 1. การรัน Unit Test (Financial Logic)
@@ -93,26 +100,17 @@ node test-financial.js
 ```
 
 ### 2. การรัน E2E Test (Cypress)
-ในระบบ Windows 11 ที่สิทธิ์ความปลอดภัยหรือ Sandbox การ์ดจอจำกัด (ทำให้การเปิดแครชด้วยโค้ด `2147483651` หรือ `ERR_FAILED`) สามารถรันด้วยการปลดล็อค Sandbox ผ่านคำสั่งด้านล่างนี้:
+ในระบบ Windows 11 ที่สิทธิ์ความปลอดภัยหรือ Sandbox การ์ดจอจำกัด ได้สร้าง Node.js Wrapper Script ไว้เพื่อแก้ไขปัญหาความเสถียรและ Chrome แครช 
 
 * **รันการทดสอบทั้งหมดแบบเบื้องหลัง (Headless - แนะนำและเสถียรที่สุด):**
   ```powershell
-  $env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npx start-server-and-test serve http://127.0.0.1:5500 "npx cypress run"
+  node run_tests.js
   ```
-* **รันเฉพาะไฟล์ E2E เจาะจงเบื้องหลัง (เช่น ไฟล์ทดสอบคำสั่งเสียง):**
-  ```powershell
-  $env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npx start-server-and-test serve http://127.0.0.1:5500 "npx cypress run --spec cypress/e2e/16-voice-unit-tests.cy.js"
-  ```
-* **รันการทดสอบใน Extension (หรือเมื่อเปิด Server `npm run serve` ทิ้งไว้แล้ว):**
-  เนื่องจาก Server รันอยู่แล้ว ไม่จำเป็นต้องใช้ `start-server-and-test` อีก สามารถรันคำสั่งเหล่านี้ใน Terminal ได้โดยตรง:
-  - รันการทดสอบทั้งหมดแบบเบื้องหลัง (Headless):
-    ```powershell
-    npx cypress run
-    ```
-  - รันทดสอบเฉพาะไฟล์ที่ระบุ (เช่น ไฟล์ `14-extra-cost.cy.js`):
-    ```powershell
-    npx cypress run --spec "cypress/e2e/14-extra-cost.cy.js"
-    ```
+  *(หมายเหตุ: ผลลัพธ์อย่างละเอียดกรณี Test พัง จะถูกบันทึกไว้ใน `cypress-debug-output.txt`)*
+
+* **รันเฉพาะไฟล์ E2E เจาะจงเบื้องหลัง:**
+  แก้ไขไฟล์ `run_tests.js` ชั่วคราวโดยเติมแฟล็ก `--spec cypress/e2e/ชื่อไฟล์.cy.js` แล้วรัน `node run_tests.js` ตามปกติ
+
 * **เปิดหน้าจอ Cypress คุมการทดสอบ (GUI Mode):**
   1. หน้าต่าง Terminal ที่ 1: สั่งรันเซิร์ฟเวอร์เว็บไว้ `npm run serve`
   2. หน้าต่าง Terminal ที่ 2: เปิดโปรแกรม `$env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npm run cy:open`

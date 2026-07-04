@@ -249,21 +249,26 @@ function initFirebaseListener() {
         // ถ้ารับข้อมูลมาจากคลาวด์และเป็นข้อมูลที่ใหม่กว่าของในเครื่อง
         if (data && data.state && data.timestamp > (state.timestamp || 0)) {
             isFirebaseUpdating = true; // ป้องกันการเซฟทับกลับขึ้นไปในจังหวะนี้
-            state = data.state;
-            state.timestamp = data.timestamp;
-            ensureIntegrity(); syncGameIdCounter();
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            
+            try {
+                state = data.state;
+                state.timestamp = data.timestamp;
+                ensureIntegrity(); syncGameIdCounter();
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
-            $('shuttlecockPrice').value = state.settings.shuttlecockPrice || 0;
-            $('settingDefaultPrice').value = state.settings.shuttlecockPrice || 0;
-            const roomInput = $('settingSyncRoomId'); if (roomInput) roomInput.value = state.settings.syncRoomId || '';
+                $('shuttlecockPrice').value = state.settings.shuttlecockPrice || 0;
+                $('settingDefaultPrice').value = state.settings.shuttlecockPrice || 0;
+                const roomInput = $('settingSyncRoomId'); if (roomInput) roomInput.value = state.settings.syncRoomId || '';
 
-            updateAndRender();
+                updateAndRender();
 
-            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 });
-            Toast.fire({ icon: 'info', title: 'อัปเดตข้อมูลจากคลาวด์แล้ว' });
-
-            isFirebaseUpdating = false;
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 });
+                Toast.fire({ icon: 'info', title: 'อัปเดตข้อมูลจากคลาวด์แล้ว' });
+            } catch (err) {
+                console.error("Firebase Sync Render Error:", err);
+            } finally {
+                isFirebaseUpdating = false;
+            }
         }
     });
 }
@@ -1510,10 +1515,10 @@ function renderAccount() {
             tu += b;
             let qrBtn = state.settings.promptpayId ? `<button onclick="showAccountQR('${nameJsEscaped}', ${b})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-400 transition-colors shrink-0" title="สแกน QR Code"><i class="fas fa-qrcode"></i></button>` : '';
             un += `<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white dark:bg-slate-800 border-l-4 border-red-500 border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-3 transition-all hover:shadow-md">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
                     <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
-                    <div class="cursor-pointer group" onclick="showDebtDetails('${nameJsEscaped}', ${b})" title="คลิกเพื่อดูรายละเอียด">
-                        <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight group-hover:text-indigo-600 transition-colors">${nameHtml} <i class="fas fa-info-circle text-[10px] text-gray-400 group-hover:text-indigo-500 ml-1"></i></div>
+                    <div class="cursor-pointer group min-w-0 flex-1" onclick="showDebtDetails('${nameJsEscaped}', ${b})" title="คลิกเพื่อดูรายละเอียด">
+                        <div class="font-bold text-gray-800 dark:text-gray-200 break-words whitespace-normal leading-tight group-hover:text-indigo-600 transition-colors">${nameHtml} <i class="fas fa-info-circle text-[10px] text-gray-400 group-hover:text-indigo-500 ml-1"></i></div>
                         <div class="text-red-500 font-bold text-xs mt-0.5">ค้าง ${b.toFixed(2)}</div>
                     </div>
                 </div>
@@ -1528,9 +1533,9 @@ function renderAccount() {
         else if (b < -TOLERANCE) {
             tc -= b;
             cr += `<div class="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border-l-4 border-blue-500 border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-2 transition-all hover:shadow-md">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
                     <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
-                    <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight">${nameHtml}</div>
+                    <div class="font-bold text-gray-800 dark:text-gray-200 break-words whitespace-normal leading-tight min-w-0 flex-1">${nameHtml}</div>
                 </div>
                 <div class="flex items-center gap-1.5">
                     <span class="text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full text-xs whitespace-nowrap">เครดิต ${(-b).toFixed(2)}</span>
@@ -1540,9 +1545,9 @@ function renderAccount() {
         }
         else {
             pf += `<div class="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border-l-4 border-green-500 border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-2 opacity-75 hover:opacity-100 transition-all">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
                     <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
-                    <div class="font-bold text-gray-800 dark:text-gray-200 break-all leading-tight">${nameHtml}</div>
+                    <div class="font-bold text-gray-800 dark:text-gray-200 break-words whitespace-normal leading-tight min-w-0 flex-1">${nameHtml}</div>
                 </div>
                 <div class="flex items-center gap-1.5">
                     <span class="text-green-600 font-bold text-xs whitespace-nowrap"><i class="fas fa-check-circle mr-1"></i>ไม่มีค้างชำระ</span>

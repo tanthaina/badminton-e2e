@@ -147,7 +147,7 @@ body { font-family: 'Sarabun', sans-serif; background: #f1f5f9; color: var(--tex
 .court-center-line {
     position: absolute; top: 12px; bottom: 12px; left: 50%; width: 2px; background: rgba(255,255,255,0.5); z-index: 4; transform: translateX(-50%);
 }
-.ball-btn-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 8px; }
+.ball-btn-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
 .ball-btn { background: white; border: 2px solid #cbd5e1; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #475569; cursor: pointer; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .ball-btn.active { background: #4f46e5; border-color: #4338ca; color: white; transform: scale(1.08); box-shadow: 0 3px 8px rgba(79, 70, 229, 0.4); }
 .quick-pad-chip { display: inline-block; background: white; border: 1px solid #cbd5e1; color: #475569; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-bottom: 4px; margin-right: 4px; }
