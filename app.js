@@ -23,7 +23,7 @@ const PLAYER_FIELDS = ['player1', 'player2', 'player3', 'player4'];
 
 const TOLERANCE = 0.005; const STORAGE_KEY = 'badmintonAppState_v2';
 const PLAYER_COLORS = [{ bg: '#fee2e2', border: '#fca5a5', text: '#991b1b', tag: '#ef4444' }, { bg: '#dbeafe', border: '#93c5fd', text: '#1e40af', tag: '#3b82f6' }, { bg: '#dcfce7', border: '#86efac', text: '#166534', tag: '#22c55e' }, { bg: '#fef9c3', border: '#fde047', text: '#713f12', tag: '#eab308' }, { bg: '#ede9fe', border: '#c4b5fd', text: '#4c1d95', tag: '#8b5cf6' }, { bg: '#fce7f3', border: '#f9a8d4', text: '#831843', tag: '#ec4899' }, { bg: '#ccfbf1', border: '#5eead4', text: '#134e4a', tag: '#14b8a6' }, { bg: '#ffedd5', border: '#fdba74', text: '#7c2d12', tag: '#f97316' }];
-let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = { player1: '', player2: '', player3: '', player4: '' }; let _gameIdCounter = Date.now(); let _isDailyDirty = false;
+let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = { player1: '', player2: '', player3: '', player4: '' }; let _gameIdCounter = Date.now(); let _isDailyDirty = false; let _paidGamesCache = {};
 let currentPenMatchedBalls = []; let focusedFieldId = 'penP1'; let _editGameId = null;
 let currentGameShuttlecockSpeeds = [];
 
@@ -93,6 +93,10 @@ function ensureIntegrity() {
     state.settings = state.settings || { shuttlecockPrice: 0 };
     if (!state.settings.prefixes) state.settings.prefixes = ['ทั่วไป', 'ตากฟ้า', 'ตาคลี', 'นครสวรรค์'];
     state.settings.syncRoomId = String(state.settings.syncRoomId || 'badminton_default').replace(/[^a-zA-Z0-9_-]/g, '') || 'badminton_default';
+    
+    // Purge old cache that caused Firebase sync errors
+    if (state.paidGamesCache) delete state.paidGamesCache;
+
     state.masterPlayerList = (state.masterPlayerList || []).filter(Boolean);
     state.allTransactions = state.allTransactions || []; state.allPayments = state.allPayments || []; state.dailyData = state.dailyData || {}; state.transferLogs = state.transferLogs || [];
 
@@ -1277,7 +1281,7 @@ function renderDaily() {
         let b = sum[d.n] ? sum[d.n].d - sum[d.n].p : 0;
         
         let isPaidToday = false;
-        if (state.paidGamesCache && state.paidGamesCache[d.n] && state.paidGamesCache[d.n][selectedDate]) {
+        if (_paidGamesCache && _paidGamesCache[d.n] && _paidGamesCache[d.n][selectedDate]) {
             isPaidToday = true;
         }
 
@@ -1500,7 +1504,7 @@ function calculateOverallBalances() {
         }
     });
     
-    state.paidGamesCache = paidGames;
+    _paidGamesCache = paidGames;
 
     return sum;
 }
