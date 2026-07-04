@@ -28,7 +28,7 @@ describe('10 - Personal Receipt & PWA', () => {
     cy.get('#btnSubmitDebt').click();
 
     // 3. กดปุ่มสร้างใบเสร็จ (ไอคอน file-invoice-dollar สีฟ้า)
-    cy.contains('#unpaid-list-overall div.border', 'สมเกียรติ')
+    cy.contains('#unpaid-list-overall > div', 'สมเกียรติ')
       .find('button[onclick*="generatePersonalSlip"]').click();
       
     // กดเลือกแสดงพร้อมเพย์ในหน้าต่างตัวเลือก

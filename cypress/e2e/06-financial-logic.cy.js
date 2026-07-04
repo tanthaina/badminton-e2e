@@ -12,7 +12,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
 
     // ตรวจสอบหน้าบัญชีรวม
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 18.75');
+    cy.contains('#unpaid-list-overall > div', 'A').should('contain.text', 'ค้าง 18.75');
   });
 
   it('ทดสอบ 2: เครดิตหักลบหนี้เกมใหม่โดยอัตโนมัติ (Credit Auto-Offset)', () => {
@@ -38,7 +38,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.get('button[data-tab="account"]').click();
     
     // 2. ตรวจสอบว่ามีเครดิต 50 บาทจริงในหน้าบัญชี
-    cy.contains('#credit-list-overall div.border', 'สายเปย์').should('contain.text', 'เครดิต 50.00');
+    cy.contains('#credit-list-overall > div', 'สายเปย์').should('contain.text', 'เครดิต 50.00');
 
     // 3. กลับไปเล่นเกมใหม่ 1 เกม (มูลค่า 80 บาท หาร 4 = คนละ 20 บาท)
     cy.get('button[data-tab="daily"]').click();
@@ -46,7 +46,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
 
     // 4. ตรวจสอบบัญชี -> เครดิตเดิม 50 หักลบหนี้ใหม่ 20 จะต้องเหลือเครดิต 30 บาท และไม่ติดหนี้
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#credit-list-overall div.border', 'สายเปย์').should('contain.text', 'เครดิต 30.00');
+    cy.contains('#credit-list-overall > div', 'สายเปย์').should('contain.text', 'เครดิต 30.00');
     cy.get('#unpaid-list-overall').should('not.contain.text', 'สายเปย์');
   });
 
@@ -60,7 +60,7 @@ describe('06 - Deep Financial Logic & Edge Cases', () => {
     cy.visit('/index.html');
     cy.get('button[data-tab="account"]').click();
     
-    cy.contains('#unpaid-list-overall div.border', 'คนคิดมาก').should('contain.text', 'ค้าง 10.00');
+    cy.contains('#unpaid-list-overall > div', 'คนคิดมาก').should('contain.text', 'ค้าง 10.00');
 
     // 2. ทยอยจ่ายทีละนิด: 3.33 -> 3.33 -> 3.34 (รวม 10.00 พอดี)
     cy.payDebt('คนคิดมาก', '3.33');

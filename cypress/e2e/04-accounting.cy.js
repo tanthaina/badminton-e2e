@@ -17,14 +17,14 @@ describe('04 - Accounting & History', () => {
     cy.get('button[data-tab="account"]').click();
 
     // 2. ตรวจสอบว่า 'ก้อง' มีหนี้ 10 บาท และยอดรวมหนี้คือ 40 บาท
-    cy.contains('#unpaid-list-overall div.border', 'ก้อง').should('contain.text', 'ค้าง 10.00');
+    cy.contains('#unpaid-list-overall > div', 'ก้อง').should('contain.text', 'ค้าง 10.00');
     cy.get('#total-unpaid-overall').should('have.text', '฿40.00');
 
     // 3. จ่ายเงินบางส่วน (จ่าย 4 บาท)
     cy.payDebt('ก้อง', '4');
 
     // 4. ตรวจสอบว่า 'ก้อง' เหลือหนี้ 6 บาท และยอดรวมหนี้ลดลงเหลือ 36 บาท
-    cy.contains('#unpaid-list-overall div.border', 'ก้อง').should('contain.text', 'ค้าง 6.00');
+    cy.contains('#unpaid-list-overall > div', 'ก้อง').should('contain.text', 'ค้าง 6.00');
     cy.get('#total-unpaid-overall').should('have.text', '฿36.00');
   });
 
@@ -94,13 +94,13 @@ describe('04 - Accounting & History', () => {
     cy.get('button[data-tab="account"]').click();
 
     // 2. ตรวจสอบว่า A มีหนี้ 5 บาทจริง
-    cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 5.00');
+    cy.contains('#unpaid-list-overall > div', 'A').should('contain.text', 'ค้าง 5.00');
 
     // 3. จ่ายเงินเกินยอด (จ่าย 20)
     cy.payDebt('A', '20');
     
     // 4. ตรวจสอบว่า A มีเครดิต 15 บาท
-    cy.contains('#credit-list-overall div.border', 'A').should('contain.text', 'เครดิต 15.00');
+    cy.contains('#credit-list-overall > div', 'A').should('contain.text', 'เครดิต 15.00');
     cy.get('#total-credit-overall').should('have.text', '฿15.00');
     cy.get('#unpaid-list-overall').should('not.contain.text', 'A');
   });
@@ -149,7 +149,7 @@ describe('04 - Accounting & History', () => {
     cy.addDebt('A', '50');
 
     // 4. ตรวจสอบผลลัพธ์: A ต้องย้ายมาอยู่ฝั่งค้างชำระด้วยยอด 50 บาท และยอดรวมค้างชำระต้องเป็น 80 บาท (B:10 + C:10 + D:10 + A:50)
-    cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 50.00');
+    cy.contains('#unpaid-list-overall > div', 'A').should('contain.text', 'ค้าง 50.00');
     cy.get('#total-unpaid-overall').should('have.text', '฿80.00');
   });
 
@@ -160,11 +160,11 @@ describe('04 - Accounting & History', () => {
 
     // 1. ตั้งหนี้ 1000 บาท
     cy.addDebt('ลูกหนี้ชั้นดี', '1000');
-    cy.contains('#unpaid-list-overall div.border', 'ลูกหนี้ชั้นดี').should('contain.text', 'ค้าง 1000.00');
+    cy.contains('#unpaid-list-overall > div', 'ลูกหนี้ชั้นดี').should('contain.text', 'ค้าง 1000.00');
 
     // 2. จ่ายเงินในหน้าบัญชีรวม 400 บาท (ต้องเหลือ 600)
     cy.payDebt('ลูกหนี้ชั้นดี', '400');
-    cy.contains('#unpaid-list-overall div.border', 'ลูกหนี้ชั้นดี').should('contain.text', 'ค้าง 600.00');
+    cy.contains('#unpaid-list-overall > div', 'ลูกหนี้ชั้นดี').should('contain.text', 'ค้าง 600.00');
 
     // 3. จำลองการไปทำกิจกรรมอื่นเพื่อกระตุ้นให้ระบบซิงก์ข้อมูล (Trigger syncAllDailyToAccount)
     cy.get('button[data-tab="daily"]').click();
@@ -172,7 +172,7 @@ describe('04 - Accounting & History', () => {
     
     // 4. กลับมาตรวจสอบหน้าบัญชีรวมอีกครั้ง ยอดต้องยังคงเป็น 600 บาท (การจ่ายเงินต้องไม่ถูกลบทิ้ง)
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div.border', 'ลูกหนี้ชั้นดี').should('contain.text', 'ค้าง 600.00');
+    cy.contains('#unpaid-list-overall > div', 'ลูกหนี้ชั้นดี').should('contain.text', 'ค้าง 600.00');
   });
 
   it('ทดสอบการป้องกันค่ายอดเงินติดลบ (Negative Inputs)', () => {
@@ -197,7 +197,7 @@ describe('04 - Accounting & History', () => {
     cy.intercept('GET', 'https://promptpay.io/**').as('qrCodeLoadAccount');
     
     // กดปุ่มไอคอน QR Code (สีม่วง) ในหน้ารายชื่อคนค้างชำระ
-    cy.contains('#unpaid-list-overall div.border', 'สายสแกนด่วน').find('button[title="สแกน QR Code"]').should('be.visible').click();
+    cy.contains('#unpaid-list-overall > div', 'สายสแกนด่วน').find('button[title="สแกน QR Code"]').should('be.visible').click();
     
     cy.get('.swal2-popup').should('be.visible').and('contain.text', 'สแกนเพื่อชำระเงิน');
     cy.get('.swal2-html-container').should('contain.text', 'สายสแกนด่วน').and('contain.text', '฿99.50');
@@ -358,7 +358,7 @@ describe('04 - Accounting & History', () => {
 
     // 2. ไปที่หน้าบัญชีรวม ตรวจสอบว่ามีหนี้ 40 บาท
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div.border', 'สายเปย์').should('contain.text', 'ค้าง 40.00');
+    cy.contains('#unpaid-list-overall > div', 'สายเปย์').should('contain.text', 'ค้าง 40.00');
 
     // 3. กดจ่ายเงิน 40 บาท
     cy.payDebt('สายเปย์', '40');
@@ -388,10 +388,10 @@ describe('04 - Accounting & History', () => {
     cy.get('.swal2-confirm').click();
 
     // ตรวจสอบว่าผู้เล่นใหม่มีเครดิต 250 บาท
-    cy.contains('#credit-list-overall div.border', 'ผู้เล่นใหม่').should('contain.text', 'เครดิต 250.00');
+    cy.contains('#credit-list-overall > div', 'ผู้เล่นใหม่').should('contain.text', 'เครดิต 250.00');
 
     // 2. ตรวจสอบปุ่ม "เติมเงิน" ประจำตัวผู้เล่นที่มีเครดิตอยู่
-    cy.contains('#credit-list-overall div.border', 'ผู้เล่นใหม่').find('button').contains('เติมเงิน').click();
+    cy.contains('#credit-list-overall > div', 'ผู้เล่นใหม่').find('button').contains('เติมเงิน').click();
     cy.get('#payment-modal').should('not.have.class', 'hidden');
     cy.get('#payment-name').should('contain.text', 'ผู้เล่นใหม่');
     cy.get('#payment-amount').should('have.value', ''); // ต้องว่างเปล่าเพราะไม่มีหนี้ค้าง
@@ -399,7 +399,7 @@ describe('04 - Accounting & History', () => {
     cy.get('#btnSubmitPayment').click();
 
     // เครดิตต้องเพิ่มเป็น 300 บาท
-    cy.contains('#credit-list-overall div.border', 'ผู้เล่นใหม่').should('contain.text', 'เครดิต 300.00');
+    cy.contains('#credit-list-overall > div', 'ผู้เล่นใหม่').should('contain.text', 'เครดิต 300.00');
   });
   it('ทดสอบระบบ Unified Ledger: ปุ่มจ่ายในหน้ารายวัน pre-fill ยอดสะสมรวมและ mark จ่ายแล้ว', () => {
     const today = '2024-01-02';

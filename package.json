@@ -7,6 +7,7 @@
     "serve": "http-server -p 5500 -c-1",
     "test": "start-server-and-test serve http://127.0.0.1:5500 'cypress run --browser chrome'",
     "test:live": "cypress run --browser chrome",
+    "test:123": "node run_tests.js \"cypress/e2e/01-core.cy.js,cypress/e2e/02-players.cy.js,cypress/e2e/03-smart-board.cy.js\"",
     "cy:open": "cypress open --browser chrome"
   },
   "keywords": [],

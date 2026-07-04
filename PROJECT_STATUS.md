@@ -44,9 +44,19 @@
    - **(ใหม่)** อัปเดตข้อมูลบนหน้าจออัตโนมัติทันทีที่มีการเปลี่ยนแปลงจากเครื่องอื่น โดยไม่ต้องกดปุ่มดึงข้อมูล
 
 ## 🚀 สถานะล่าสุดและการพัฒนา (Recent Updates)
+- **(ล่าสุด ✅ 2026-07-05) แก้ไขบั๊กโครงสร้างโค้ดและปรับปรุงความเสถียรของ Cypress UI Selectors**
+  - **SyntaxError Fix:** แก้ปัญหาเปิดหน้าเว็บไม่ขึ้นและทำเทสต์พัง (`Unexpected end of input`) โดยการเติมวงเล็บปีกกา `}` ที่ตกหล่นใน `app.js` (ฟังก์ชัน `closeDaily`) ทำให้ Core Tests (01, 02, 03) กลับมารันผ่าน 100%
+  - **Cypress Selector Refactor:** เปลี่ยนวิธีการดึง Element แบบเปราะบาง (`div.border`) ไปใช้โครงสร้างพาธตรง (`> div`) ในสคริปต์ 04, 05, 06, 08, 10, 14 ช่วยลดปัญหา Time out และทำให้เทสต์เสถียรขึ้น
+  - **Package Scripts:** เพิ่มสคริปต์ลัด `npm run test:123` สำหรับให้รันเทสต์เฉพาะส่วนบน Windows โดยไม่ติดปัญหา Sandbox
+  - **Status:** ชุดทดสอบ Cypress E2E ทั้งหมดผ่านสมบูรณ์ 100% (23 ชุด)
 - **(ล่าสุด)** เปลี่ยนระบบคลาวด์จาก JSONBin.io เป็น Firebase Realtime Database เพื่อการซิงก์ที่รวดเร็วขึ้นและไม่จำกัดขนาดไฟล์ที่ 100KB
 - **(ล่าสุด)** เพิ่มฟีเจอร์จดค่าจิปาถะรายบุคคล (ค่าน้ำ, ค่ากริป) และฟีเจอร์คลิกดูรายละเอียดที่มาของยอดค้างชำระ
 - **(ล่าสุด)** ปรับปรุง UI เพิ่ม Loading Screen (Toast) ขณะที่กำลังซิงก์ข้อมูลจากฐานข้อมูล
+- **(ล่าสุด ✅ 2026-07-04) แก้บั๊กความเสถียร Firebase Sync และทดสอบระบบ (System Stability)**
+  - **Firebase Sync Lock Fix:** ห่อหุ้ม `updateAndRender()` ภายใน Firebase listener ด้วยบล็อก `try...finally` เพื่อการันตีว่า `isFirebaseUpdating` จะถูกปลดล็อกเสมอ ป้องกันอาการแอปค้างไม่ยอมส่งข้อมูล
+  - **Firebase Clock Drift Fix:** ใช้สูตร `Math.max(Date.now(), (state.timestamp || 0) + 1)` เพื่อบังคับให้ timestamp เดินไปข้างหน้าเสมอ ป้องกันปัญหาเวลาเครื่องไม่ตรงกันแล้ว Firebase มองว่าเป็นข้อมูลเก่า
+  - **Firebase Invalid Key Fix:** ป้องกันปัญหาผู้เล่นชื่อมีจุด (เช่น "นศ.1") ที่ทำให้ Firebase แครช โดยย้าย `paidGamesCache` ออกจากตัวแปร `state` ไปเป็น local memory แทน
+  - **Cypress E2E Testing:** ทำให้ `run_tests.js` รับ argument ระบุไฟล์ได้ และแก้ไฟล์เทสต์ข้อ 12 ให้ไม่ต้องล็อกเลขเวอร์ชันของ PWA cache อีกต่อไป
 - **(ล่าสุด)** เพิ่มโค้ดดักจับ `window.Cypress` ใน `app.js` เพื่อป้องกันไม่ให้ข้อมูลขยะจากการรัน E2E Test ถูกส่งขึ้นฐานข้อมูล Firebase จริง
 - **(ล่าสุด)** ระบบหักยอดหนี้รายวันอัตโนมัติ (Auto-Reconcile Daily Debts) เมื่อยืนยันชำระเงินในหน้าบัญชีรวม จะไปเคลียร์เครื่องหมาย "จ่ายแล้ว" ในหน้ารายวันให้อัตโนมัติ พร้อมเทสตรวจสอบระบบ
 - **(ล่าสุด)** ปรับปรุงระบบทดสอบให้เสถียรขึ้น ป้องกันไม่ให้ `beforeunload` เซฟทับข้อมูลจำลองใน `localStorage` ขณะรัน Cypress
@@ -114,7 +124,6 @@ node test-financial.js
 * **เปิดหน้าจอ Cypress คุมการทดสอบ (GUI Mode):**
   1. หน้าต่าง Terminal ที่ 1: สั่งรันเซิร์ฟเวอร์เว็บไว้ `npm run serve`
   2. หน้าต่าง Terminal ที่ 2: เปิดโปรแกรม `$env:ELECTRON_EXTRA_LAUNCH_ARGS="--no-sandbox" ; npm run cy:open`
-
 ---
 **🤖 Note to AI (Gemini Code Assist):**
 If you are reading this, please acknowledge the project structure, stack, and current state. 

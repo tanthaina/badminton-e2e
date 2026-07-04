@@ -40,14 +40,14 @@ describe('14 - Individual Extra Expense (ค่าจิปาถะ)', () => {
 
     // 1. ตรวจสอบในหน้าบัญชีรวมว่าหนี้ถูกรวมถูกต้อง (A = ค่าเกม 10 + จิปาถะ 20 = 30 บาท)
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div.border', 'A').should('contain.text', 'ค้าง 30.00');
+    cy.contains('#unpaid-list-overall > div', 'A').should('contain.text', 'ค้าง 30.00');
 
     // ตรวจสอบว่ามีปุ่ม "คัดลอกข้อความ LINE" โผล่ขึ้นมาด้วย
-    cy.contains('#unpaid-list-overall div.border', 'A')
+    cy.contains('#unpaid-list-overall > div', 'A')
       .find('button[title="คัดลอกข้อความ LINE"]').should('be.visible');
 
     // 2. จำลองการกดแชร์ใบเสร็จ และตรวจสอบว่าบิลมีการแจกแจงค่าจิปาถะให้เห็น
-    cy.contains('#unpaid-list-overall div.border', 'A').find('button[title="แชร์/บันทึกใบเสร็จ"]').click();
+    cy.contains('#unpaid-list-overall > div', 'A').find('button[title="แชร์/บันทึกใบเสร็จ"]').click();
     cy.get('#slip-template').should('contain.text', '+ จิปาถะ 20 บ.');
     cy.get('#slip-total').should('have.text', '฿30.00');
   });
@@ -125,7 +125,7 @@ describe('14 - Individual Extra Expense (ค่าจิปาถะ)', () => {
 
     // 1. ไปที่หน้าบัญชีรวม แล้วคลิกที่ชื่อเพื่อดูรายละเอียดค้างชำระของ "กิตติ"
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div.border', 'กิตติ').find('.cursor-pointer').click();
+    cy.contains('#unpaid-list-overall > div', 'กิตติ').find('.cursor-pointer').click();
 
     // 2. ตรวจสอบข้อมูลใน Pop-up ว่าแจกแจงรายละเอียดและมีค่าจิปาถะแสดงอยู่จริง
     cy.get('.swal2-popup').should('contain.text', 'รายละเอียดค้างชำระ');

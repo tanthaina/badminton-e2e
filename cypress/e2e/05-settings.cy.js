@@ -46,7 +46,7 @@ describe('05 - Settings & Data Integrity', () => {
     cy.get('.swal2-popup').should('contain.text', 'โหลดข้อมูลสำเร็จ!');
     
     cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div.border', 'สมปอง').should('contain.text', 'ค้าง 300.00'); // 500 - 200 = 300
+    cy.contains('#unpaid-list-overall > div', 'สมปอง').should('contain.text', 'ค้าง 300.00'); // 500 - 200 = 300
     cy.get('button[data-tab="history"]').click();
     cy.get('#overall-summary-content').should('contain.text', 'สมปอง').and('contain.text', 'ชำระเงิน').and('contain.text', '200.00');
   });
@@ -64,7 +64,7 @@ describe('05 - Settings & Data Integrity', () => {
     // ตาคลี: ต้อม ต้องจ่ายครบพอดี (หนี้เก่า 364 + ตีเพิ่มรวม 78 - จ่าย 416 - จ่าย 26 = 0)
     cy.get('#paid-in-full-list-overall').should('contain.text', 'ตาคลี: ต้อม');
     // ตากฟ้า: พี่ชัย ต้องมีเครดิต 742 (ตีหลายวัน 312 + หนี้เก่า 53 - จ่าย 1000 - จ่าย 107 = -742)
-    cy.get('#credit-list-overall').contains('div.border', 'ตากฟ้า: พี่ชัย').should('contain.text', 'เครดิต 742.00');
+    cy.get('#credit-list-overall').contains('> div', 'ตากฟ้า: พี่ชัย').should('contain.text', 'เครดิต 742.00');
   });
 
   it('ทดสอบ Data Cleansing: ล้างบิลผีและซ่อมแซมข้อมูลวันที่ (Undefined Date Bug)', () => {

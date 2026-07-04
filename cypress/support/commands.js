@@ -99,7 +99,7 @@ Cypress.Commands.add('addDebt', (name, amount) => {
 
 // --- Custom Commands สำหรับการจ่ายเงิน (หน้าบัญชีรวม) ---
 Cypress.Commands.add('payDebt', (name, amount) => {
-  cy.contains('#unpaid-list-overall div.border', name).find('button').contains('จ่าย').should('be.visible').and('be.enabled').click();
+  cy.contains('#unpaid-list-overall > div', name).find('button').contains('จ่าย').should('be.visible').and('be.enabled').click();
   if (amount !== undefined) {
     cy.get('#payment-amount').should('be.visible').and('be.enabled').clear().type(amount, { delay: 0 });
   }

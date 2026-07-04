@@ -23,7 +23,7 @@ const PLAYER_FIELDS = ['player1', 'player2', 'player3', 'player4'];
 
 const TOLERANCE = 0.005; const STORAGE_KEY = 'badmintonAppState_v2';
 const PLAYER_COLORS = [{ bg: '#fee2e2', border: '#fca5a5', text: '#991b1b', tag: '#ef4444' }, { bg: '#dbeafe', border: '#93c5fd', text: '#1e40af', tag: '#3b82f6' }, { bg: '#dcfce7', border: '#86efac', text: '#166534', tag: '#22c55e' }, { bg: '#fef9c3', border: '#fde047', text: '#713f12', tag: '#eab308' }, { bg: '#ede9fe', border: '#c4b5fd', text: '#4c1d95', tag: '#8b5cf6' }, { bg: '#fce7f3', border: '#f9a8d4', text: '#831843', tag: '#ec4899' }, { bg: '#ccfbf1', border: '#5eead4', text: '#134e4a', tag: '#14b8a6' }, { bg: '#ffedd5', border: '#fdba74', text: '#7c2d12', tag: '#f97316' }];
-let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = { player1: '', player2: '', player3: '', player4: '' }; let _gameIdCounter = Date.now(); let _isDailyDirty = false; let _paidGamesCache = {};
+let state = createDefaultState(); let selectedDate = getTodayString(); let currentGameSelection = { player1: '', player2: '', player3: '', player4: '' }; let _gameIdCounter = Date.now(); let _isDailyDirty = false; let _paidGamesCache = {}; let activeHistoryExactMatch = null;
 let currentPenMatchedBalls = []; let focusedFieldId = 'penP1'; let _editGameId = null;
 let currentGameShuttlecockSpeeds = [];
 
@@ -1765,6 +1765,13 @@ function renderHistory() {
     let end = $('summaryEndDate').value;
     let searchName = $('summarySearchName').value.trim().toLowerCase();
     
+    // Auto-clear exact match if search input gets cleared manually
+    if (activeHistoryExactMatch && searchName === '') {
+        activeHistoryExactMatch = null;
+    }
+    
+    renderHistoryQuickPills();
+    
     // ดึงหนี้จาก dailyData มาทำเป็นประวัติเกม
     let dailyHistory = [];
     Object.keys(state.dailyData).forEach(date => {
@@ -1787,7 +1794,11 @@ function renderHistory() {
     
     if (start) h = h.filter(x => x.date >= start);
     if (end) h = h.filter(x => x.date <= end);
-    if (searchName) h = h.filter(x => x.name.toLowerCase().includes(searchName));
+    if (activeHistoryExactMatch) {
+        h = h.filter(x => x.name === activeHistoryExactMatch);
+    } else if (searchName) {
+        h = h.filter(x => x.name.toLowerCase().includes(searchName));
+    }
     h.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const sumBox = $('history-summary-box');
@@ -1856,7 +1867,9 @@ function renderHistory() {
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full ${avatarBg} ${avatarColor} flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
                     <div>
-                        <div class="font-bold text-gray-800 dark:text-gray-200 leading-tight break-all">${nameHtml}</div>
+                        <div class="font-bold leading-tight break-all">
+                            <span class="tx-clickable-name" onclick="toggleHistoryFilter('${nameHtml.replace(/'/g, "\\'")}')">${nameHtml}</span>
+                        </div>
                         <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">${iconHtml}${x.type}</div>
                     </div>
                 </div>
@@ -1876,6 +1889,43 @@ function renderHistory() {
     });
     $('overall-summary-content').innerHTML = html;
 }
+
+function toggleHistoryFilter(exactName) {
+    if (activeHistoryExactMatch === exactName) {
+        activeHistoryExactMatch = null;
+        $('summarySearchName').value = '';
+    } else {
+        activeHistoryExactMatch = exactName;
+        $('summarySearchName').value = exactName;
+    }
+    renderHistory();
+}
+
+function renderHistoryQuickPills() {
+    const container = $('quick-history-pills');
+    if (!container) return;
+    
+    let html = '';
+    const players = (state.masterPlayerList || []).filter(Boolean).sort((a, b) => a.localeCompare(b, 'th'));
+    
+    players.forEach(name => {
+        let isActive = (activeHistoryExactMatch === name);
+        let btnClass = isActive 
+            ? 'active bg-indigo-600 text-white font-bold shadow-md' 
+            : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50';
+            
+        html += `<button class="quick-pill whitespace-nowrap px-3 py-1.5 rounded-full text-sm cursor-pointer ${btnClass}" 
+                    onclick="toggleHistoryFilter('${escapeHtml(name.replace(/'/g, "\\'"))}')">${escapeHtml(name)}</button>`;
+    });
+    
+    if (activeHistoryExactMatch) {
+        html = `<button class="quick-pill whitespace-nowrap px-3 py-1.5 rounded-full text-sm cursor-pointer bg-rose-100 text-rose-700 font-bold border border-rose-200 hover:bg-rose-200" onclick="toggleHistoryFilter('${escapeHtml(activeHistoryExactMatch.replace(/'/g, "\\'"))}')"><i class="fas fa-times mr-1"></i> เลิกกรอง</button>` + html;
+    }
+
+    container.innerHTML = html;
+}
+
+function closeDaily() {}
 
 // --- ACTIONS & EXPORT ---
 function waitForImages(element) {
