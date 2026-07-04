@@ -36,6 +36,13 @@ function createDefaultState() { return { masterPlayerList: [], allTransactions: 
 function getTodayString() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 function escapeHtml(str) { return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 function escapeJsString(str) { return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"'); }
+function formatThaiDateShort(dateStr) {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const thY = (parseInt(y, 10) + 543).toString().slice(-2);
+    return `${parseInt(d, 10)} ${months[parseInt(m, 10) - 1]} ${thY}`;
+}
 function getPlayerColor(name) { if (!name) return PLAYER_COLORS[0]; const sum = [...String(name)].reduce((a, c) => a + c.charCodeAt(0), 0); return PLAYER_COLORS[sum % PLAYER_COLORS.length]; }
 function getCurrentDailyData() { if (!state.dailyData[selectedDate]) state.dailyData[selectedDate] = { players: [], games: [] }; return state.dailyData[selectedDate]; }
 
@@ -122,6 +129,48 @@ function ensureIntegrity() {
             p.isAutoDaily = exp ? (exp.paid && Math.abs(p.amount - exp.cost) < TOLERANCE) : false;
         }
     });
+
+    // Migration: Unified Payment Ledger
+    if (!state.migratedReconcile) {
+        Object.keys(state.dailyData).forEach(date => {
+            const dd = state.dailyData[date];
+            if (!dd.players || !dd.games) return;
+            
+            let det = {};
+            dd.players.forEach(p => det[p.name] = { cost: (p.extraCost || 0), isPaid: p.paid });
+            dd.games.forEach(g => {
+                let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
+                g.players.forEach(p => {
+                    if (!det[p]) {
+                        let px = dd.players.find(x => x.name === p);
+                        det[p] = { cost: (px ? px.extraCost || 0 : 0), isPaid: (px ? px.paid : false) };
+                    }
+                    det[p].cost += c;
+                });
+            });
+            
+            Object.keys(det).forEach(name => {
+                if (det[name].cost > TOLERANCE && det[name].isPaid) {
+                    state.allPayments.push({
+                        id: Date.now() + Math.random(),
+                        date: date,
+                        name: name,
+                        amount: det[name].cost,
+                        isAutoDaily: false,
+                        note: 'Migrated Reconcile'
+                    });
+                }
+            });
+            
+            // Delete 'paid' flag since we now use FIFO
+            dd.players.forEach(p => { delete p.paid; });
+        });
+        
+        // Cleanup: Remove all isAutoDaily payments since they are obsolete
+        state.allPayments = state.allPayments.filter(p => !p.isAutoDaily);
+        state.allTransactions = state.allTransactions.filter(t => !t.isAutoDaily);
+        state.migratedReconcile = true;
+    }
 }
 function syncGameIdCounter() { let max = _gameIdCounter; Object.values(state.dailyData).forEach(d => (d.games || []).forEach(g => { if (g.id > max) max = g.id; })); _gameIdCounter = max; }
 
@@ -380,16 +429,6 @@ function submitRename() {
     state.allTransactions.forEach(t => { if (t.name === oldN) t.name = newN; }); state.allPayments.forEach(t => { if (t.name === oldN) t.name = newN; });
     Object.values(state.dailyData).forEach(d => { d.players.forEach(p => { if (p.name === oldN) p.name = newN; }); d.games.forEach(g => g.players = g.players.map(x => x === oldN ? newN : x)); });
     $('rename-modal').classList.add('hidden'); updateAndRender();
-}
-
-function togglePlayerPaidStatus(playerName) {
-    const dd = getCurrentDailyData();
-    let player = dd.players.find(x => x.name === playerName);
-    if (!player) {
-        player = { name: playerName, paid: false, present: true };
-        dd.players.push(player);
-    }
-    player.paid = !player.paid; updateAndRender();
 }
 
 function addExtraCost(name) {
@@ -1121,55 +1160,8 @@ function deleteGame(idx) {
 
 // --- RENDER LOGIC ---
 function syncAllDailyToAccount() {
-    // 1. ล้างรายการที่มาจากระบบรายวันทั้งหมดทิ้ง (เก็บไว้เฉพาะหนี้ที่ตั้งมือ)
-    state.allTransactions = state.allTransactions.filter(t => t.isAutoDaily !== true);
-    state.allPayments = state.allPayments.filter(p => p.isAutoDaily !== true);
-    
-    // 2. คำนวณใหม่จากทุกวันใน dailyData
-    Object.keys(state.dailyData).forEach(date => {
-        if (!date || date === 'undefined' || date === 'null') return;
-        const dd = state.dailyData[date]; 
-        if (!dd.players || !dd.games) return;
-        
-        let det = {}; 
-        
-        // กวาดผู้เล่นจากทั้ง dd.players และ g.players เพื่อป้องกันการตกหล่น
-        dd.players.forEach(p => det[p.name] = { cost: (p.extraCost || 0), isPaid: p.paid });
-        dd.games.forEach(g => { 
-            let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4; 
-            g.players.forEach(p => { 
-                if (!det[p]) { 
-                    let px = dd.players.find(x => x.name === p); 
-                    det[p] = { cost: (px ? px.extraCost || 0 : 0), isPaid: (px ? px.paid : false) }; 
-                } 
-                det[p].cost += c; 
-            }); 
-        });
-        
-        Object.keys(det).forEach(name => { 
-            if (det[name].cost > TOLERANCE) {
-                // สร้าง Transaction สำหรับทุกคนที่มี cost > 0
-                state.allTransactions.push({ 
-                    id: Date.now() + Math.random(), 
-                    date: date, 
-                    name: name, 
-                    totalCost: det[name].cost, 
-                    isAutoDaily: true 
-                });
-                
-                // ถ้าระบุว่าจ่ายแล้ว ให้สร้าง Payment หักล้างทันที (ป้องกัน Bug บัญชีรวมค้าง แต่รายวันจ่ายแล้ว)
-                if (det[name].isPaid) {
-                    state.allPayments.push({ 
-                        id: Date.now() + Math.random(), 
-                        date: date, 
-                        name: name, 
-                        amount: det[name].cost, 
-                        isAutoDaily: true 
-                    });
-                }
-            }
-        });
-    });
+    // เลิกใช้งานแล้ว (Deprecated) เนื่องจากเปลี่ยนมาใช้ระบบ Unified Payment Ledger
+    // การคำนวณจะทำแบบ On-the-fly ใน calculateOverallBalances() แทนเพื่อป้องกัน Double Counting
 }
 
 
@@ -1268,20 +1260,21 @@ function renderDaily() {
     Object.values(details).filter(x => x.cost > 0).sort((a, b) => a.n.localeCompare(b.n, 'th')).forEach(d => {
         grand += d.cost;
         let b = sum[d.n] ? sum[d.n].d - sum[d.n].p : 0;
-        let isPaidToday = d.p || (b <= TOLERANCE);
+        
+        let isPaidToday = false;
+        if (state.paidGamesCache && state.paidGamesCache[d.n] && state.paidGamesCache[d.n][selectedDate]) {
+            isPaidToday = true;
+        }
 
         let statusBadge = '';
-        if (d.p) {
-            let debtText = b % 1 === 0 ? b.toFixed(0) : b.toFixed(2);
-            if (b > TOLERANCE) {
-                statusBadge = `<span class="text-orange-600 font-bold" title="จ่ายของวันนี้แล้ว แต่มียอดค้างชำระจากวันอื่น">จ่ายวันนี้แล้ว (ค้างเก่า: ฿${debtText})</span>`;
+        if (isPaidToday) {
+            let remainingCredit = -b;
+            if (remainingCredit > TOLERANCE) {
+                let creditText = remainingCredit % 1 === 0 ? remainingCredit.toFixed(0) : remainingCredit.toFixed(2);
+                statusBadge = `<span class="text-blue-600 font-bold" title="ยอดเงินเกิน (เครดิต)">จ่ายแล้ว (เครดิต: ฿${creditText})</span>`;
             } else {
                 statusBadge = '<span class="text-green-600 font-bold">จ่ายแล้ว</span>';
             }
-        } else if (isPaidToday) {
-            let remainingCredit = -b;
-            let creditText = remainingCredit % 1 === 0 ? remainingCredit.toFixed(0) : remainingCredit.toFixed(2);
-            statusBadge = `<span class="text-blue-600 font-bold" title="หักลบจากเครดิตคงเหลือในบัญชีอัตโนมัติ">จ่ายแล้ว (เครดิต: ฿${creditText})</span>`;
         } else {
             let debtText = b % 1 === 0 ? b.toFixed(0) : b.toFixed(2);
             if (b > d.cost + TOLERANCE) {
@@ -1301,11 +1294,11 @@ function renderDaily() {
             <span>${d.cost.toFixed(2)}</span>
             <i class="fas fa-plus-circle ${d.extraCost > 0 ? 'text-indigo-500' : 'text-gray-300 group-hover:text-indigo-500'} transition-colors"></i>
         </div>`;
-        // Phase 1: "จ่าย" เรียก openPaymentModal (ยอดสุทธิรวมหนี้สะสม + autoReconcile)
-        //          "ยกเลิก" เรียก togglePlayerPaidStatus เหมือนเดิม (undo flag เฉพาะวัน)
-        let payBtn = d.p
-            ? `<button onclick="togglePlayerPaidStatus('${nameJsEscaped}')" class="btn btn-sm btn-secondary">ยกเลิก</button>`
+        
+        let payBtn = isPaidToday
+            ? `<button disabled class="btn btn-sm btn-outline-secondary" title="ชำระเรียบร้อยแล้ว หากต้องการแก้ไขให้ลบประวัติการรับเงินในหน้าบัญชี">เคลียร์แล้ว</button>`
             : `<button onclick="openPaymentModal('${nameJsEscaped}')" class="btn btn-sm btn-warning">จ่าย</button>`;
+            
         let row = `<tr><td class="sticky-col">${escapeHtml(d.n)}</td><td class="text-center">${d.games}</td><td class="text-center text-xs text-gray-500">${escapeHtml(spds)}</td><td class="text-center font-bold">${costDisplay}</td><td class="text-center">${statusBadge}</td><td class="text-center"><div class="flex justify-center items-center gap-1">${payBtn}${qrBtn}</div></td></tr>`;
         if (isPaidToday) pd += row; else un += row;
     });
@@ -1444,9 +1437,55 @@ function calculateOverallBalances() {
         }
     });
 
-    // 3. วนลูปเพื่อบวกยอดหนี้และยอดชำระ
-    state.allTransactions.forEach(t => { if (sum[t.name]) sum[t.name].d += t.totalCost; });
+    // 3. วนลูปเพื่อบวกยอดหนี้ (เฉพาะตั้งหนี้มือ) และยอดชำระ
+    state.allTransactions.forEach(t => { if (sum[t.name] && !t.isAutoDaily) sum[t.name].d += t.totalCost; });
     state.allPayments.forEach(p => { if (sum[p.name]) sum[p.name].p += p.amount; });
+
+    // 4. คำนวณ FIFO เพื่อหาสถานะ 'จ่ายแล้ว' ของแต่ละบิลรายวัน
+    const paidGames = {};
+    allPlayerNames.forEach(name => {
+        if (!name) return;
+        let oldDebt = sum[name].d;
+        let availableCredit = sum[name].p - oldDebt;
+        let dailyDebts = [];
+        
+        // รวบรวมหนี้รายวันของคนนี้
+        Object.keys(state.dailyData).forEach(date => {
+            const dd = state.dailyData[date];
+            if (!dd.players || !dd.games) return;
+            
+            let cost = 0;
+            let pData = dd.players.find(x => x.name === name);
+            if (pData) cost += (pData.extraCost || 0);
+            
+            dd.games.forEach(g => {
+                if (g.players.includes(name)) {
+                    cost += (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
+                }
+            });
+            
+            if (cost > TOLERANCE) {
+                dailyDebts.push({ date, cost });
+                sum[name].d += cost;
+            }
+        });
+        
+        // เรียงจากเก่าไปใหม่
+        dailyDebts.sort((a, b) => a.date.localeCompare(b.date));
+        
+        paidGames[name] = {};
+        for (let game of dailyDebts) {
+            // ถ้าเงินพอจ่ายบิลนี้ หรือเงินเหลือพอที่จะครอบคลุมบิลนี้ (ยอมให้ต่างกันได้ระดับ TOLERANCE)
+            if (availableCredit >= game.cost - TOLERANCE) {
+                paidGames[name][game.date] = true;
+                availableCredit -= game.cost;
+            } else {
+                break; // เงินหมดแล้ว บิลหลังจากนี้ค้างชำระทั้งหมด
+            }
+        }
+    });
+    
+    state.paidGamesCache = paidGames;
 
     return sum;
 }
@@ -1522,9 +1561,27 @@ function renderAccount() {
 
 function showDebtDetails(name, amount) {
     let txsByDate = {};
-    state.allTransactions.filter(t => t.name === name).forEach(t => {
+    // 1. ดึงหนี้ตั้งมือ (Manual Debts)
+    state.allTransactions.filter(t => t.name === name && !t.isAutoDaily).forEach(t => {
         if (!txsByDate[t.date]) txsByDate[t.date] = 0;
         txsByDate[t.date] += t.totalCost;
+    });
+    // 2. ดึงหนี้จากการเล่นรายวัน (Daily Games & Extra Costs)
+    Object.keys(state.dailyData).forEach(date => {
+        const dd = state.dailyData[date];
+        if (!dd.players || !dd.games) return;
+        let cost = 0;
+        const p = dd.players.find(x => x.name === name);
+        if (p && p.extraCost) cost += p.extraCost;
+        dd.games.forEach(g => {
+            if (g.players.includes(name)) {
+                cost += (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
+            }
+        });
+        if (cost > TOLERANCE) {
+            if (!txsByDate[date]) txsByDate[date] = 0;
+            txsByDate[date] += cost;
+        }
     });
     let sortedDates = Object.keys(txsByDate).sort((a, b) => a.localeCompare(b));
     let totalPaid = state.allPayments.filter(p => p.name === name).reduce((sum, p) => sum + p.amount, 0);
@@ -1606,9 +1663,27 @@ function _doGeneratePersonalSlip(name, amount, showPP) {
     $('slip-total').innerText = `฿${amount.toFixed(2)}`;
 
     let txsByDate = {};
-    state.allTransactions.filter(t => t.name === name).forEach(t => {
+    // 1. ดึงหนี้ตั้งมือ (Manual Debts)
+    state.allTransactions.filter(t => t.name === name && !t.isAutoDaily).forEach(t => {
         if (!txsByDate[t.date]) txsByDate[t.date] = 0;
         txsByDate[t.date] += t.totalCost;
+    });
+    // 2. ดึงหนี้จากการเล่นรายวัน (Daily Games & Extra Costs)
+    Object.keys(state.dailyData).forEach(date => {
+        const dd = state.dailyData[date];
+        if (!dd.players || !dd.games) return;
+        let cost = 0;
+        const p = dd.players.find(x => x.name === name);
+        if (p && p.extraCost) cost += p.extraCost;
+        dd.games.forEach(g => {
+            if (g.players.includes(name)) {
+                cost += (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
+            }
+        });
+        if (cost > TOLERANCE) {
+            if (!txsByDate[date]) txsByDate[date] = 0;
+            txsByDate[date] += cost;
+        }
     });
     let sortedDates = Object.keys(txsByDate).sort((a, b) => a.localeCompare(b));
     let totalPaid = state.allPayments.filter(p => p.name === name).reduce((sum, p) => sum + p.amount, 0);
@@ -1670,7 +1745,27 @@ function renderHistory() {
     let start = $('summaryStartDate').value;
     let end = $('summaryEndDate').value;
     let searchName = $('summarySearchName').value.trim().toLowerCase();
-    let h = [...state.allTransactions.map(t => ({ ...t, type: 'เกม' })), ...state.allPayments.map(p => ({ ...p, type: 'ชำระเงิน' }))];
+    
+    // ดึงหนี้จาก dailyData มาทำเป็นประวัติเกม
+    let dailyHistory = [];
+    Object.keys(state.dailyData).forEach(date => {
+        const dd = state.dailyData[date];
+        if (!dd.players || !dd.games) return;
+        let pCosts = {};
+        dd.players.forEach(p => pCosts[p.name] = (p.extraCost || 0));
+        dd.games.forEach(g => {
+            let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
+            g.players.forEach(p => pCosts[p] = (pCosts[p] || 0) + c);
+        });
+        Object.keys(pCosts).forEach(name => {
+            if (pCosts[name] > TOLERANCE) {
+                dailyHistory.push({ id: date + '-' + name, date: date, name: name, totalCost: pCosts[name], type: 'เกม' });
+            }
+        });
+    });
+
+    let h = [...state.allTransactions.map(t => ({ ...t, type: 'เกม' })), ...dailyHistory, ...state.allPayments.map(p => ({ ...p, type: 'ชำระเงิน' }))];
+    
     if (start) h = h.filter(x => x.date >= start);
     if (end) h = h.filter(x => x.date <= end);
     if (searchName) h = h.filter(x => x.name.toLowerCase().includes(searchName));
@@ -1738,7 +1833,7 @@ function renderHistory() {
             let avatarColor = isPaid ? 'text-green-600' : 'text-red-600';
             let iconHtml = isPaid ? '<i class="fas fa-hand-holding-usd mr-1 text-[10px]"></i>' : '<i class="fas fa-shuttlecock mr-1 text-[10px]"></i>';
 
-            html += `<div class="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border-l-4 ${borderColor} border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-2 transition-all hover:shadow-md">
+            html += `<div class="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border-l-4 ${borderColor} border border-gray-100 dark:border-slate-700 shadow-sm rounded-r-xl gap-2 transition-all hover:shadow-md relative group">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full ${avatarBg} ${avatarColor} flex items-center justify-center font-bold text-lg shrink-0">${avatarChar}</div>
                     <div>
@@ -1746,7 +1841,10 @@ function renderHistory() {
                         <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">${iconHtml}${x.type}</div>
                     </div>
                 </div>
-                <div class="font-bold ${color} text-base whitespace-nowrap bg-gray-50 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg">${sign}฿${(x.totalCost || x.amount).toFixed(2)}</div>
+                <div class="flex items-center gap-2">
+                    <div class="font-bold ${color} text-base whitespace-nowrap bg-gray-50 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg">${sign}฿${(x.totalCost || x.amount).toFixed(2)}</div>
+                    ${isPaid ? `<button onclick="deleteManualPayment('${x.id}')" class="btn-ghost text-red-500 hover:text-red-700 p-2 opacity-50 hover:opacity-100 transition-opacity" title="ลบประวัติการรับเงิน"><i class="fas fa-trash-alt"></i></button>` : ''}
+                </div>
             </div>`;
         });
 
@@ -1827,10 +1925,16 @@ function exportSummaryImg() {
     const originalPos = el.style.position;
     if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
     const watermark = document.createElement('div');
-    const [y, m, d] = selectedDate.split('-');
-    watermark.innerText = `${d}/${m}/${y}`;
-    const wmColor = document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
-    watermark.style.cssText = `position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) rotate(-15deg); font-size:120px; font-weight:900; color:${wmColor}; white-space:nowrap; pointer-events:none; z-index:0; text-align:center; user-select:none;`;
+    watermark.innerText = formatThaiDateShort(selectedDate);
+    
+    const containerWidth = el.offsetWidth;
+    const fontSize = Math.min(Math.max(containerWidth * 0.15, 48), 160);
+    
+    const isDark = document.documentElement.classList.contains('dark');
+    const wmColor = isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)';
+    const textShadow = isDark ? '2px 2px 10px rgba(0,0,0,0.8)' : '2px 2px 10px rgba(255,255,255,0.8)';
+    
+    watermark.style.cssText = `position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:${fontSize}px; font-weight:900; color:${wmColor}; text-shadow:${textShadow}; white-space:nowrap; pointer-events:none; z-index:10; text-align:center; user-select:none;`;
     el.appendChild(watermark);
 
     Swal.fire({ title: 'กำลังสร้างรูป...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
@@ -1880,7 +1984,26 @@ function exportAccountImg() {
 function exportHistoryCSV() {
     let start = $('summaryStartDate').value; let end = $('summaryEndDate').value;
     let searchName = $('summarySearchName').value.trim().toLowerCase();
-    let h = [...state.allTransactions.map(t => ({ ...t, type: 'เกม' })), ...state.allPayments.map(p => ({ ...p, type: 'ชำระเงิน' }))];
+    
+    let dailyHistory = [];
+    Object.keys(state.dailyData).forEach(date => {
+        const dd = state.dailyData[date];
+        if (!dd.players || !dd.games) return;
+        let pCosts = {};
+        dd.players.forEach(p => pCosts[p.name] = (p.extraCost || 0));
+        dd.games.forEach(g => {
+            let c = (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
+            g.players.forEach(p => pCosts[p] = (pCosts[p] || 0) + c);
+        });
+        Object.keys(pCosts).forEach(name => {
+            if (pCosts[name] > TOLERANCE) {
+                dailyHistory.push({ id: date + '-' + name, date: date, name: name, totalCost: pCosts[name], type: 'เกม' });
+            }
+        });
+    });
+
+    let h = [...state.allTransactions.map(t => ({ ...t, type: 'เกม' })), ...dailyHistory, ...state.allPayments.map(p => ({ ...p, type: 'ชำระเงิน' }))];
+    
     if (start) h = h.filter(x => x.date >= start); if (end) h = h.filter(x => x.date <= end);
     if (searchName) h = h.filter(x => x.name.toLowerCase().includes(searchName));
     h.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1980,9 +2103,27 @@ function exportAccountText() {
 function sendPersonalLineReminder(name, amount) {
     // ดึงรายการหนี้ทั้งหมดของคนนี้มาจัดกลุ่มตามวันที่
     let txsByDate = {};
-    state.allTransactions.filter(t => t.name === name).forEach(t => {
+    // 1. ดึงหนี้ตั้งมือ (Manual Debts)
+    state.allTransactions.filter(t => t.name === name && !t.isAutoDaily).forEach(t => {
         if (!txsByDate[t.date]) txsByDate[t.date] = 0;
         txsByDate[t.date] += t.totalCost;
+    });
+    // 2. ดึงหนี้จากการเล่นรายวัน (Daily Games & Extra Costs)
+    Object.keys(state.dailyData).forEach(date => {
+        const dd = state.dailyData[date];
+        if (!dd.players || !dd.games) return;
+        let cost = 0;
+        const p = dd.players.find(x => x.name === name);
+        if (p && p.extraCost) cost += p.extraCost;
+        dd.games.forEach(g => {
+            if (g.players.includes(name)) {
+                cost += (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
+            }
+        });
+        if (cost > TOLERANCE) {
+            if (!txsByDate[date]) txsByDate[date] = 0;
+            txsByDate[date] += cost;
+        }
     });
 
     let sortedDates = Object.keys(txsByDate).sort((a, b) => a.localeCompare(b));
@@ -2117,18 +2258,9 @@ function showGroupBillResult(members, isDaily = false) {
         }
     }).then(res => {
         if (res.isConfirmed) {
-            if (isDaily) {
-                const dd = getCurrentDailyData();
-                members.forEach(m => {
-                    let p = dd.players.find(x => x.name === m.name);
-                    if (p) p.paid = true;
-                    else dd.players.push({ name: m.name, paid: true, present: true });
-                });
-            } else {
-                members.forEach(m => {
-                    state.allPayments.push({ id: Date.now() + Math.random(), date: getTodayString(), name: m.name, amount: m.debt, isAutoDaily: false });
-                });
-            }
+            members.forEach(m => {
+                state.allPayments.push({ id: Date.now() + Math.random(), date: getTodayString(), name: m.name, amount: m.debt, isAutoDaily: false });
+            });
             updateAndRender();
             Swal.fire({ icon: 'success', title: 'บันทึกชำระเงินเรียบร้อย', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
         }
@@ -2152,47 +2284,28 @@ function submitPayment() {
     if (!name || isNaN(amt) || amt <= 0) return;
     state.allPayments.push({ id: Date.now(), date: getTodayString(), name: name, amount: amt, isAutoDaily: false });
     document.getElementById('payment-modal').classList.add('hidden');
-    const affectedDates = autoReconcileDailyDebts(name);
     updateAndRender();
-    // แสดง Undo Toast ถ้ามีการ reconcile วันเก่า
-    if (affectedDates && affectedDates.length > 0) {
-        showPaymentUndoToast(name, affectedDates);
-    } else {
-        Swal.fire({ icon: 'success', title: 'บันทึกชำระเงินแล้ว', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
-    }
+    Swal.fire({ icon: 'success', title: 'บันทึกชำระเงินแล้ว', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
 }
 
-// Phase 2: แสดง Toast พร้อมปุ่ม "ยกเลิก" 5 วินาทีหลังจ่าย
-function showPaymentUndoToast(playerName, affectedDates) {
+window.deleteManualPayment = function(id) {
     Swal.fire({
-        icon: 'success',
-        title: 'บันทึกชำระเงินแล้ว',
-        html: `เคลียร์ยอด ${affectedDates.length} วัน &nbsp;<button id="undoPayBtn" style="font-size:11px;padding:2px 10px;border-radius:6px;background:#f1f5f9;border:1px solid #cbd5e1;cursor:pointer;font-family:'Sarabun',sans-serif;">↩ ยกเลิก</button>`,
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 5000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-            const btn = document.getElementById('undoPayBtn');
-            if (btn) btn.addEventListener('click', () => { Swal.close(); undoDailyPayment(playerName, affectedDates); });
-            toast.addEventListener('mouseenter', Swal.stopTimer);
-            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        title: 'ยืนยันการลบ?',
+        text: 'คุณต้องการลบประวัติการรับเงินนี้ใช่หรือไม่?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ลบเลย',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            state.allPayments = state.allPayments.filter(p => String(p.id) !== String(id));
+            updateAndRender();
+            Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
         }
     });
-}
-
-// Phase 2: ยกเลิกการชำระเงิน — toggle วันที่ถูก reconcile ทั้งหมดกลับเป็น unpaid
-function undoDailyPayment(playerName, affectedDates) {
-    affectedDates.forEach(date => {
-        const dd = state.dailyData[date];
-        if (!dd || !dd.players) return;
-        const player = dd.players.find(p => p.name === playerName);
-        if (player) player.paid = false;
-    });
-    updateAndRender();
-    Swal.fire({ icon: 'info', title: 'ยกเลิกการชำระเงินแล้ว', text: `คืนยอดค้าง ${affectedDates.length} วัน`, toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-}
+};
 
 function openGlobalPaymentModal() {
     const opts = state.masterPlayerList.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
@@ -2221,77 +2334,10 @@ function openGlobalPaymentModal() {
     }).then(res => {
         if (res.isConfirmed) {
             state.allPayments.push({ id: Date.now(), date: getTodayString(), name: res.value.name, amount: res.value.amount, isAutoDaily: false });
-            autoReconcileDailyDebts(res.value.name);
             updateAndRender();
             Swal.fire({ icon: 'success', title: 'บันทึกชำระเงินเรียบร้อย', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
         }
     });
-}
-
-function autoReconcileDailyDebts(playerName) {
-    let manualPaymentsTotal = state.allPayments.filter(p => p.name === playerName && !p.isAutoDaily).reduce((sum, p) => sum + p.amount, 0);
-    let manualDebtsTotal = state.allTransactions.filter(t => t.name === playerName && !t.isAutoDaily).reduce((sum, t) => sum + t.totalCost, 0);
-
-    let availableCredit = manualPaymentsTotal - manualDebtsTotal;
-    if (availableCredit <= TOLERANCE) return [];
-
-    let unpaidDaily = [];
-    Object.keys(state.dailyData).forEach(date => {
-        if (!date || date === 'undefined' || date === 'null') return;
-        const dd = state.dailyData[date];
-        if (!dd.players || !dd.games) return;
-
-        let pData = dd.players.find(x => x.name === playerName);
-        if (pData && !pData.paid) {
-            let cost = pData.extraCost || 0;
-            dd.games.forEach(g => {
-                if (g.players.includes(playerName)) {
-                    cost += (g.shuttlecocksUsed * (g.shuttlecockPrice || 0)) / 4;
-                }
-            });
-            if (cost > TOLERANCE) {
-                unpaidDaily.push({ date: date, cost: cost });
-            }
-        }
-    });
-
-    unpaidDaily.sort((a, b) => a.date.localeCompare(b.date));
-
-    let madeChanges = false;
-    let affectedDates = []; // เก็บวันที่ที่ถูก reconcile เพื่อรองรับ Undo
-    for (let record of unpaidDaily) {
-        if (availableCredit >= record.cost - TOLERANCE) {
-            let dd = state.dailyData[record.date];
-            let pData = dd.players.find(x => x.name === playerName);
-            pData.paid = true;
-            availableCredit -= record.cost;
-            madeChanges = true;
-            affectedDates.push(record.date); // บันทึกวันที่เพื่อ Undo
-
-            let amountToRemove = record.cost;
-            for (let i = 0; i < state.allPayments.length; i++) {
-                let p = state.allPayments[i];
-                if (p.name === playerName && !p.isAutoDaily) {
-                    if (p.amount >= amountToRemove) {
-                        p.amount -= amountToRemove;
-                        amountToRemove = 0;
-                        break;
-                    } else {
-                        amountToRemove -= p.amount;
-                        p.amount = 0;
-                    }
-                }
-            }
-        } else {
-            break;
-        }
-    }
-
-    if (madeChanges) {
-        state.allPayments = state.allPayments.filter(p => p.isAutoDaily || p.amount > TOLERANCE);
-        syncAllDailyToAccount();
-    }
-    return affectedDates; // คืนรายการวันที่สำหรับ Undo Toast
 }
 
 // --- THEME MGMT ---
@@ -2596,7 +2642,6 @@ function executeAutoPay(name, amount) {
         amount: amount,
         isAutoDaily: false
     });
-    autoReconcileDailyDebts(name);
     updateAndRender();
 
     const sh = name.includes(': ') ? name.split(': ')[1] : name;

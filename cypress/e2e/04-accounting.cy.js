@@ -51,16 +51,32 @@ describe('04 - Accounting & History', () => {
 
     cy.recordGame('A', 'B', 'C', 'D', '1', '20');
 
-    // Phase 1: ปุ่ม "จ่าย" ตอนนี้เปิด payment modal แทนการ toggle โดยตรง
+    // Phase 1: ปุ่ม "จ่าย" ตอนนี้เปิด payment modal
     cy.contains('#summaryTableUnpaid tr', 'A').find('button').contains('จ่าย').click();
     cy.get('#payment-modal').should('not.have.class', 'hidden');
     cy.get('#btnSubmitPayment').click();
 
     // A ต้องย้ายไปตาราง paid หลังจาก confirm modal
     cy.get('#summaryTablePaid').should('contain.text', 'A');
+    
+    // หลังจากจ่ายแล้ว ปุ่มจะเปลี่ยนเป็น 'เคลียร์แล้ว' และถูก disable
+    cy.contains('#summaryTablePaid tr', 'A').find('button').contains('เคลียร์แล้ว').should('be.disabled');
 
-    // กดปุ่ม "ยกเลิก" เพื่อ toggle กลับ (ยังทำงานเหมือนเดิม)
-    cy.contains('#summaryTablePaid tr', 'A').find('button').contains('ยกเลิก').click();
+    // ไปลบประวัติการจ่ายเงินที่หน้าประวัติเพื่อ undo
+    cy.get('button[data-tab="history"]').click();
+    
+    // In the history tab, find the delete button for the payment
+    // and click it using force: true in case the opacity hover effect interferes in Cypress
+    cy.get('#tab-history')
+      .contains('.group', 'ชำระเงิน')
+      .find('button[onclick^="deleteManualPayment"]')
+      .click({force: true});
+      
+    // ยืนยันการลบ
+    cy.get('.swal2-confirm').click();
+    
+    // กลับไปหน้ารายวัน A ต้องกลับมาอยู่ตาราง Unpaid
+    cy.get('button[data-tab="daily"]').click();
     cy.get('#summaryTableUnpaid').should('contain.text', 'A');
     cy.get('#summaryTablePaid').should('not.contain.text', 'A');
   });
@@ -99,10 +115,10 @@ describe('04 - Accounting & History', () => {
       dailyData: {
         [today]: {
           players: [
-            { name: 'A', paid: true, present: true },
-            { name: 'B', paid: false, present: true },
-            { name: 'C', paid: false, present: true },
-            { name: 'D', paid: false, present: true }
+            { name: 'A', present: true },
+            { name: 'B', present: true },
+            { name: 'C', present: true },
+            { name: 'D', present: true }
           ],
           games: [{
             id: 1,
@@ -112,7 +128,14 @@ describe('04 - Accounting & History', () => {
             shuttlecockSpeeds: ['1']
           }]
         }
-      }
+      },
+      allPayments: [{
+        id: 1,
+        date: today,
+        name: 'A',
+        amount: 10,
+        isAutoDaily: false
+      }]
     });
 
     cy.mockTime(today + 'T12:00:00Z');
@@ -223,7 +246,7 @@ describe('04 - Accounting & History', () => {
     });
     
     // 5. กดปิดหน้าต่าง
-    cy.get('.swal2-confirm').click();
+    cy.get('.swal2-confirm').click({ force: true });
   });
 
   it('ทดสอบฟีเจอร์ทวงแบบกลุ่ม (Group Bill) และบันทึกการจ่ายเงิน', () => {
@@ -378,7 +401,7 @@ describe('04 - Accounting & History', () => {
     // เครดิตต้องเพิ่มเป็น 300 บาท
     cy.contains('#credit-list-overall div.border', 'ผู้เล่นใหม่').should('contain.text', 'เครดิต 300.00');
   });
-  it('ทดสอบ Phase 1: ปุ่มจ่ายในหน้ารายวัน pre-fill ยอดสะสมรวมและ mark วันเก่าว่าจ่ายแล้ว', () => {
+  it('ทดสอบระบบ Unified Ledger: ปุ่มจ่ายในหน้ารายวัน pre-fill ยอดสะสมรวมและ mark จ่ายแล้ว', () => {
     const today = '2024-01-02';
     const yesterday = '2024-01-01';
     const players = ['สมชาย', 'A', 'B', 'C'];
@@ -427,53 +450,5 @@ describe('04 - Accounting & History', () => {
     cy.get('button[data-tab="account"]').click();
     cy.get('#paid-in-full-list-overall').should('contain.text', 'สมชาย');
     cy.get('#unpaid-list-overall').should('not.contain.text', 'สมชาย');
-  });
-
-  it('ทดสอบ Phase 2: Undo Toast หลังจ่ายต้องคืนยอดค้างครบทุกวัน', () => {
-    const today = '2024-01-02';
-    const yesterday = '2024-01-01';
-    const players = ['สมชาย', 'A', 'B', 'C'];
-    const oneGame = (id) => ({
-      id, players, shuttlecocksUsed: 1, shuttlecockPrice: 160, shuttlecockSpeeds: ['1']
-    });
-
-    cy.seedSessionState('phase2UndoToast', {
-      masterPlayerList: players,
-      dailyData: {
-        [yesterday]: {
-          players: players.map(name => ({ name, paid: false, present: true })),
-          games: [oneGame(1)],
-          isClosed: true
-        },
-        [today]: {
-          players: players.map(name => ({ name, paid: false, present: true })),
-          games: [oneGame(2)],
-          isClosed: false
-        }
-      }
-    });
-
-    cy.mockTime(today + 'T12:00:00Z');
-    cy.visit('/index.html');
-
-    // 1. กดจ่าย → ยืนยันใน modal
-    cy.contains('#summaryTableUnpaid tr', 'สมชาย').find('button').contains('จ่าย').click();
-    cy.get('#payment-modal').should('not.have.class', 'hidden');
-    cy.get('#btnSubmitPayment').click();
-
-    // 2. Undo Toast ต้องปรากฏพร้อมข้อมูลจำนวนวันที่ cleared
-    cy.get('.swal2-toast').should('contain.text', 'บันทึกชำระเงินแล้ว').and('contain.text', 'เคลียร์ยอด 2 วัน');
-    cy.get('#undoPayBtn').should('be.visible');
-
-    // 3. กดปุ่ม "↩ ยกเลิก"
-    cy.get('#undoPayBtn').click();
-
-    // 4. สมชายต้องกลับมาอยู่ใน summaryTableUnpaid (ยอดค้างคืนมาครบ)
-    cy.get('#summaryTableUnpaid').should('contain.text', 'สมชาย');
-    cy.get('#summaryTablePaid').should('not.contain.text', 'สมชาย');
-
-    // 5. หน้าบัญชีรวมต้องแสดงยอดค้าง 80 บาทกลับมา
-    cy.get('button[data-tab="account"]').click();
-    cy.contains('#unpaid-list-overall div.border', 'สมชาย').should('contain.text', 'ค้าง 80.00');
   });
 });

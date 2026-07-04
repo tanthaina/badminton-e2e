@@ -12,6 +12,7 @@ describe('Auto Transfer Listener', () => {
                 { id: 2, type: 'GAME_FEE', name: 'UserB', totalCost: 150.00, date: win.getTodayString() },
                 { id: 3, type: 'GAME_FEE', name: 'UserC', totalCost: 80.00, date: win.getTodayString() }
             ];
+            win.state.migratedReconcile = true;
             
             win.updateAndRender();
         });

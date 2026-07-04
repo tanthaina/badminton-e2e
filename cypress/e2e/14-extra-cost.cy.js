@@ -136,6 +136,6 @@ describe('14 - Individual Extra Expense (ค่าจิปาถะ)', () => {
       .and('contain.text', '+ จิปาถะ 15 บ.');
 
     // 3. กดปิดหน้าต่าง
-    cy.get('.swal2-confirm').contains('ปิดหน้าต่าง').click();
+    cy.get('.swal2-confirm').contains('ปิดหน้าต่าง').click({ force: true });
   });
 });

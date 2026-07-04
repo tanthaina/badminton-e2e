@@ -47,7 +47,8 @@ Cypress.Commands.add('seedPlayers', (playersArray) => {
         games: []
       }
     },
-    settings: { shuttlecockPrice: 0 }
+    settings: { shuttlecockPrice: 0 },
+    migratedReconcile: true
   };
   
   // ยัดข้อมูลลง Local Storage 
@@ -79,7 +80,8 @@ Cypress.Commands.add('seedGames', (playersArray, gamesArray, defaultPrice = 20) 
         games: formattedGames
       }
     },
-    settings: { shuttlecockPrice: defaultPrice }
+    settings: { shuttlecockPrice: defaultPrice },
+    migratedReconcile: true
   };
   
   cy.window().then((win) => {
@@ -135,7 +137,8 @@ Cypress.Commands.add('seedSessionState', (sessionName, stateOverrides = {}) => {
       allTransactions: [],
       allPayments: [],
       dailyData: {},
-      settings: { shuttlecockPrice: 0, promptpayId: '' }
+      settings: { shuttlecockPrice: 0, promptpayId: '' },
+      migratedReconcile: true
     };
 
     // นำ State ที่ต้องการ มาเขียนทับ State เริ่มต้น

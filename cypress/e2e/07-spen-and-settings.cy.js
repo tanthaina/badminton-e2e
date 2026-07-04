@@ -78,11 +78,11 @@ describe('07 - S-Pen Smart Board & Settings', () => {
     
     cy.get('#btnFactoryReset').scrollIntoView().should('be.visible').click({ force: true });
     cy.get('.swal2-popup').should('be.visible').and('contain.text', 'ล้างข้อมูลทั้งหมด');
-    cy.get('.swal2-confirm').should('be.visible').click(); 
+    cy.get('.swal2-confirm').should('be.visible').click({ force: true }); 
     
     // ปิดหน้าต่างแจ้งเตือน "ล้างข้อมูลสำเร็จ" ที่เด้งขึ้นมาซ้อน
     cy.get('.swal2-popup').should('be.visible').and('contain.text', 'ล้างข้อมูลสำเร็จ');
-    cy.get('.swal2-confirm').should('be.visible').click();
+    cy.get('.swal2-confirm').should('be.visible').click({ force: true });
 
     // กลับไปหน้ารายวัน ต้องไม่มีผู้เล่นคนนี้หลงเหลืออยู่
     cy.get('button[data-tab="daily"]').click();

@@ -1,0 +1,126 @@
+1: starting server using command "npm run serve"
+and when url "[ 'http://127.0.0.1:5500' ]" is responding with HTTP status code 200
+running tests using command "npx cypress run --spec cypress/e2e/14-extra-cost.cy.js"
+
+
+> voicepen@1.0.0 serve
+> http-server -p 5500 -c-1
+
+Starting up http-server, serving ./
+
+http-server version: 14.1.1
+
+http-server settings: 
+CORS: disabled
+Cache: -1 seconds
+Connection Timeout: 120 seconds
+Directory Listings: visible
+AutoIndex: visible
+Serve GZIP Files: false
+Serve Brotli Files: false
+Default File Extension: none
+
+Available on:
+  http://192.168.137.1:5500
+  http://10.194.94.204:5500
+  http://127.0.0.1:5500
+Hit CTRL-C to stop the server
+
+[2026-07-04T17:15:10.056Z]  "HEAD /" "axios/1.18.1"
+
+
+====================================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.18.0                                                                        │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v24.16.0 (C:\Program Files\nodejs\node.exe)                                    │
+  │ Specs:          1 found (14-extra-cost.cy.js)                                                  │
+  │ Searched:       C:\Users\tanth\Desktop\newprogram\voicepen\cypress\e2e\14-extra-cost.cy.js     │
+  │ Experiments:    experimentalRunAllSpecs=true                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  14-extra-cost.cy.js                                                             (1 of 1)
+
+
+  14 - Individual Extra Expense (ค่าจิปาถะ)
+[2026-07-04T17:15:20.509Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:20.580Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:20.589Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:22.638Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:22.679Z]  "GET /manifest.json" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:22.685Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:22.689Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:22.751Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:22.786Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:23.416Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:23.538Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:23.542Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:24.190Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+    √ ทดสอบ 1: เพิ่มและลบค่าจิปาถะในหน้าคิดเงินรายวัน (6212ms)
+[2026-07-04T17:15:26.778Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:26.825Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:26.827Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:26.964Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:26.987Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.030Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.082Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.085Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.227Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+    √ ทดสอบ 2: ซิงก์ค่าจิปาถะลงบัญชีรวมและตรวจสอบหน้าใบเสร็จ (Personal Slip) (723ms)
+[2026-07-04T17:15:27.548Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.595Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.605Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.734Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.748Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.812Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.815Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:27.938Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:28.825Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:29.947Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+    √ ทดสอบ 3: ลบค่าจิปาถะแล้ว ยอดรวมใน QR Code กลุ่มต้องลดลงตาม (Daily Group Bill) (7631ms)
+[2026-07-04T17:15:35.238Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:35.277Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:35.282Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:35.446Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:35.501Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:35.560Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:35.561Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-04T17:15:35.699Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+    √ ทดสอบ 4: ดูรายละเอียดค้างชำระและค่าจิปาถะในหน้าบัญชีรวม (759ms)
+
+
+  4 passing (16s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        4                                                                                │
+  │ Passing:      4                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        false                                                                            │
+  │ Duration:     15 seconds                                                                       │
+  │ Spec Ran:     14-extra-cost.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+====================================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ √  14-extra-cost.cy.js                      00:15        4        4        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    √  All specs passed!                        00:15        4        4        -        -        -  
+
