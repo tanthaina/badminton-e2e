@@ -64,7 +64,12 @@ function saveToStorage() {
                 timestamp: state.timestamp
             }).catch(err => console.error("Firebase sync error:", err));
         }
-    } catch (e) { console.warn("Storage full"); }
+    } catch (e) { 
+        console.error("Save/Sync Error:", e);
+        if (e.name === 'QuotaExceededError') {
+            console.warn("Storage full");
+        }
+    }
 }
 
 function loadFromStorage() { try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) state = JSON.parse(raw) || createDefaultState(); } catch (e) { state = createDefaultState(); } }
