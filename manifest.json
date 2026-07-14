@@ -8,9 +8,10 @@
   "description": "ระบบจัดการบัญชีค่าลูกแบดมินตันส่วนตัว",
   "icons": [
     {
-      "src": "icon.png",
-      "sizes": "1024x1024",
-      "type": "image/png"
+      "src": "./icon.png",
+      "sizes": "192x192 512x512 1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

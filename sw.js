@@ -1,9 +1,10 @@
-const CACHE_NAME = 'badminton-pay-v6';
+const CACHE_NAME = 'badminton-pay-v7';
 const urlsToCache = [
   'index.html',
   'manifest.json',
   'app.js',
-  'styles.css'
+  'styles.css',
+  'icon.png'
 ];
 
 self.addEventListener('install', event => {
