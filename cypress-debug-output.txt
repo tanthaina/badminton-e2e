@@ -1,6 +1,6 @@
 1: starting server using command "npm run serve"
 and when url "[ 'http://127.0.0.1:5500' ]" is responding with HTTP status code 200
-running tests using command "npx cypress run --spec cypress/e2e/01-core.cy.js,cypress/e2e/02-players.cy.js,cypress/e2e/03-smart-board.cy.js"
+running tests using command "npx cypress run --spec cypress/e2e/19-inventory-system.cy.js"
 
 
 > voicepen@1.0.0 serve
@@ -22,11 +22,11 @@ Default File Extension: none
 
 Available on:
   http://192.168.137.1:5500
-  http://192.168.0.103:5500
+  http://192.168.1.139:5500
   http://127.0.0.1:5500
 Hit CTRL-C to stop the server
 
-[2026-07-04T20:24:28.700Z]  "HEAD /" "axios/1.18.1"
+[2026-07-16T03:04:55.783Z]  "HEAD /" "axios/1.18.1"
 
 
 ====================================================================================================
@@ -37,240 +37,52 @@ Hit CTRL-C to stop the server
   │ Cypress:        15.18.0                                                                        │
   │ Browser:        Electron 138 (headless)                                                        │
   │ Node Version:   v24.16.0 (C:\Program Files\nodejs\node.exe)                                    │
-  │ Specs:          3 found (01-core.cy.js, 02-players.cy.js, 03-smart-board.cy.js)                │
-  │ Searched:       C:\Users\tanth\Desktop\newprogram\voicepen\cypress\e2e\01-core.cy.js, C:\Users │
-  │                 \tanth\Desktop\newprogram\voicepen\cypress\e2e\02-players.cy.js, C:\Users\tant │
-  │                 h\Desktop\newprogram\voicepen\cypress\e2e\03-smart-board.cy.js                 │
+  │ Specs:          1 found (19-inventory-system.cy.js)                                            │
+  │ Searched:       C:\Users\tanth\Desktop\newprogram\voicepen\cypress\e2e\19-inventory-system.cy. │
+  │                 js                                                                             │
   │ Experiments:    experimentalRunAllSpecs=true                                                   │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
                                                                                                     
-  Running:  01-core.cy.js                                                                   (1 of 3)
+  Running:  19-inventory-system.cy.js                                                       (1 of 1)
 
 
-  01 - Core Flow & Game Management
-[2026-07-04T20:24:43.430Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:43.506Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:43.522Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:44.506Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:44.580Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:44.586Z]  "GET /manifest.json" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:44.628Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:44.650Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:44.739Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบโฟลว์หลัก: เพิ่มผู้เล่น -> บันทึกเกม -> เช็คยอดเงิน -> จ่ายเงิน (5476ms)
-[2026-07-04T20:24:48.961Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:49.349Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:49.365Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:50.019Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบกรณีเลือกผู้เล่นซ้ำกันหรือลืมกรอกเบอร์ลูก (Negative Test) (3025ms)
-[2026-07-04T20:24:52.036Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:52.078Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:52.083Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:52.159Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:52.278Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบการเพิ่มผู้เล่นด่วน (Quick Add Player) จากแถบเครื่องมือบันทึกเกม (875ms)
-[2026-07-04T20:24:52.950Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:53.337Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:53.350Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:53.472Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:53.922Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:53.998Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:54.048Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:54.051Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:54.235Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบระบบบันทึกข้อมูลอัตโนมัติ (Data Persistence) (1320ms)
-[2026-07-04T20:24:54.306Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:54.372Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:54.375Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:54.507Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:55.289Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:56.392Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบการแสดงผลตารางบนหน้าจอมือถือ (Mobile View & Sticky Column) (3530ms)
-[2026-07-04T20:24:57.952Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:58.371Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:58.386Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:24:58.506Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:00.281Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบการลบเกม และการคำนวณยอดเงินใหม่ (Delete Game) (3826ms)
-[2026-07-04T20:25:01.878Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:01.945Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:01.949Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:02.094Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:03.933Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบ User Error: บันทึกเกมโดยที่เลือกผู้เล่นไม่ครบ 4 คน (2490ms)
-[2026-07-04T20:25:04.416Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:04.480Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:04.483Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:04.613Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:06.425Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบ Performance (Stress Test): จำลองการบันทึกเกมจำนวนมากต่อเนื่อง (6058ms)
-[2026-07-04T20:25:10.585Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:10.985Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:11.000Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:11.121Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:13.032Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบ Edge Case: ป้องกันการบันทึกเกมด้วยราคาลูกติดลบ (Negative Price) (3628ms)
+  Shuttlecock Inventory System
+[2026-07-16T03:05:06.864Z]  "GET /" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:06.930Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:06.940Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:07.957Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:07.997Z]  "GET /manifest.json" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:08.002Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:08.010Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:08.048Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:08.055Z]  "GET /icon.png.png" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:08.176Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+    √ should deduct stock when a game is recorded (2738ms)
+[2026-07-16T03:05:09.634Z]  "GET /" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:09.707Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:09.710Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+[2026-07-16T03:05:10.073Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
+    √ should restore stock when a game is deleted (651ms)
 
 
-  9 passing (31s)
+  2 passing (4s)
 
 
   (Results)
 
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │ Tests:        9                                                                                │
-  │ Passing:      9                                                                                │
+  │ Tests:        2                                                                                │
+  │ Passing:      2                                                                                │
   │ Failing:      0                                                                                │
   │ Pending:      0                                                                                │
   │ Skipped:      0                                                                                │
   │ Screenshots:  0                                                                                │
   │ Video:        false                                                                            │
-  │ Duration:     30 seconds                                                                       │
-  │ Spec Ran:     01-core.cy.js                                                                    │
-  └────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-
-────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                                                    
-  Running:  02-players.cy.js                                                                (2 of 3)
-
-
-  02 - Player Management & Security
-[2026-07-04T20:25:16.021Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:16.069Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:16.074Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:16.755Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:16.783Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:16.787Z]  "GET /manifest.json" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:16.797Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:16.822Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:16.880Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบระบบค้นหารายชื่อผู้เล่น (Search Filtering Test) (4329ms)
-[2026-07-04T20:25:20.388Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:20.769Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:20.783Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:21.329Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:24.237Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบระบบป้องกันการลบผู้เล่นที่มียอดหนี้ค้าง (Delete Player Validation) (4807ms)
-[2026-07-04T20:25:25.339Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:25.384Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:25.387Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:25.516Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบการเปลี่ยนชื่อผู้เล่น (Rename Player) (1184ms)
-[2026-07-04T20:25:26.502Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:26.564Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:26.567Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:26.697Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:27.358Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบ User Error: เปลี่ยนชื่อไปซ้ำกับคนที่มีอยู่แล้ว (Duplicate Rename) (1713ms)
-[2026-07-04T20:25:28.259Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:28.607Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:28.644Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:28.659Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:28.776Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:30.682Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบ Edge Case: ป้องกันการลบผู้เล่นที่มีเครดิตคงเหลือ (Credit Loss Prevention) (2572ms)
-[2026-07-04T20:25:30.974Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:31.033Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:31.040Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:31.227Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบ Edge Case: การกดยกเลิก (Cancel) ล้างรายชื่อวันนี้ ข้อมูลต้องไม่หาย (1013ms)
-[2026-07-04T20:25:32.006Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:32.091Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:32.095Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:32.240Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบ Security (XSS): ป้องกันการฝังโค้ดอันตรายในชื่อผู้เล่น (775ms)
-[2026-07-04T20:25:32.805Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:33.209Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:33.218Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:33.361Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:33.787Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:35.274Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบ Edge Case: ป้องกันการกดล้างรายชื่อวันนี้ หากมีการบันทึกเกมไปแล้ว (Prevent Data Loss) (3877ms)
-[2026-07-04T20:25:36.777Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:36.849Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:36.852Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:37.010Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบการเพิ่มผู้เล่นพร้อม Prefix (Prefix Selection & UI Display) (1235ms)
-
-
-  9 passing (22s)
-
-
-  (Results)
-
-  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │ Tests:        9                                                                                │
-  │ Passing:      9                                                                                │
-  │ Failing:      0                                                                                │
-  │ Pending:      0                                                                                │
-  │ Skipped:      0                                                                                │
-  │ Screenshots:  0                                                                                │
-  │ Video:        false                                                                            │
-  │ Duration:     22 seconds                                                                       │
-  │ Spec Ran:     02-players.cy.js                                                                 │
-  └────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-
-────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                                                    
-  Running:  03-smart-board.cy.js                                                            (3 of 3)
-
-
-  03 - Smart Board & Voice Command
-[2026-07-04T20:25:39.723Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:39.761Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:39.764Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:40.428Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:40.461Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:40.465Z]  "GET /manifest.json" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:40.470Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:40.498Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:40.534Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบกระดานจัดทัพอัจฉริยะ (Smart Board & Auto-mapping) (4869ms)
-[2026-07-04T20:25:44.641Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:44.706Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:44.708Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:44.981Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:46.869Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบกระดานจัดทัพ: การแก้ไขคำผิดและจิ้มเลือกชื่อจาก Quick Pad (4702ms)
-[2026-07-04T20:25:49.409Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:49.444Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:49.446Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:49.586Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:51.395Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบกระดานจัดทัพ: การสั่งงานด้วยเสียง (Voice Command Simulation) (4438ms)
-[2026-07-04T20:25:53.945Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:54.356Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:54.374Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:54.495Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:56.313Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบกระดานจัดทัพ: จัดทีมที่มีผู้เล่นที่ลงทะเบียนไว้แต่ไม่ได้เช็คอินวันนี้ (absent) และบันทึกสำเร็จ (3941ms)
-[2026-07-04T20:25:57.902Z]  "GET /index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:57.970Z]  "GET /styles.css" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:57.977Z]  "GET /app.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-[2026-07-04T20:25:58.099Z]  "GET /sw.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cypress/15.18.0 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36"
-    √ ทดสอบกระดานจัดทัพ: การสร้างคำนำหน้ากลุ่มใหม่ และการเพิ่มผู้เล่นด่วนผ่านกระดานจัดทัพ (1223ms)
-
-
-  5 passing (20s)
-
-
-  (Results)
-
-  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │ Tests:        5                                                                                │
-  │ Passing:      5                                                                                │
-  │ Failing:      0                                                                                │
-  │ Pending:      0                                                                                │
-  │ Skipped:      0                                                                                │
-  │ Screenshots:  0                                                                                │
-  │ Video:        false                                                                            │
-  │ Duration:     19 seconds                                                                       │
-  │ Spec Ran:     03-smart-board.cy.js                                                             │
+  │ Duration:     3 seconds                                                                        │
+  │ Spec Ran:     19-inventory-system.cy.js                                                        │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
@@ -281,11 +93,7 @@ Hit CTRL-C to stop the server
 
        Spec                                              Tests  Passing  Failing  Pending  Skipped  
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-  │ √  01-core.cy.js                            00:30        9        9        -        -        - │
-  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ √  02-players.cy.js                         00:22        9        9        -        -        - │
-  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ √  03-smart-board.cy.js                     00:19        5        5        -        -        - │
+  │ √  19-inventory-system.cy.js                00:03        2        2        -        -        - │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    √  All specs passed!                        01:12       23       23        -        -        -  
+    √  All specs passed!                        00:03        2        2        -        -        -  
 

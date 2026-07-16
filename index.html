@@ -99,8 +99,11 @@
                         <div>
                             <div class="flex justify-between items-center mb-1.5">
                                 <label class="form-label !mb-0">เบอร์ลูกที่ใช้</label>
-                                <div id="lastShuttlecockIndicator"
-                                    class="text-xs font-semibold text-gray-500 dark:text-gray-400"></div>
+                                <div class="flex items-center gap-2">
+                                    <span id="dailyInventoryBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap transition-colors"></span>
+                                    <div id="lastShuttlecockIndicator"
+                                        class="text-xs font-semibold text-gray-500 dark:text-gray-400"></div>
+                                </div>
                             </div>
                             <div id="shuttlecockSpeedsDisplay"
                                 class="form-control flex items-center gap-2 min-h-[45px] bg-gray-50 dark:bg-slate-800/50 flex-wrap p-2 cursor-pointer"
@@ -343,6 +346,27 @@
                             placeholder="0">
                         <p class="text-xs text-gray-500 mt-1">
                             ราคานี้จะถูกดึงไปแสดงเป็นค่าเริ่มต้นในหน้าคิดเงินรายวันโดยอัตโนมัติ</p>
+                    </div>
+                    <hr class="border-gray-200">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <label class="form-label mb-0">ระบบจัดการสต๊อกลูกแบดมินตัน</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="settingInventoryEnabled" class="sr-only peer" onchange="toggleInventorySystem()">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-3">หักยอดอัตโนมัติเมื่อมีการบันทึกเกม (นับเป็นจำนวนลูก)</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <span class="text-sm text-gray-500">คงเหลือ: </span>
+                                <span id="settingInventoryStockDisplay" class="text-xl font-bold text-indigo-600 dark:text-indigo-400">0</span>
+                                <span class="text-sm text-gray-500"> ลูก</span>
+                            </div>
+                            <button class="btn btn-sm btn-primary" onclick="addInventoryStock(12)">+1 หลอด (12 ลูก)</button>
+                            <button class="btn btn-sm btn-indigo" onclick="addInventoryStock(60)">+5 หลอด (60 ลูก)</button>
+                            <button class="btn btn-sm btn-secondary text-red-600" onclick="addInventoryStock(-1)">-1 ลูก</button>
+                        </div>
                     </div>
                     <div>
                         <label class="form-label">เบอร์โทรศัพท์/เลขบัตรประชาชน (พร้อมเพย์)</label>
